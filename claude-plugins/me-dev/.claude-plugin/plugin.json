@@ -1,0 +1,13 @@
+{
+  "name": "me-dev",
+  "version": "0.1.0",
+  "description": "MyEngine dev orchestrator. The /me pipeline (intake -> architect -> developer -> tester -> runner -> verifier -> docs) plus the full agent roster, shipped as Claude Code skills + subagents. Thin adapter over the docs/agentic canon.",
+  "author": {
+    "name": "MyEngine",
+    "email": "maintainers@example.com",
+    "url": "https://example.com/myengine"
+  },
+  "homepage": "https://example.com/myengine",
+  "license": "UNLICENSED",
+  "keywords": ["myengine", "game-engine", "workflow", "simulation", "android"]
+}

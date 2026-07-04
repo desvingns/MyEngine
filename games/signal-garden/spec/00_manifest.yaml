@@ -1,0 +1,9 @@
+schema_version: 1
+slug: signal-garden
+title: Signal Garden
+mode: greenfield-game
+platforms:
+  - android
+status: sample
+created: 2026-07-02
+engine_baseline: MyEngine v0.1 draft

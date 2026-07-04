@@ -1,0 +1,26 @@
+{
+  "name": "me-spec",
+  "version": "0.1.0",
+  "description": "Repo-local thin Codex adapter for the MyEngine /me-spec workflow.",
+  "author": {
+    "name": "MyEngine",
+    "email": "maintainers@example.com",
+    "url": "https://example.com/myengine"
+  },
+  "license": "UNLICENSED",
+  "keywords": ["myengine", "game-spec", "workflow"],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "MyEngine Spec",
+    "shortDescription": "Thin adapter for /me-spec workflows.",
+    "longDescription": "Repo-local adapter that points Codex to the canonical MyEngine game spec workflow docs.",
+    "developerName": "MyEngine",
+    "category": "Productivity",
+    "capabilities": ["Write", "Review"],
+    "defaultPrompt": [
+      "/me-spec --greenfield-game",
+      "/me-spec --engine-feature",
+      "Review the current game spec bundle"
+    ]
+  }
+}

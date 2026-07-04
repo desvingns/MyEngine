@@ -1,0 +1,26 @@
+{
+  "name": "me-dev",
+  "version": "0.1.0",
+  "description": "Repo-local thin Codex adapter for the MyEngine /me workflow.",
+  "author": {
+    "name": "MyEngine",
+    "email": "maintainers@example.com",
+    "url": "https://example.com/myengine"
+  },
+  "license": "UNLICENSED",
+  "keywords": ["myengine", "game-engine", "workflow"],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "MyEngine Dev",
+    "shortDescription": "Thin adapter for /me workflows.",
+    "longDescription": "Repo-local adapter that points Codex to the canonical MyEngine agentic workflow docs.",
+    "developerName": "MyEngine",
+    "category": "Productivity",
+    "capabilities": ["Write", "Review"],
+    "defaultPrompt": [
+      "/me --feature --next",
+      "/me --content-validate",
+      "/me --reflect"
+    ]
+  }
+}

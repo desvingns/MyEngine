@@ -1,0 +1,11 @@
+{
+  "project": "MyEngine",
+  "canonicalDocs": [
+    "AGENTS.md",
+    "STATE.md",
+    ".ai/handoff.md",
+    "docs/agentic/PIPELINE.md",
+    "docs/agentic/AGENT_CONTRACTS.md"
+  ],
+  "commands": ["/me", "/me-spec"]
+}

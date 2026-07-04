@@ -1,0 +1,27 @@
+{
+  "name": "myengine",
+  "owner": {
+    "name": "MyEngine",
+    "url": "https://example.com/myengine"
+  },
+  "metadata": {
+    "description": "Ship MyEngine with ready-made Claude Code workflows: the /me dev pipeline and /me-spec game/engine spec bundles, backed by the canonical docs/agentic contracts. Thin adapters over the single source of truth in docs/agentic.",
+    "version": "0.1.0"
+  },
+  "plugins": [
+    {
+      "name": "me-dev",
+      "source": "./claude-plugins/me-dev",
+      "description": "MyEngine dev orchestrator: the /me pipeline (intake -> architect -> developer -> tester -> runner -> verifier -> docs) plus the full agent roster as Claude Code skills + subagents.",
+      "category": "workflow",
+      "keywords": ["myengine", "game-engine", "simulation", "android", "workflow"]
+    },
+    {
+      "name": "me-spec",
+      "source": "./claude-plugins/me-spec",
+      "description": "MyEngine spec author: /me-spec builds traceable game and engine-feature spec bundles and bridges accepted specs to the backlog.",
+      "category": "workflow",
+      "keywords": ["myengine", "game-spec", "requirements", "workflow"]
+    }
+  ]
+}

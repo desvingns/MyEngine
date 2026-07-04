@@ -1,0 +1,13 @@
+{
+  "name": "me-spec",
+  "version": "0.1.0",
+  "description": "MyEngine spec author. /me-spec builds a traceable game or engine-feature spec bundle and bridges accepted specs to the backlog. Thin adapter over docs/agentic/SPEC_BOARD.md and docs/GAME_SPEC_PIPELINE.md.",
+  "author": {
+    "name": "MyEngine",
+    "email": "maintainers@example.com",
+    "url": "https://example.com/myengine"
+  },
+  "homepage": "https://example.com/myengine",
+  "license": "UNLICENSED",
+  "keywords": ["myengine", "game-spec", "requirements", "workflow"]
+}
