@@ -1,6 +1,6 @@
 id: SG-005
 title: Balance report deltas
-status: backlog
+status: done
 phase: first-game
 
 Acceptance:

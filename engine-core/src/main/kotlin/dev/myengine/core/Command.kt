@@ -43,6 +43,9 @@ class CommandQueue {
 
     fun isEmpty(): Boolean = pending.isEmpty()
 
+    /** Non-destructive snapshot of not-yet-drained commands, in insertion order. */
+    fun pending(): List<EngineCommand> = pending.toList()
+
     companion object {
         val commandComparator: Comparator<EngineCommand> =
             compareBy<EngineCommand> { it.scheduledTick.value }

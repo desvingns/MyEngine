@@ -20,6 +20,7 @@ dependencies {
     implementation(project(":games:sandbox"))
     testImplementation(libs.kotlin.test.junit5)
     testImplementation(libs.junit.jupiter)
+    testImplementation(libs.kotlinx.serialization.json)
 }
 
 application {

@@ -1,7 +1,7 @@
 # MyEngine Agent Contracts
 
-Status: Phase 04 accepted  
-Last updated: 2026-07-02
+Status: Phase 04 accepted; PROC-2026-07-04 improvements accepted  
+Last updated: 2026-07-04
 
 Every LLM agent returns exactly one JSON object or exactly one `BRAINSTORM` block. Invalid
 structured output receives one retry. Writer and final reviewer are always separate roles.
@@ -49,6 +49,7 @@ END_BRAINSTORM
 | Agent | Writes files | Contract focus |
 |---|---:|---|
 | `me-architect` | No | Options, dependency direction, ADR need |
+| `me-scout` | No | Cheap fan-out fact-finding: verified `file:line` facts, no review |
 | `me-engine-developer` | Yes | Scoped implementation, changed files, risks |
 | `me-gameplay-designer` | Yes | Mechanics/content may clone references, verbatim IP needs ADR |
 | `me-simulation-reviewer` | No | Determinism, system order, replay hash |
@@ -115,8 +116,28 @@ END_BRAINSTORM
     "content_external": true,
     "save_versioned": true
   },
-  "findings": [],
+  "findings": [
+    {"finding": "", "severity": "low", "attributed_agent": ""}
+  ],
   "manual_checks": []
+}
+```
+
+`attributed_agent` names the roster agent whose miss produced the finding (e.g. a boundary
+violation the developer introduced, a test the tester should have written). Empty when no
+single agent is responsible. Attributions feed telemetry and retro aggregation
+(`SELF_IMPROVEMENT.md`, Agent Attribution).
+
+### Scout
+
+```json
+{
+  "agent": "me-scout",
+  "verdict": "pass",
+  "facts": [
+    {"fact": "", "file": "path", "line": 0}
+  ],
+  "not_found": []
 }
 ```
 
@@ -132,13 +153,30 @@ END_BRAINSTORM
       "evidence": "",
       "proposed_minimal_change": "",
       "target_file": "",
+      "attributed_agent": "",
       "scope": "project-local"
     }
   ]
 }
 ```
 
-Allowed `scope`: `project-local`, `pipeline-level`.
+Allowed `scope`: `project-local`, `pipeline-level`, `brain-level`.
+
+`brain-level` findings generalize beyond MyEngine (domain lessons, cross-pipeline patterns,
+user-level facts). They are NOT applied here: `me-docs` appends them at close-out to
+`D:/Pet/brain/inbox/<YYYY-MM-DD>-myengine.md` (format: `brain/inbox/README.md`; `status: NEW`);
+promotion into curated brain files is human-gated via `/brain promote` — never edit
+`brain/core|domains|pipelines` directly. Reflect findings and Improve proposals may also carry
+an optional `twin_applicability` object
+`{"applicable":"yes|no|unknown","twin_target":"<mp artifact per D:/Pet/brain/pipelines/TWINS.md>","why":""}`
+so `/brain sync-twins` can stage ports into the twin mp pipeline (applied only by its own
+`/mp --improve --drain` gate).
+
+## Runner Invocation Rule
+
+`me-runner` invokes PowerShell gate scripts as `powershell.exe -File scripts\me-<name>.ps1`
+(one uniform form from any host shell) and never inlines script bodies. Retried malformed
+envelopes are counted and reported so close-out telemetry can record `malformed_json_count`.
 
 ## Retry Rule
 

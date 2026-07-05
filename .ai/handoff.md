@@ -1,7 +1,7 @@
 # MyEngine Handoff
 
-Last updated: 2026-07-04 (SG-002 kill/reward gate hardening: kill-bearing canonical scenario + reward-drop telemetry)  
-Owner: Claude
+Last updated: 2026-07-05 (MTD-001 closed as SG-002 duplicate; MTD-002 gold-cost gating acceptance coverage added; MyTD MTD-003 next)  
+Owner: Codex
 
 ## DONE
 
@@ -111,6 +111,221 @@ Owner: Claude
   - Gates: `.\gradlew.bat test` -> pass; `scripts\me-sim-replay.ps1` + `scripts\me-benchmark.ps1`
     -> pass, canonical `9c495d8ff30fd83d` (kills=0) unchanged + kill `83a65da1a7881b2c`
     (enemies_killed=2, tower_shots=4); `scripts\me-save-compat.ps1` -> pass.
+- Signal Garden `SG-003` (placeholder render surface, 2026-07-04):
+  - New `engine-render/src/main/kotlin/dev/myengine/render/PlaceholderRenderSurface.kt`: a PURE
+    projection `project(snapshot: EngineSnapshot, camera: Camera): RenderFrame`. Kinds
+    `RenderKind{TILE_FLOOR,TILE_WALL,TILE_RESOURCE,CORE,TOWER,ENEMY}`;
+    `RenderPrimitive(kind, tile, screen, health?)`; `RenderFrame(primitives, coreHealth, tick)`.
+    Tiles emitted first (snapshot order), then entities sorted by id; unknown terrain/entity types
+    skipped; screen via `camera.worldToScreen(tile center)`; ENEMY carries health, TOWER null. No
+    game/Android imports; no simulation mutation — a reusable, game-agnostic engine capability.
+  - Tests: `engine-render/.../RenderBoundaryTest.kt` extended with camera pan/zoom cases (pan delta
+    + clamp-to-world, zoom clamp to `[0.5,4]`, scale grows with zoom) — camera pan/zoom was
+    previously untested; new `engine-render/.../PlaceholderRenderSurfaceTest.kt` (six kinds present,
+    enemy health carried / tower null, screen == `worldToScreen(tile center)`,
+    tiles-then-entities-by-id ordering, unknown-type safety, projection purity: idempotent + source
+    unchanged); new `games/sandbox/.../SandboxRenderNonMutationTest.kt` (step runtime, capture
+    `stableHash`, project snapshot, assert `stableHash` unchanged — render path proven
+    non-mutating).
+  - Decision: reusable game-agnostic render surface, pure `snapshot -> frame` projection, not yet
+    launcher-wired (desktop/Android still use `AsciiRenderer`). No ADR (engine-render presentation
+    boundary is Experimental; pure projection introduces no new dependency direction).
+  - Pipeline: developer `me-engine-developer` (architect skipped — scope small and well-bounded,
+    like SG-001) -> tester `me-tester` -> reviewers `me-renderer-qa` (pass: snapshot boundary,
+    camera math, coverage all sound) + `me-verifier` (pass: all four boundary_checks true,
+    render_snapshot_only confirmed) -> docs.
+  - Gates: `.\gradlew.bat test` -> pass (full suite incl. new render + sandbox tests);
+    `.\gradlew.bat desktop:run` -> pass (exit 0; ASCII map unaffected); telemetry recorded via
+    `scripts\me-record-run.ps1` (events=4).
+- Signal Garden `SG-003 follow-up` (RenderFrame consumed in a real desktop launcher + pixel-smoke,
+  2026-07-04):
+  - New `engine-render/src/main/kotlin/dev/myengine/render/RenderPalette.kt`: pure, Android-safe
+    (NO java.awt/android imports — verified by grep + `android:assembleDebug`). `data class
+    Rgb(r,g,b)` with `toRgbInt()` (packs 0xRRGGBB); `object RenderPalette` maps each of the six
+    `RenderKind`s to a distinct color (floor=dark gray, wall=mid gray, resource=amber, core=cyan,
+    tower=blue, enemy=red) plus `background`, `coreHealthText`, `enemyPip`. The durable shared
+    kind->color mapping future launcher authors reuse (closes SG-003 follow-up note #2).
+  - New `desktop/src/main/kotlin/dev/myengine/desktop/FrameRasterizer.kt`: AWT-only
+    (`BufferedImage`/`Graphics2D`/`ImageIO`, antialiasing OFF, TYPE_INT_RGB) rasterizer of
+    `RenderFrame` -> a `CELL_SIZE`(20px) quad per primitive centered on the projected `ScreenPoint`,
+    an `enemyPip`(4px) marker drawn ONLY when `RenderPrimitive.health != null`, and a `core <n>`
+    readout from `RenderFrame.coreHealth` (the CORE primitive carries no health). Consts
+    CELL_SIZE/PIP_SIZE/CORE_TEXT_X/CORE_TEXT_Y; `writePng`. AWT is confined to the desktop harness
+    (desktop is never built into Android).
+  - Edit `desktop/.../DesktopLauncher.kt`: existing banner/`hash=`/ASCII output preserved and
+    unreordered (canonical `9c495d8ff30fd83d` unchanged); ADDS a debug render-smoke block — project
+    the scenario snapshot via `PlaceholderRenderSurface`, rasterize, write
+    `desktop/build/render-smoke.png`, print `png=<path>`.
+  - Edit `desktop/build.gradle.kts`: added `testImplementation(libs.kotlin.test.junit5)` +
+    `libs.junit.jupiter` and `tasks.test { useJUnitPlatform() }`.
+  - New test `desktop/.../FrameRasterizerPixelSmokeTest.kt`: deterministic headless AWT pixel-smoke
+    — synthetic snapshot covering all six kinds -> project -> rasterize -> assert each kind's
+    cell-center pixel == its `RenderPalette` color (masking getRGB ARGB), enemy-pip present /
+    tower-pip absent (health nullability gate), core-health text region non-background, and
+    bit-for-bit rasterization determinism. CLOSES the `docs/contracts/render.md` pixel-smoke gate
+    that unit tests alone previously met (SG-003 follow-up note #1).
+  - Decision: pure headless AWT `BufferedImage` rasterizer (Option A) over a libGDX/GL window (not
+    deterministic/headless-testable). Split refined by a verified dependency fact — `android` ->
+    `:games:sandbox` -> `api(project(":engine-render"))`, so engine-render compiles transitively
+    into Android; therefore AWT must NOT live in engine-render. Final split: reusable pure
+    `RenderPalette` (RGB ints) in engine-render; AWT `FrameRasterizer` + pixel-smoke in the desktop
+    harness. No ADR (engine-render presentation boundary + `EngineSnapshot`/`Camera` Experimental;
+    no new module dependency edge; Constitution rule 2 preserved, guarded by existing
+    `SandboxRenderNonMutationTest`).
+  - Pipeline: architect `me-architect` -> developer `me-engine-developer` -> tester `me-tester` ->
+    runner `me-runner` -> reviewers `me-renderer-qa` (pass) + `me-verifier` (pass, all four
+    boundary_checks true) -> docs. Reviewers found only cosmetic/low nits; one post-review cosmetic
+    fix applied by the orchestrator (debug PNG path `desktop\desktop\build\...` ->
+    `desktop\build\render-smoke.png`; re-ran `desktop:run`, hash unchanged).
+  - Gates: `.\gradlew.bat test` -> pass (incl. new `FrameRasterizerPixelSmokeTest` + existing
+    `PlaceholderRenderSurfaceTest`/`RenderBoundaryTest`/`SandboxRenderNonMutationTest`);
+    `.\gradlew.bat desktop:run` -> exit 0, `hash=9c495d8ff30fd83d` (unchanged), ASCII map,
+    `png=D:\Pet\MyEngine\desktop\build\render-smoke.png`; `.\gradlew.bat android:assembleDebug` ->
+    BUILD SUCCESSFUL.
+- Signal Garden `SG-004` (Android lifecycle save smoke, 2026-07-04):
+  - New `games/sandbox/src/main/kotlin/dev/myengine/games/sandbox/SandboxSession.kt`: a pure,
+    Android-free holder wrapping `SandboxRuntime` + seed. `save()` = `SandboxSaveCodec.encode(state,
+    seed)`; `restore(text)` decodes and re-parses the seed; plus `start()`, `step()`, `submit()`,
+    `stableHash()`. QUIESCENT-SAVE precondition documented in KDoc: only `state` is persisted, NOT the
+    runtime command queue or the per-tick `SeededRandom(17)`, so `save()` is sound at a quiescent tick
+    boundary. No android imports; no save-format change (`SAVE_VERSION` stays 1).
+  - Edit `android/src/main/kotlin/dev/myengine/android/MyEngineActivity.kt`: thin adapter. `onCreate`
+    restores from `savedInstanceState["me_sandbox_save"]` under a greppable `DEBUG_SAVE = true` flag
+    (else `start()`), preserving the banner + tick + hash TextView and the `runCatching` fold;
+    `onSaveInstanceState` writes `session.save()` to the Bundle. No sim logic or content ids in the
+    Activity.
+  - New test `games/sandbox/src/test/kotlin/dev/myengine/games/sandbox/SandboxSessionLifecycleTest.kt`:
+    save/restore roundtrip preserves stableHash; pause/resume determinism (resume == uninterrupted run
+    to the same tick); seed roundtrip; independent-runtime; PLUS future-version + non-numeric-version
+    decode rejection (durable guard for the versioned-save invariant).
+  - Decision: Option A (pure holder in `games/sandbox` + thin Activity adapter; command-queue/RNG
+    persistence deferred; quiescent-save precondition documented). No ADR (save codec stays v1;
+    sandbox game module + Android shell are Experimental; no new module dependency edge). Device path
+    (acceptance #3) is device-pending — see BLOCKERS.
+  - Pipeline: architect `me-architect` (Option A) -> developer `me-engine-developer` -> tester
+    `me-tester` -> reviewers `me-save-compat-reviewer` (pass: roundtrip/versioning/seed sound,
+    quiescent limitation documented), `me-android-performance` (pass: lifecycle pairing correct,
+    boundary clean, frame budget fine for the tiny sandbox), `me-verifier` (pass, all four
+    boundary_checks true) -> docs.
+  - Gates: `.\gradlew.bat test` -> pass (full suite incl. `SandboxSessionLifecycleTest` +
+    version-rejection tests); `scripts\me-save-compat.ps1` -> pass; `.\gradlew.bat
+    android:assembleDebug` -> BUILD SUCCESSFUL (thin adapter compiles + packages); telemetry recorded
+    (events=7).
+- Signal Garden `SG-004 follow-up` (sandbox save-format v2 — persist the runtime's pending
+  `CommandQueue`, 2026-07-05): closes the last recorded SG-004 gap — the quiescent-save precondition
+  is DROPPED, `save()` is now sound at ANY tick.
+  - `engine-core/src/main/kotlin/dev/myengine/core/Command.kt`: added
+    `CommandQueue.pending(): List<EngineCommand>` (non-destructive snapshot; `drainFor`/
+    `commandComparator` unchanged).
+  - `games/sandbox/src/main/kotlin/dev/myengine/games/sandbox/SandboxGame.kt`: `SandboxRuntime`
+    gained `pendingCommands()`/`submitAll()`; `SandboxSaveCodec.SAVE_VERSION` bumped **1 -> 2**;
+    `encode()` gained a `pendingCommands` param serialized as a new `pendingCommands` properties line
+    (`type|id|scheduledTick|actorId|stablePayload` per command, `;`-joined); `decode()`'s version
+    guard now accepts `1 || 2` (rejects 3+), its signature/return type (`SandboxState`) UNCHANGED —
+    this is a real v1->v2 migration, not a breaking bump; new separate `decodePendingCommands(text)`
+    reconstructs `BuildTowerCommand` for `type=="build_tower"` or a generic `TextCommand` otherwise.
+  - `games/sandbox/src/main/kotlin/dev/myengine/games/sandbox/SandboxSession.kt`: `save()` now passes
+    `runtime.pendingCommands()` to encode; `restore()` also calls `decodePendingCommands()` and loads
+    them via `submitAll()`; KDoc rewritten to DROP the quiescent-save precondition — `save()` is
+    documented as sound at ANY tick.
+  - `android/src/main/kotlin/dev/myengine/android/MyEngineActivity.kt`: `DEBUG_SAVE` changed from a
+    hardcoded `const val true` to `val DEBUG_SAVE = BuildConfig.DEBUG` (release builds can no longer
+    ship this enabled); stale "quiescent tick" comment updated.
+  - `android/build.gradle.kts`: added `buildFeatures { buildConfig = true }`.
+  - Tests: `games/sandbox/.../SandboxSessionLifecycleTest.kt` updated — new key regression test
+    (pending future-tick command still queued at save time round-trips correctly through
+    save/restore/resume, matching an uninterrupted run's stableHash); new v1->v2 migration test
+    (v1-shaped save with no `pendingCommands` property decodes cleanly to an empty queue); new
+    CommandId/Tick preservation test; retargeted the future-version-rejection test to
+    `saveVersion=3` (v2 is now valid) and the non-numeric-version test to the new `saveVersion=2`
+    baseline. Class KDoc rewritten to describe both quiescent and pending-command save cases.
+  - Decision: no ADR needed. me-architect's ruling: covered by the existing "saves are versioned from
+    v1 and migration-aware" invariant; `SandboxSaveCodec` stays Experimental per
+    `docs/API_STABILITY.md` — same precedent as the original v1 codec, which also shipped without an
+    ADR.
+  - Pipeline: architect `me-architect` (no ADR) -> developer `me-engine-developer` -> tester
+    `me-tester` -> runner `me-runner` -> reviewers `me-simulation-reviewer` (pass, one medium
+    non-blocking forward-looking: no persisted CommandId-issuing counter — no production caller mints
+    sequential ids today so no current collision risk; one medium non-blocking: no
+    engine-core-unit-level determinism test for `pending()`/`submitAll()`, covered end-to-end at the
+    sandbox level instead), `me-save-compat-reviewer` (pass, one low: `pendingCommands` encoding
+    assumes no `;`/`|`/`:` in command type/actorId/stablePayload — same pre-existing assumption class
+    as entities/producers encoding in the same file), `me-android-performance` (pass, one low:
+    `DEBUG_SAVE` losing `const val` means release-branch elimination now depends on
+    R8/minification rather than compile-time folding — acceptable, trivial branch bodies; one medium
+    pre-existing/unchanged: no onPause/onStop/onDestroy persistence path yet, Bundle-only, still
+    device-pending) -> `me-verifier` (pass, all four boundary_checks true; confirmed all three SG-004
+    acceptance criteria are satisfied: "Android shell can trigger save/load in debug"
+    (`BuildConfig.DEBUG` gate + wiring), "Lifecycle pause does not corrupt simulation state" (now
+    strictly stronger — sound at any tick, not just quiescent), "Exact device blocker is documented if
+    no device is available" (unaffected, already on record)) -> docs `me-docs`.
+  - Gates: `.\gradlew.bat :games:sandbox:test` -> pass; full `.\gradlew.bat test` -> pass;
+    `scripts\me-save-compat.ps1` -> pass; `.\gradlew.bat :android:compileDebugKotlin` -> pass
+    (verified after pointing a machine-local, gitignored `local.properties` at the Android SDK — not
+    a code change).
+- Signal Garden `SG-005` (balance report deltas, 2026-07-05):
+  - `engine-devtools/.../DevtoolReports.kt`: added `BalanceDeltaReport`, `BalancePackSummary`,
+    deterministic metric deltas, threshold metadata (`large_percent_delta=0.25`,
+    `large_absolute_delta=5.0`), warning generation, and invalid-pack error reporting. Default
+    comparison is sandbox baseline content vs `games/signal-garden/content/signal-garden`.
+  - `engine-devtools/.../DevtoolsMain.kt`: added `balance-report` / `balance-delta` CLI aliases.
+    Existing `scenario` / `balance` suite output is unchanged.
+  - Tests in `DevtoolReportsTest`: baseline-vs-changed comparison, parser-backed JSON structure,
+    captured CLI stdout parses as one object, no-op copy has no warnings, large enemy/core/resource
+    deltas are flagged, and invalid changed-pack errors are returned without throwing. Added
+    test-only `kotlinx-serialization-json` via `gradle/libs.versions.toml` and
+    `engine-devtools/build.gradle.kts`.
+  - Default report warnings today: `enemy_health_total` 32 -> 40, `core_damage_potential` 16 -> 8,
+    `reward_total` 8 -> 16.
+  - Decision: devtools-only Experimental report; no ADR, no engine runtime change, no content schema
+    change, and no balance values changed. Pipeline: architect pass; tester initially found missing
+    JSON-parse/CLI coverage, fixed; runner gates pass; verifier pass with all four boundary checks
+    true and no findings.
+- MyTD `MTD-001` / `MTD-002` (reward deposit duplicate close + tower cost gating, 2026-07-05):
+  - `MTD-001` is closed as a duplicate of implemented SG-002. MyTD gold is a content-defined resource
+    (`enemy.rewardResource=gold` in a future MyTD pack), not a separate engine branch.
+  - `MTD-002` is closed by the existing generic build command flow plus new acceptance tests:
+    `SandboxRuntime.buildTower` checks `Inventory.canRemove(tower.costResource, tower.costAmount)`,
+    invokes `DefenseRuntime.placeTower` only when affordable, and removes cost only after
+    `TowerPlacementResult.Placed`.
+  - New `games/sandbox/.../SandboxTowerCostGatingTest.kt` covers affordable spend, unaffordable
+    rejection with unchanged non-negative balance, not-buildable rejection without spend, and
+    replay-stable rejection.
+  - Synced `.claude/specs/backlog/MTD-001-reward-deposit.md`,
+    `.claude/specs/backlog/MTD-002-gold-cost-gating.md`, `.claude/specs/ENGINE_ROADMAP.md`, and
+    `D:/Pet/MyTD/spec/{engine-gap-analysis.md,traceability.csv,risks.md}`.
+  - Decision: no ADR; no new dependency edge, no copied reference content, and no gold-specific
+    engine logic. Keep `engine-defense` inventory-free; game/runtime orchestration owns resource
+    mutation.
+
+- PROC v0.2.0 pipeline improvements (2026-07-04) — first real `/me --improve`-style batch,
+  sourced from an approved architecture review (human gate = plan approval):
+  - Canon (`docs/agentic/SELF_IMPROVEMENT.md`, `PIPELINE.md`, `AGENT_CONTRACTS.md`,
+    `SPEC_BOARD.md`, `docs/GAME_SPEC_PIPELINE.md`): mandatory telemetry for every run incl.
+    failures with new fields (`duration_min`, `malformed_json_count`, `gate_failures`,
+    `attributed_agent`); reflect cadence (after any failed run / every 5th event); proposal
+    queue `.ai/proposals/` + `--improve --drain`; plugin-versioning rule; memory boundary;
+    selfcheck at intake; `.ai/DIGEST.md` intake digest; conditional Reviewer Matrix by
+    changed paths; `--upgrade` mode; close-out flips spec card statuses and syncs game-bundle
+    traceability; Gap Dedup Rule + demand-counted Engine Roadmap.
+  - Scripts: `me-record-run.ps1` (needs_human verdict, new fields, `reflect_required` output),
+    `me-retro.ps1` (attribution/gate-failure/retry aggregation).
+  - me-dev plugin: `model:` tiers on all agents (haiku `me-runner`; sonnet reviewers/tester/
+    docs/reflect/content-schema/balance; inherit architect/developer/gameplay-designer/
+    verifier/improve); NEW `me-scout` (cheap `file:line` fact-finder, Scout schema in
+    contracts); SKILL.md reworked (intake selfcheck + digest, reviewer matrix, scout
+    delegation, close-out telemetry + reflect trigger, `--improve --drain`, `--upgrade`).
+  - me-spec plugin: mandatory gap dedup (scan backlog/active/done + `docs/API_STABILITY.md` +
+    roadmap before minting a gap); backlog bridge updates `.claude/specs/ENGINE_ROADMAP.md`
+    (NEW: aggregated capabilities with demand counts; flags MTD-001 as a duplicate of done
+    SG-002 — close by reference, verify the gold-mapping delta only).
+  - Deferred (filed as backlog cards, NOT implemented): PROC-001 spec back-sync script,
+    PROC-002 multi-repo ADR, PROC-003 domain roadmap (flow-field/jobs/storyteller vs game
+    specs), PROC-004 perf budgets, PROC-005 golden replay-hash files, PROC-006 CI/pre-push,
+    PROC-007 save migration matrix, PROC-008 playtest bot, PROC-009 Android visual smoke,
+    PROC-010 cost telemetry.
+  - Versions: both plugins 0.1.0 -> 0.2.0; logged in `.ai/changes/agent-skill-log.md`.
+    User should reinstall/update the `myengine` marketplace plugins to refresh the cache.
 
 ## DECISIONS
 
@@ -128,31 +343,119 @@ Owner: Claude
   game runtime (`SandboxRuntime.step`) owns Inventory mutation. No ADR because `DefenseRuntime` is
   Experimental per `docs/API_STABILITY.md`. Deposits are content-derived (no hardcoded resource
   ids) and applied in sorted-key order guarded by `canAdd` for determinism.
+- SG-003 render surface is a reusable, game-agnostic engine capability: `PlaceholderRenderSurface`
+  is a pure `snapshot -> RenderFrame` projection with no game/Android imports and no simulation
+  mutation, so it stays behind the presentation/snapshot boundary. It is deliberately NOT yet wired
+  into the desktop/Android launchers (still `AsciiRenderer`); consuming `RenderFrame` in a real
+  launcher with a pixel/screenshot smoke is a tracked follow-up.
+- SG-003 follow-up: `RenderFrame` is consumed in a real launcher via a pure headless AWT
+  `BufferedImage` rasterizer in the desktop harness. The reusable kind->color mapping is factored
+  into a pure Android-safe `RenderPalette` in engine-render (RGB ints, no AWT), and all AWT stays in
+  `:desktop` because `android -> :games:sandbox -> engine-render` compiles engine-render into the
+  Android artifact. No ADR (Experimental presentation boundary; no new module edge). The Android
+  shell keeps `AsciiRenderer` for now, Android real-launcher wiring is a separate follow-up.
+- SG-004 Android lifecycle save smoke uses Option A: the save/restore logic lives in a pure,
+  Android-free `SandboxSession` holder in `games/sandbox` (`save()`/`restore()` over
+  `SandboxSaveCodec`), and the Android `MyEngineActivity` is only a thin Bundle adapter (save on
+  `onSaveInstanceState`, restore on `onCreate` under a greppable `DEBUG_SAVE` flag) with no sim logic
+  or content ids. Save format stays v1 (only `state`+seed persisted); the command queue and per-tick
+  `SeededRandom(17)` are NOT persisted, so `save()` carries a documented quiescent-save precondition
+  (deferred: command-queue/RNG persistence would need a v1->v2 migration). No ADR. The
+  device-independent proof is JVM-covered by `SandboxSessionLifecycleTest`; the real on-device Bundle
+  round-trip is device-pending.
+- SG-004 follow-up (2026-07-05) closes the deferred command-queue-persistence item: `SandboxSaveCodec`
+  bumps `SAVE_VERSION` 1 -> 2 with a real migration (`decode()` accepts `1 || 2`, rejects 3+; v1 saves
+  with no `pendingCommands` property decode to an empty queue) and now persists the runtime's pending
+  `CommandQueue` (`CommandQueue.pending()`, `SandboxRuntime.pendingCommands()`/`submitAll()`), so
+  `save()` is sound at ANY tick — the quiescent-save precondition from the original SG-004 slice is
+  DROPPED. The per-tick incident `SeededRandom(17)` still needs no persistence: confirmed to be a
+  fresh instance constructed every tick, not a persistent cursor, so there is nothing to save for it.
+  No ADR: per me-architect, this is covered by the existing "saves are versioned from v1 and
+  migration-aware" invariant, and `SandboxSaveCodec` stays Experimental per `docs/API_STABILITY.md`
+  (same precedent as the original v1 codec). `DEBUG_SAVE` is now gated on `BuildConfig.DEBUG`
+  (`android/build.gradle.kts` gained `buildFeatures { buildConfig = true }`), closing SG-004
+  follow-up #2 in the same pass.
+- SG-005 balance report deltas are a devtools-only, content-driven JSON report over loaded
+  `ContentRegistry` values. No ADR: no engine runtime behavior, Android shell, save format, content
+  schema, or shipped balance values changed; thresholds are report metadata for suspicious-value
+  review, not final game balance policy.
+- MyTD gold is represented as ordinary content-defined resources (`costResource`/`rewardResource`),
+  not a hardcoded engine economy concept. `MTD-001` is closed by SG-002; `MTD-002` is closed by the
+  existing generic build command flow plus `SandboxTowerCostGatingTest`. `engine-defense` remains
+  inventory-free.
 
+—
 ## MyTD (2026-07-04)
 
 - `/me-spec --greenfield-game` clone-intake vs `com.vipubstd.games.block.defense` produced an
   original, traceable MyTD bundle at `D:/Pet/MyTD/spec` (13 files, FR-001..FR-016 fully traced).
 - Both human gates passed. Mechanics cloned; all names/numbers original; art own-style; reference-IP
   reuse gated behind a dedicated ADR.
-- Backlog bridge added: `MTD-001` reward deposit, `MTD-002` gold-cost gating, `MTD-003` tower upgrade
-  hook, `MTD-004` difficulty modifiers, `MTD-005` render/input surface. Content (EG-006) stays in the
-  MyTD bundle.
+- Backlog bridge added: `MTD-001` reward deposit (done/duplicate of SG-002), `MTD-002` gold-cost
+  gating (done), `MTD-003` tower upgrade hook, `MTD-004` difficulty modifiers, `MTD-005` render/input
+  surface. Content (EG-006) stays in the MyTD bundle.
 
 ## NEXT
 
-Implement Signal Garden `SG-003` (placeholder render surface):
+Implement MyTD `MTD-003` (tower upgrade hook):
 
 ```powershell
-Get-Content -Raw games\signal-garden\ROADMAP.md
-Get-Content -Raw .claude\specs\backlog\SG-003-render-surface.md
+Get-Content -Raw .claude\specs\ENGINE_ROADMAP.md
+Get-Content -Raw .claude\specs\backlog\MTD-003-tower-upgrade-hook.md
+Get-Content -Raw D:\Pet\MyTD\spec\engine-gap-analysis.md
 ```
 
 ## BLOCKERS
 
-- None for `SG-003`.
-- Known follow-ups: real render surface (now SG-003), Android lifecycle save smoke, content
-  suspicious-value report.
+- None for `MTD-003`.
+- RESOLVED (2026-07-05, SG-005): content suspicious-value/balance reporting is covered by the
+  devtools `balance-report` / `balance-delta` JSON report.
+- SG-004 DEVICE BLOCKER (2026-07-04, acceptance #3): no connected Android device/emulator is
+  available here, so the on-device Bundle round-trip (`onSaveInstanceState` outState -> `onCreate`
+  savedInstanceState under config-change/process-death) — the real instrumented pause/resume +
+  save-directory-access smoke from `docs/contracts/android.md` Test Gates — cannot be executed. The
+  device-independent proof (save-at-pause == uninterrupted run, seed roundtrip, versioned-save
+  rejection) is JVM-covered by `SandboxSessionLifecycleTest`; `.\gradlew.bat android:assembleDebug`
+  is the best available static gate. Closing acceptance #3's device path needs a device/emulator run.
+- SG-004 follow-ups (2026-07-04, non-blocking, low, from me-save-compat-reviewer/me-android-performance):
+  1. RESOLVED (2026-07-05, SG-004 follow-up): the runtime's pending `CommandQueue` is now persisted
+     via a `SAVE_VERSION` v1->v2 migration in `SandboxSaveCodec`, so `save()` is sound outside a
+     quiescent tick — see DONE "Signal Garden SG-004 follow-up". The per-tick incident RNG needed no
+     persistence (fresh instance every tick, confirmed not a cursor).
+  2. RESOLVED (2026-07-05, SG-004 follow-up): `DEBUG_SAVE` is now gated on `BuildConfig.DEBUG`
+     (`buildFeatures { buildConfig = true }` added to `android/build.gradle.kts`).
+  3. Move the `onSaveInstanceState` encode off the main thread (or cap size) once state grows. Still
+     OPEN — not addressed by the SG-004 follow-up.
+  4. On a device/emulator, run the real pause/resume + process-death Bundle round-trip (closes
+     acceptance #3's device path). Still OPEN/device-pending — unaffected by the SG-004 follow-up.
+- SG-004 follow-up new low-severity items (2026-07-05, non-blocking, from
+  me-simulation-reviewer/me-save-compat-reviewer/me-android-performance/me-verifier):
+  1. No persisted CommandId-issuing counter for the new `pendingCommands` encoding — forward-looking,
+     no production caller mints sequential command ids today, no current collision risk. Revisit if a
+     real command-submitting UI is added.
+  2. No engine-core-unit-level determinism test for `CommandQueue.pending()`/
+     `SandboxRuntime.submitAll()` in isolation — covered end-to-end at the sandbox level
+     (`SandboxSessionLifecycleTest`) instead.
+  3. The new `pendingCommands` properties-line encoding assumes command type/actorId/stablePayload
+     contain no `;`/`|`/`:` — same pre-existing delimiter-collision assumption class as the
+     entities/producers encodings in the same codec file (not a new risk class, a new field sharing
+     it).
+- SG-003 follow-ups (2026-07-04, non-blocking, low/info from me-renderer-qa/me-verifier):
+  - RESOLVED (2026-07-04, SG-003 follow-up): `RenderFrame` is now consumed in a real launcher —
+    `DesktopLauncher` projects via `PlaceholderRenderSurface` and rasterizes through the new headless
+    AWT `FrameRasterizer` to `desktop/build/render-smoke.png`; the new deterministic
+    `FrameRasterizerPixelSmokeTest` gives all six `RenderKind`s visual coverage, closing the
+    `render.md` pixel-smoke gate. See DONE "Signal Garden SG-003 follow-up".
+  - RESOLVED (2026-07-04, SG-003 follow-up): the launcher-author doc note is now encoded durably —
+    the kind->color mapping lives in `engine-render/.../RenderPalette.kt` (Android-safe), and
+    `FrameRasterizer` reads core health from `RenderFrame.coreHealth` (CORE carries no health) and
+    draws the enemy pip only when `RenderPrimitive.health != null` (`ENEMY.health` nullable), all
+    asserted by the pixel-smoke.
+  - Low/pre-existing (NOT introduced by SG-003, still OPEN): `Camera.clamped()` clamps center to
+    `[0..width]` inclusive while `screenToTile` clamps to `width-1` — reconcile if precise edge
+    framing matters later. Not exercised by the SG-003 follow-up change.
+  - Low/deferred (NOT blocking): the Android shell still uses `AsciiRenderer`; wiring the Android
+    real launcher to consume `RenderFrame` is a tracked follow-up.
 - RESOLVED (2026-07-04): the SG-001 verifier follow-up (default content gate validated only the
   sandbox pack) is closed — the gate now aggregates every `games/*/content/*` pack. See DONE
   "Default content gate coverage" below.
@@ -196,6 +499,59 @@ Get-Content -Raw .claude\specs\backlog\SG-003-render-surface.md
   kill 83a65da1a7881b2c kills=2]}`; `scripts\me-benchmark.ps1` -> pass (kill enemies_killed=2,
   tower_shots=4; canonical 0/0 unchanged); `scripts\me-save-compat.ps1` -> pass;
   `.\gradlew.bat desktop:run` -> canonical hash `9c495d8ff30fd83d` unchanged.
+- SG-003 (2026-07-04): `.\gradlew.bat test` -> pass (full suite incl. extended `RenderBoundaryTest`
+  camera pan/zoom cases, new `PlaceholderRenderSurfaceTest`, and new `SandboxRenderNonMutationTest`);
+  `.\gradlew.bat desktop:run` -> pass (exit 0; ASCII map path unaffected);
+  `scripts\me-record-run.ps1` -> pass (events=4).
+- SG-003 follow-up (2026-07-04): new files
+  `engine-render/src/main/kotlin/dev/myengine/render/RenderPalette.kt`,
+  `desktop/src/main/kotlin/dev/myengine/desktop/FrameRasterizer.kt`,
+  `desktop/src/test/kotlin/dev/myengine/desktop/FrameRasterizerPixelSmokeTest.kt`; edits to
+  `desktop/src/main/kotlin/dev/myengine/desktop/DesktopLauncher.kt` and `desktop/build.gradle.kts`.
+  `.\gradlew.bat test` -> pass (full suite incl. new `FrameRasterizerPixelSmokeTest` + existing
+  `PlaceholderRenderSurfaceTest`/`RenderBoundaryTest`/`SandboxRenderNonMutationTest`);
+  `.\gradlew.bat desktop:run` -> exit 0, `hash=9c495d8ff30fd83d` (canonical, unchanged), ASCII map,
+  `png=D:\Pet\MyEngine\desktop\build\render-smoke.png`; `.\gradlew.bat android:assembleDebug` ->
+  BUILD SUCCESSFUL (proves `RenderPalette` did not pull java.awt into the Android artifact).
+
+- SG-004 (2026-07-04): `.\gradlew.bat test` -> pass (full suite incl. new
+  `SandboxSessionLifecycleTest`: save/restore roundtrip, pause/resume determinism, seed roundtrip,
+  independent-runtime, future/non-numeric version rejection); `scripts\me-save-compat.ps1` -> pass;
+  `.\gradlew.bat android:assembleDebug` -> pass (thin Activity+Bundle adapter compiles/links);
+  `scripts\me-record-run.ps1` -> pass (events=7). On-device Bundle round-trip device-pending (see
+  BLOCKERS).
+- SG-004 follow-up (2026-07-05, sandbox save-format v2 / pending CommandQueue persistence):
+  `.\gradlew.bat :games:sandbox:test` -> pass; full `.\gradlew.bat test` -> pass (incl. updated
+  `SandboxSessionLifecycleTest`: pending-command save/restore/resume regression, v1->v2 migration,
+  CommandId/Tick preservation, retargeted version-rejection tests); `scripts\me-save-compat.ps1` ->
+  pass; `.\gradlew.bat :android:compileDebugKotlin` -> pass (after pointing a machine-local,
+  gitignored `local.properties` at the Android SDK — not a code change). All gate/review verdicts:
+  pass across the board (me-architect, me-engine-developer, me-tester, me-runner,
+  me-simulation-reviewer, me-save-compat-reviewer, me-android-performance, me-verifier), only
+  low/non-blocking-medium findings noted (see BLOCKERS "SG-004 follow-up new low-severity items").
+- SG-005 (2026-07-05): `.\gradlew.bat :engine-devtools:test` -> pass (incl. parser-backed
+  `BalanceDeltaReport` JSON structure and CLI stdout tests); full `.\gradlew.bat test` -> pass;
+  `scripts\me-content-validate.ps1` -> pass (`validated 2 pack(s)`); `scripts\me-sim-replay.ps1` ->
+  pass (canonical `9c495d8ff30fd83d`, kill `83a65da1a7881b2c`); `scripts\me-save-compat.ps1` ->
+  pass; `scripts\me-benchmark.ps1` -> pass; `.\gradlew.bat -q :engine-devtools:run
+  --args="balance-report"` -> pass, one JSON object with enemy/core/resource warnings. Final
+  verifier verdict pass, all four boundary checks true, no findings. Telemetry recorded via
+  `scripts\me-record-run.ps1` (events=9, `reflect_required=false`).
+- MTD-001/MTD-002 (2026-07-05): `.\gradlew.bat :games:sandbox:test` -> pass (incl. new
+  `SandboxTowerCostGatingTest`); full `.\gradlew.bat test` -> pass;
+  `scripts\me-content-validate.ps1` -> pass (`validated 2 pack(s)`); `scripts\me-sim-replay.ps1` ->
+  pass (canonical `9c495d8ff30fd83d`, kill `83a65da1a7881b2c`); `scripts\me-save-compat.ps1` ->
+  pass; `scripts\me-benchmark.ps1` -> pass; `scripts\me-record-run.ps1` -> recorded event 10 with
+  `reflect_required=true`; `scripts\me-retro.ps1` -> pass, wrote
+  `.ai/retro/retro-2026-07-05.md` with no failure clusters. Initial bare Gradle invocation failed
+  before testing because inherited `JAVA_HOME` was invalid; reruns with the documented Android Studio
+  JBR passed.
+
+- PROC v0.2.0 (2026-07-04): `scripts\me-selfcheck.ps1` -> pass after all adapter edits;
+  `scripts\me-record-run.ps1` (improve event, events=6) -> new fields present in the JSONL and
+  `reflect_required` in the output; `scripts\me-retro.ps1` -> pass, wrote
+  `.ai/retro/retro-2026-07-04.md` (legacy events without new fields aggregate cleanly);
+  `.\gradlew.bat test` -> pass (engine code untouched by this batch).
 
 ## NOTES
 

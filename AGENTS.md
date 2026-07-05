@@ -83,6 +83,9 @@ At the end of each phase:
 - Update `STATE.md`.
 - Update `.ai/handoff.md` with DONE, DECISIONS, NEXT, BLOCKERS, and VERIFICATION.
 - Add durable lessons to `.ai/memory/MEMORY.md` only when they are useful beyond the current task.
+- Lessons that generalize beyond MyEngine (domain / cross-pipeline / user-level): append a candidate
+  to `D:/Pet/brain/inbox/` (second brain, entry point `D:/Pet/brain/INDEX.md`; this repo's card:
+  `brain/projects/myengine.md`). Promotion is human-gated (`/brain promote`); skip if the repo is absent.
 - Log agent/skill/pipeline changes in `.ai/changes/agent-skill-log.md`.
 
 ## Current Next Step

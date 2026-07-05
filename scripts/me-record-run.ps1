@@ -3,7 +3,7 @@ param(
     [string]$Phase = "unknown",
     [string]$Agent = "codex",
     [string]$Model = "unknown",
-    [ValidateSet("pass", "fail", "partial", "blocked")]
+    [ValidateSet("pass", "fail", "partial", "blocked", "needs_human")]
     [string]$Verdict = "pass",
     [int]$Retries = 0,
     [string]$ChangedFiles = "",
@@ -12,6 +12,10 @@ param(
     [string]$Replay = "not_run",
     [string]$SaveCompat = "not_run",
     [string]$Benchmark = "not_run",
+    [double]$DurationMin = 0,
+    [int]$MalformedJsonCount = 0,
+    [string]$GateFailures = "",
+    [string]$AttributedAgent = "",
     [string]$Note = "",
     [string]$FailureCluster = ""
 )
@@ -40,6 +44,10 @@ $event = [ordered]@{
         frame_ms = $null
         sim_ms = $null
     }
+    duration_min = $DurationMin
+    malformed_json_count = $MalformedJsonCount
+    gate_failures = @($GateFailures.Split(",") | Where-Object { $_.Trim().Length -gt 0 } | ForEach-Object { $_.Trim() })
+    attributed_agent = $AttributedAgent
     note = $Note
     failure_cluster = $FailureCluster
 }
@@ -47,10 +55,12 @@ $event = [ordered]@{
 $line = ($event | ConvertTo-Json -Compress -Depth 6)
 Add-Content -Path $path -Value $line
 $count = (Get-Content -Path $path).Count
+$retroDue = (($count % 5) -eq 0)
 $result = [ordered]@{
     status = "recorded"
     path = ".ai/runs/telemetry.jsonl"
-    retro_due = (($count % 5) -eq 0)
+    retro_due = $retroDue
+    reflect_required = ($retroDue -or ($Verdict -ne "pass"))
     events = $count
 }
 $result | ConvertTo-Json -Compress

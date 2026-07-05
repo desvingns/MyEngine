@@ -33,6 +33,10 @@ Read `AGENTS.md`, `STATE.md`, `.ai/handoff.md`, then the two spec docs above.
 - A spec becomes a backlog candidate only after traceability exists
   (`SPEC_BOARD.md` -> Backlog Bridge). Engine gaps go to `.claude/specs/backlog`;
   game work stays under `games/<slug>/spec`.
+- Gap dedup is mandatory (`SPEC_BOARD.md` -> Gap Dedup Rule): scan
+  backlog/active/done cards, `.claude/specs/ENGINE_ROADMAP.md`, and
+  `docs/API_STABILITY.md` before minting a gap; reference existing capabilities
+  instead of duplicating. The backlog bridge updates the roadmap's demand counts.
 - Minimum spec fields are defined in `SPEC_BOARD.md`
   (`id, title, status, owner, phase, requirements, acceptance, gates`).
 

@@ -19,6 +19,12 @@ dependencies {
     implementation(libs.gdx)
     implementation(libs.gdx.backend.lwjgl3)
     runtimeOnly("com.badlogicgames.gdx:gdx-platform:${libs.versions.gdx.get()}:natives-desktop")
+    testImplementation(libs.kotlin.test.junit5)
+    testImplementation(libs.junit.jupiter)
+}
+
+tasks.test {
+    useJUnitPlatform()
 }
 
 application {

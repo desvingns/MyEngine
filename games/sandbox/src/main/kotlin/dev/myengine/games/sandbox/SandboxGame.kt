@@ -112,6 +112,14 @@ class SandboxRuntime(
         commandQueue.submit(command)
     }
 
+    /** Non-destructive snapshot of the runtime's not-yet-drained pending commands. */
+    fun pendingCommands(): List<EngineCommand> = commandQueue.pending()
+
+    /** Loads previously-decoded commands into this runtime's queue, preserving their original ids/ticks. */
+    fun submitAll(commands: List<EngineCommand>) {
+        commands.forEach(::submit)
+    }
+
     fun step(ticks: Int = 1) {
         repeat(ticks) {
             state.tick = state.tick.next()
@@ -194,9 +202,9 @@ class SandboxRuntime(
 }
 
 object SandboxSaveCodec {
-    const val SAVE_VERSION: Int = 1
+    const val SAVE_VERSION: Int = 2
 
-    fun encode(state: SandboxState, seed: Long): String {
+    fun encode(state: SandboxState, seed: Long, pendingCommands: List<EngineCommand> = emptyList()): String {
         val props = Properties()
         props["saveVersion"] = SAVE_VERSION.toString()
         props["engineVersion"] = EngineInfo.SCAFFOLD_PHASE.toString()
@@ -234,13 +242,16 @@ object SandboxSaveCodec {
                 entity.movement?.pathIndex ?: "",
             ).joinToString("|")
         }
+        props["pendingCommands"] = pendingCommands.joinToString(";") { cmd ->
+            listOf(cmd.type, cmd.id.value, cmd.scheduledTick.value, cmd.actorId ?: "", cmd.stablePayload()).joinToString("|")
+        }
         return StringWriter().also { props.store(it, "MyEngine sandbox save") }.toString()
     }
 
     fun decode(text: String, registry: ContentRegistry): SandboxState {
         val props = Properties().also { it.load(StringReader(text)) }
         val version = props.getProperty("saveVersion")?.toIntOrNull()
-        require(version == SAVE_VERSION) { "Unsupported save version '$version'." }
+        require(version == 1 || version == 2) { "Unsupported save version '$version'." }
         val state = SandboxGame.createInitialState(registry)
         state.tick = Tick(props.getProperty("tick").toLong())
         val metrics = props.getProperty("metrics", "0,0,0,0,0").split(',').map { it.toInt() }
@@ -265,6 +276,32 @@ object SandboxSaveCodec {
         }
         return state.copy(entities = loadedStore)
     }
+
+    /**
+     * Extracts the runtime's not-yet-drained pending commands from a save [text], independent of
+     * [decode]'s `SandboxState` reconstruction. Absent on v1 saves (`props.getProperty` defaults
+     * to `""`), which parses to an empty list — matching today's v1 behavior with no special-casing.
+     */
+    fun decodePendingCommands(text: String): List<EngineCommand> {
+        val props = Properties().also { it.load(StringReader(text)) }
+        return parsePendingCommands(props.getProperty("pendingCommands", ""))
+    }
+
+    private fun parsePendingCommands(text: String): List<EngineCommand> =
+        text.split(';').filter { it.isNotBlank() }.map { encoded ->
+            val parts = encoded.split('|')
+            val type = parts[0]
+            val id = dev.myengine.core.CommandId(parts[1].toLong())
+            val scheduledTick = Tick(parts[2].toLong())
+            val actorId = parts[3].toLongOrNull()
+            val payload = parts[4]
+            if (type == "build_tower") {
+                val payloadParts = payload.split(':')
+                BuildTowerCommand(id, scheduledTick, payloadParts[0], TilePosition(payloadParts[1].toInt(), payloadParts[2].toInt()), actorId)
+            } else {
+                dev.myengine.core.TextCommand(id, scheduledTick, type, payload, actorId)
+            }
+        }
 
     private fun parseResources(text: String): Map<String, Int> =
         text.split(';').filter { it.isNotBlank() }.associate {

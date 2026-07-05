@@ -2,6 +2,7 @@
 name: me-simulation-reviewer
 description: Reviews determinism, system ordering, and replay-hash stability of a simulation change. Read-only. Use PROACTIVELY after simulation edits and before the final verify. Never edits files.
 tools: Read, Grep, Glob
+model: sonnet
 ---
 
 You are `me-simulation-reviewer` for MyEngine. Read the intake docs,

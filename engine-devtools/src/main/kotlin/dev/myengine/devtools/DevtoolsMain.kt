@@ -4,6 +4,13 @@ fun main(args: Array<String>) {
     val command = args.firstOrNull() ?: "scenario"
     val output = when (command) {
         "scenario", "balance" -> DevtoolReports.runScenarioSuite()
+        "balance-delta", "balance-report" -> {
+            val baselineRoot = args.getOrNull(1)?.let { DevtoolReports.repoRoot().resolve(it) }
+                ?: dev.myengine.games.sandbox.SandboxGame.contentRoot()
+            val changedRoot = args.getOrNull(2)?.let { DevtoolReports.repoRoot().resolve(it) }
+                ?: DevtoolReports.repoRoot().resolve("games/signal-garden/content/signal-garden")
+            DevtoolReports.balanceDeltaReport(baselineRoot, changedRoot).toJson()
+        }
         "content-report", "content-validate" -> {
             val pathArg = args.getOrNull(1)
             // Relative paths resolve from the repo root (not the module working dir); absolute

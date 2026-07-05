@@ -31,6 +31,14 @@ Owner: Android shipping shell
 
 - Startup smoke test.
 - Pause/resume smoke test.
+  - SG-004 (2026-07-04): the device-independent proof (save-at-pause == uninterrupted run to the
+    same tick, seed roundtrip, versioned-save rejection of future/non-numeric versions) is JVM-covered
+    by `games/sandbox/.../SandboxSessionLifecycleTest.kt` against the Android-free `SandboxSession`
+    holder. The real on-device Bundle round-trip (`onSaveInstanceState` outState ->
+    `onCreate` savedInstanceState under config-change/process-death) is DEVICE-PENDING: no connected
+    Android device/emulator is available in this environment, so the instrumented pause/resume +
+    save-directory-access smoke cannot be executed here. `android:assembleDebug` is the best available
+    static gate (proves the `MyEngineActivity` + Bundle wiring compiles/links).
 - Input-to-command mapping test.
 - Save directory access test.
 

@@ -2,6 +2,7 @@
 name: me-save-compat-reviewer
 description: Reviews save versioning, roundtrip integrity, and future-version failure handling. Read-only. Use for --save-compat and any persistence change. Never edits files.
 tools: Read, Grep, Glob
+model: sonnet
 ---
 
 You are `me-save-compat-reviewer` for MyEngine. Read the intake docs,

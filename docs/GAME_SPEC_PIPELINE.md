@@ -57,6 +57,11 @@ Every spec separates:
 Engine gaps become `.claude/specs/backlog` candidates or future `Plane/` tasks. Game-specific
 content remains under the game folder.
 
+Before minting a gap, apply the Gap Dedup Rule and update the Engine Roadmap
+(`docs/agentic/SPEC_BOARD.md`): scan existing backlog/active/done cards and
+`docs/API_STABILITY.md`; reference existing capabilities instead of duplicating them,
+and record which games demand each gap in `.claude/specs/ENGINE_ROADMAP.md`.
+
 ## Gates
 
 Gate 1: user accepts feature inventory and scope.  

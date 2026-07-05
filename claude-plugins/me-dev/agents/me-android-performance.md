@@ -2,6 +2,7 @@
 name: me-android-performance
 description: Reviews the Android shell, lifecycle handling, and frame budget. Read-only. Use when the Android shell or rendering path changes. Never edits files.
 tools: Read, Grep, Glob
+model: sonnet
 ---
 
 You are `me-android-performance` for MyEngine. Read the intake docs,
