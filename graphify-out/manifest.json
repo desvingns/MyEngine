@@ -1,0 +1,1067 @@
+{
+  ".claude-plugin/marketplace.json": {
+    "mtime": 1783058289.773324,
+    "ast_hash": "cb4639c1f9379a561469935dc11a7559",
+    "semantic_hash": ""
+  },
+  ".ai/changes/agent-skill-log.md": {
+    "mtime": 1783245873.3298752,
+    "ast_hash": "e64f548f28e5b7f3a1af98c7c7533a97",
+    "semantic_hash": ""
+  },
+  ".ai/handoff.md": {
+    "mtime": 1783237374.820223,
+    "ast_hash": "d20e18e0179e51ca41caba351725526c",
+    "semantic_hash": ""
+  },
+  ".ai/memory/MEMORY.md": {
+    "mtime": 1783235837.4588523,
+    "ast_hash": "0739566681183406e4cb90d88645eacc",
+    "semantic_hash": ""
+  },
+  "AGENTS.md": {
+    "mtime": 1783245858.0699842,
+    "ast_hash": "ce36ce766272df756a962de2b086b285",
+    "semantic_hash": ""
+  },
+  "README.md": {
+    "mtime": 1783019398.184538,
+    "ast_hash": "63c9a98db7099ffd2a4ac4b063fa2a26",
+    "semantic_hash": ""
+  },
+  "docs/ARCHITECTURE.md": {
+    "mtime": 1783011544.0917218,
+    "ast_hash": "bed610d30cb33120ad5fc2e779a26c5e",
+    "semantic_hash": ""
+  },
+  ".claude/myengine/config.json": {
+    "mtime": 1783019056.6651187,
+    "ast_hash": "9384a058e92ef3b2979a1f0e06339e89",
+    "semantic_hash": ""
+  },
+  ".claude/settings.local.json": {
+    "mtime": 1783195426.4679663,
+    "ast_hash": "6f8ca14d4103a5b8334671edce5adc80",
+    "semantic_hash": ""
+  },
+  "android/build.gradle.kts": {
+    "mtime": 1783234646.763294,
+    "ast_hash": "49c903ee83f7226e1317d96c7b7c9229",
+    "semantic_hash": ""
+  },
+  "android/src/main/kotlin/dev/myengine/android/MyEngineActivity.kt": {
+    "mtime": 1783234671.3715181,
+    "ast_hash": "091131f8bf811d34eae858bf847a3222",
+    "semantic_hash": ""
+  },
+  "build.gradle.kts": {
+    "mtime": 1783011732.043737,
+    "ast_hash": "58e6fc7945f503ee8d26aeccf2cc3315",
+    "semantic_hash": ""
+  },
+  "claude-plugins/me-dev/.claude-plugin/plugin.json": {
+    "mtime": 1783194183.5231981,
+    "ast_hash": "8a73c6033a4b68e15a1203b40c9f4f8d",
+    "semantic_hash": ""
+  },
+  "claude-plugins/me-spec/.claude-plugin/plugin.json": {
+    "mtime": 1783194184.931175,
+    "ast_hash": "96b1fc54a83a2c50c9f10e917231168c",
+    "semantic_hash": ""
+  },
+  "codex-plugins/me-dev/.codex-plugin/plugin.json": {
+    "mtime": 1783019104.3032606,
+    "ast_hash": "c2aea3f23e7fcba6873d795e707ac059",
+    "semantic_hash": ""
+  },
+  "codex-plugins/me-spec/.codex-plugin/plugin.json": {
+    "mtime": 1783019104.3042865,
+    "ast_hash": "618ee6d6338a7a7bdcf8398dea24e880",
+    "semantic_hash": ""
+  },
+  "desktop/build.gradle.kts": {
+    "mtime": 1783189393.3262925,
+    "ast_hash": "d2266df8fedae37aee94f53f11ae8172",
+    "semantic_hash": ""
+  },
+  "desktop/src/main/kotlin/dev/myengine/desktop/DesktopLauncher.kt": {
+    "mtime": 1783189875.6613426,
+    "ast_hash": "aef61b0a92c327a0ed248200e19d3606",
+    "semantic_hash": ""
+  },
+  "desktop/src/main/kotlin/dev/myengine/desktop/FrameRasterizer.kt": {
+    "mtime": 1783189377.7073078,
+    "ast_hash": "e9e48b787b4eaba77873d1a67b8f4a2f",
+    "semantic_hash": ""
+  },
+  "desktop/src/test/kotlin/dev/myengine/desktop/FrameRasterizerPixelSmokeTest.kt": {
+    "mtime": 1783189559.8151095,
+    "ast_hash": "844832dfedcf0b68faa70b06211e7c40",
+    "semantic_hash": ""
+  },
+  "engine-ai/build.gradle.kts": {
+    "mtime": 1783018236.1421947,
+    "ast_hash": "aa3c020226039a0f01e239d6f33d6f6e",
+    "semantic_hash": ""
+  },
+  "engine-ai/src/main/kotlin/dev/myengine/ai/Jobs.kt": {
+    "mtime": 1783018505.5976598,
+    "ast_hash": "a4fdea3c79b221e3892191c3869cc886",
+    "semantic_hash": ""
+  },
+  "engine-ai/src/main/kotlin/dev/myengine/ai/Pathfinding.kt": {
+    "mtime": 1783018505.5966597,
+    "ast_hash": "b24ed45f45334ff37cd9365857ea748c",
+    "semantic_hash": ""
+  },
+  "engine-ai/src/test/kotlin/dev/myengine/ai/AiPrimitivesTest.kt": {
+    "mtime": 1783018505.5986586,
+    "ast_hash": "2fc485167ffcea097d241573563867c0",
+    "semantic_hash": ""
+  },
+  "engine-content/build.gradle.kts": {
+    "mtime": 1783011812.8749158,
+    "ast_hash": "d5fa03cf8cfdbfeda75c551ff6254340",
+    "semantic_hash": ""
+  },
+  "engine-content/src/main/kotlin/dev/myengine/content/ContentDefinitions.kt": {
+    "mtime": 1783018434.268382,
+    "ast_hash": "b96bce95b83cb3d710b1720090f5c360",
+    "semantic_hash": ""
+  },
+  "engine-content/src/main/kotlin/dev/myengine/content/ContentLoader.kt": {
+    "mtime": 1783018434.2693837,
+    "ast_hash": "6909b33e1b73256ac59a966d9566ac6a",
+    "semantic_hash": ""
+  },
+  "engine-content/src/main/kotlin/dev/myengine/content/ContentModuleContract.kt": {
+    "mtime": 1783018434.2673855,
+    "ast_hash": "cb7b5627038eb6c480c3aba7d806f7b4",
+    "semantic_hash": ""
+  },
+  "engine-content/src/test/kotlin/dev/myengine/content/ContentPackLoaderTest.kt": {
+    "mtime": 1783018434.2713802,
+    "ast_hash": "8eb073a1ae258547d09ffee0721b312d",
+    "semantic_hash": ""
+  },
+  "engine-content/src/test/kotlin/dev/myengine/content/SignalGardenContentPackTest.kt": {
+    "mtime": 1783156536.471358,
+    "ast_hash": "89e766c9a49e9aa8e7dd9f6df1df96fa",
+    "semantic_hash": ""
+  },
+  "engine-core/build.gradle.kts": {
+    "mtime": 1783011812.8739147,
+    "ast_hash": "2d785000d50ac21fb11a27b5407135bf",
+    "semantic_hash": ""
+  },
+  "engine-core/src/main/kotlin/dev/myengine/core/Command.kt": {
+    "mtime": 1783234598.43487,
+    "ast_hash": "91bbea23320a55bb1c14b9dae341a547",
+    "semantic_hash": ""
+  },
+  "engine-core/src/main/kotlin/dev/myengine/core/EngineInfo.kt": {
+    "mtime": 1783018283.5163155,
+    "ast_hash": "64b375844fcb5502bfc9c32cde91e1d9",
+    "semantic_hash": ""
+  },
+  "engine-core/src/main/kotlin/dev/myengine/core/EventLog.kt": {
+    "mtime": 1783018283.5192745,
+    "ast_hash": "3bde419e390a892e1f9d4aa7054d1151",
+    "semantic_hash": ""
+  },
+  "engine-core/src/main/kotlin/dev/myengine/core/SeededRandom.kt": {
+    "mtime": 1783018908.484698,
+    "ast_hash": "213b2150574375d4138b86506befe6c0",
+    "semantic_hash": ""
+  },
+  "engine-core/src/main/kotlin/dev/myengine/core/Simulation.kt": {
+    "mtime": 1783018283.5203154,
+    "ast_hash": "f69539bc7d785bc5b9aa881879e8165c",
+    "semantic_hash": ""
+  },
+  "engine-core/src/main/kotlin/dev/myengine/core/StableHash.kt": {
+    "mtime": 1783018283.5173771,
+    "ast_hash": "e7d7378ce4b9e92943f47ec91713bf05",
+    "semantic_hash": ""
+  },
+  "engine-core/src/main/kotlin/dev/myengine/core/Tick.kt": {
+    "mtime": 1783018283.5173771,
+    "ast_hash": "b0b10323a24d5a76426948849f915ad5",
+    "semantic_hash": ""
+  },
+  "engine-core/src/test/kotlin/dev/myengine/core/CoreRuntimeTest.kt": {
+    "mtime": 1783018302.6052406,
+    "ast_hash": "bbcb06e6fd44c86fe2de580fd612c05a",
+    "semantic_hash": ""
+  },
+  "engine-core/src/test/kotlin/dev/myengine/core/EngineInfoTest.kt": {
+    "mtime": 1783018302.6052406,
+    "ast_hash": "6a4db29ea4b1f5ed311315b2efeb9014",
+    "semantic_hash": ""
+  },
+  "engine-defense/build.gradle.kts": {
+    "mtime": 1783018236.145195,
+    "ast_hash": "381ecc3cfe8b9eb8d37f3ca462161095",
+    "semantic_hash": ""
+  },
+  "engine-defense/src/main/kotlin/dev/myengine/defense/DefenseRuntime.kt": {
+    "mtime": 1783157523.83703,
+    "ast_hash": "585d31d53aa82be26cebbb59b5b25fd1",
+    "semantic_hash": ""
+  },
+  "engine-defense/src/test/kotlin/dev/myengine/defense/DefenseRuntimeTest.kt": {
+    "mtime": 1783157662.116852,
+    "ast_hash": "b0cb1f7a8722e03ce1d4e7f2aad0b730",
+    "semantic_hash": ""
+  },
+  "engine-devtools/build.gradle.kts": {
+    "mtime": 1783235863.6363904,
+    "ast_hash": "a49af0751d878d5b04fba4be75e488d7",
+    "semantic_hash": ""
+  },
+  "engine-devtools/src/main/kotlin/dev/myengine/devtools/DevtoolReports.kt": {
+    "mtime": 1783235673.2840018,
+    "ast_hash": "ed138239f612941851418f770f4af84f",
+    "semantic_hash": ""
+  },
+  "engine-devtools/src/main/kotlin/dev/myengine/devtools/DevtoolsMain.kt": {
+    "mtime": 1783235633.558135,
+    "ast_hash": "57569b5e2bcdda711471b04d0993e54e",
+    "semantic_hash": ""
+  },
+  "engine-devtools/src/test/kotlin/dev/myengine/devtools/DevtoolReportsTest.kt": {
+    "mtime": 1783235880.2390935,
+    "ast_hash": "578b1dc15032946473be29fd168eef2f",
+    "semantic_hash": ""
+  },
+  "engine-entities/build.gradle.kts": {
+    "mtime": 1783018236.141211,
+    "ast_hash": "22f0d8148523ea4b1e2ed914cd9ff942",
+    "semantic_hash": ""
+  },
+  "engine-entities/src/main/kotlin/dev/myengine/entities/EntityModel.kt": {
+    "mtime": 1783018473.6475236,
+    "ast_hash": "e489c6f678c2304c5b1e1997d4691599",
+    "semantic_hash": ""
+  },
+  "engine-entities/src/main/kotlin/dev/myengine/entities/EntityStore.kt": {
+    "mtime": 1783018761.2727826,
+    "ast_hash": "c7dbdd41e6db50ba6e59cb6d99c160a7",
+    "semantic_hash": ""
+  },
+  "engine-entities/src/test/kotlin/dev/myengine/entities/EntityStoreTest.kt": {
+    "mtime": 1783018473.6495245,
+    "ast_hash": "0463dad83024eeb360d163da49cfe3fa",
+    "semantic_hash": ""
+  },
+  "engine-logistics/build.gradle.kts": {
+    "mtime": 1783018236.1442132,
+    "ast_hash": "246911d7728bd402730942dc7fd76d23",
+    "semantic_hash": ""
+  },
+  "engine-logistics/src/main/kotlin/dev/myengine/logistics/Inventory.kt": {
+    "mtime": 1783018534.3328164,
+    "ast_hash": "1f45a7e303a5bed0e8ce2018c3f1288a",
+    "semantic_hash": ""
+  },
+  "engine-logistics/src/main/kotlin/dev/myengine/logistics/Production.kt": {
+    "mtime": 1783018927.4940734,
+    "ast_hash": "8986db133c310134c72d82f2d862d400",
+    "semantic_hash": ""
+  },
+  "engine-logistics/src/test/kotlin/dev/myengine/logistics/LogisticsTest.kt": {
+    "mtime": 1783018534.335814,
+    "ast_hash": "e8946b7e7779f774f6913c2a2b9684d5",
+    "semantic_hash": ""
+  },
+  "engine-render/build.gradle.kts": {
+    "mtime": 1783018236.148193,
+    "ast_hash": "aa3c020226039a0f01e239d6f33d6f6e",
+    "semantic_hash": ""
+  },
+  "engine-render/src/main/kotlin/dev/myengine/render/AsciiRenderer.kt": {
+    "mtime": 1783018657.8706412,
+    "ast_hash": "5d74b510cdc0f0b6e3f4e0ff42ecc81a",
+    "semantic_hash": ""
+  },
+  "engine-render/src/main/kotlin/dev/myengine/render/Camera.kt": {
+    "mtime": 1783018657.8696387,
+    "ast_hash": "4965ea86483474cafda1a5e409c93c77",
+    "semantic_hash": ""
+  },
+  "engine-render/src/main/kotlin/dev/myengine/render/InputAdapter.kt": {
+    "mtime": 1783018657.8696387,
+    "ast_hash": "ba67b49b1e8832d4bd615b5bc987ff08",
+    "semantic_hash": ""
+  },
+  "engine-render/src/main/kotlin/dev/myengine/render/PlaceholderRenderSurface.kt": {
+    "mtime": 1783188280.6648717,
+    "ast_hash": "8ec49b30f8e17c8ab674f1ae357da169",
+    "semantic_hash": ""
+  },
+  "engine-render/src/main/kotlin/dev/myengine/render/RenderModel.kt": {
+    "mtime": 1783018657.8686433,
+    "ast_hash": "154b56f0922a48b15cb55396c1f89ede",
+    "semantic_hash": ""
+  },
+  "engine-render/src/main/kotlin/dev/myengine/render/RenderPalette.kt": {
+    "mtime": 1783189357.606066,
+    "ast_hash": "b9062b277507ffaab73156304d298e99",
+    "semantic_hash": ""
+  },
+  "engine-render/src/test/kotlin/dev/myengine/render/PlaceholderRenderSurfaceTest.kt": {
+    "mtime": 1783188450.159754,
+    "ast_hash": "3d680284ce4a28b240d4154df2168189",
+    "semantic_hash": ""
+  },
+  "engine-render/src/test/kotlin/dev/myengine/render/RenderBoundaryTest.kt": {
+    "mtime": 1783188423.6881356,
+    "ast_hash": "bdbb15a6a9ec11c365ae5a1591dcbdda",
+    "semantic_hash": ""
+  },
+  "engine-storyteller/build.gradle.kts": {
+    "mtime": 1783018236.147195,
+    "ast_hash": "a2c350cbf3c7b4c3fbc537397ade20b4",
+    "semantic_hash": ""
+  },
+  "engine-storyteller/src/main/kotlin/dev/myengine/storyteller/IncidentDirector.kt": {
+    "mtime": 1783018615.9234667,
+    "ast_hash": "2f51d16b384b0856a26fb8fb5ba8d539",
+    "semantic_hash": ""
+  },
+  "engine-storyteller/src/test/kotlin/dev/myengine/storyteller/IncidentDirectorTest.kt": {
+    "mtime": 1783018615.9244661,
+    "ast_hash": "e0122c74e0b2d9d20a32982480128126",
+    "semantic_hash": ""
+  },
+  "engine-testkit/build.gradle.kts": {
+    "mtime": 1783011812.8749158,
+    "ast_hash": "1394a325b67ce21a917fba03acf6a350",
+    "semantic_hash": ""
+  },
+  "engine-testkit/src/main/kotlin/dev/myengine/testkit/EngineTestKit.kt": {
+    "mtime": 1783011424.5051322,
+    "ast_hash": "fba43c5fb5be31cbf4b68d534f004d0c",
+    "semantic_hash": ""
+  },
+  "engine-world/build.gradle.kts": {
+    "mtime": 1783011812.8749158,
+    "ast_hash": "d5fa03cf8cfdbfeda75c551ff6254340",
+    "semantic_hash": ""
+  },
+  "engine-world/src/main/kotlin/dev/myengine/world/TileWorld.kt": {
+    "mtime": 1783018343.027025,
+    "ast_hash": "b8b604b656d844cf5b484d64cf4b0079",
+    "semantic_hash": ""
+  },
+  "engine-world/src/main/kotlin/dev/myengine/world/WorldModuleContract.kt": {
+    "mtime": 1783018343.0260248,
+    "ast_hash": "1332832af67362b3c222f8eb82691e0a",
+    "semantic_hash": ""
+  },
+  "engine-world/src/test/kotlin/dev/myengine/world/TileWorldTest.kt": {
+    "mtime": 1783018343.0280247,
+    "ast_hash": "58fd3d007c2515457c9ecd142d9ba1b3",
+    "semantic_hash": ""
+  },
+  "games/sandbox/build.gradle.kts": {
+    "mtime": 1783018792.8594375,
+    "ast_hash": "4324d9241c7deffd0f14848a421e5b27",
+    "semantic_hash": ""
+  },
+  "games/sandbox/src/main/kotlin/dev/myengine/games/sandbox/SandboxGame.kt": {
+    "mtime": 1783234619.4796276,
+    "ast_hash": "9ae1de0f423fb0391d9b374461218509",
+    "semantic_hash": ""
+  },
+  "games/sandbox/src/main/kotlin/dev/myengine/games/sandbox/SandboxSession.kt": {
+    "mtime": 1783234642.855679,
+    "ast_hash": "eab3af490b4187e604a97a4c9639e80e",
+    "semantic_hash": ""
+  },
+  "games/sandbox/src/test/kotlin/dev/myengine/games/sandbox/SandboxRenderNonMutationTest.kt": {
+    "mtime": 1783188464.0869567,
+    "ast_hash": "afbfcfa2314c04002305b8848e7e73c1",
+    "semantic_hash": ""
+  },
+  "games/sandbox/src/test/kotlin/dev/myengine/games/sandbox/SandboxRewardDepositTest.kt": {
+    "mtime": 1783157964.5719428,
+    "ast_hash": "afe11655628ab45f96575b76f14acf90",
+    "semantic_hash": ""
+  },
+  "games/sandbox/src/test/kotlin/dev/myengine/games/sandbox/SandboxRewardOverflowTest.kt": {
+    "mtime": 1783159046.4378388,
+    "ast_hash": "7f6efa20c7c7e58d7e60b9af0087c2e3",
+    "semantic_hash": ""
+  },
+  "games/sandbox/src/test/kotlin/dev/myengine/games/sandbox/SandboxSessionLifecycleTest.kt": {
+    "mtime": 1783234996.8705668,
+    "ast_hash": "0dc573c60346f395e3e3ceefeb39bcf1",
+    "semantic_hash": ""
+  },
+  "games/sandbox/src/test/kotlin/dev/myengine/games/sandbox/SandboxTowerCostGatingTest.kt": {
+    "mtime": 1783236713.370579,
+    "ast_hash": "44e97e16587bc4574184ba7338281e27",
+    "semantic_hash": ""
+  },
+  "games/sandbox/src/test/kotlin/dev/myengine/games/sandbox/SandboxVerticalSliceTest.kt": {
+    "mtime": 1783159015.8990626,
+    "ast_hash": "ea16679d8f521c4960addeafb4502e12",
+    "semantic_hash": ""
+  },
+  "gradlew": {
+    "mtime": 1783011751.1221933,
+    "ast_hash": "a43be8432bac3ffd05b3769aa42fe996",
+    "semantic_hash": ""
+  },
+  "scripts/me-benchmark.ps1": {
+    "mtime": 1783019152.1142902,
+    "ast_hash": "1998ea17dc6e278b6a043df8410cd35e",
+    "semantic_hash": ""
+  },
+  "scripts/me-content-validate.ps1": {
+    "mtime": 1783158345.16257,
+    "ast_hash": "9bd1824c580976c89833c67aa3951805",
+    "semantic_hash": ""
+  },
+  "scripts/me-record-run.ps1": {
+    "mtime": 1783193986.4570074,
+    "ast_hash": "7cdf48a75329e1c8a42ad63ad06c711b",
+    "semantic_hash": ""
+  },
+  "scripts/me-retro.ps1": {
+    "mtime": 1783194014.5500867,
+    "ast_hash": "782114e9b24acde2ce389e6414102408",
+    "semantic_hash": ""
+  },
+  "scripts/me-save-compat.ps1": {
+    "mtime": 1783019152.1162896,
+    "ast_hash": "6f9bf286c74525d9eebe5370c1b344ed",
+    "semantic_hash": ""
+  },
+  "scripts/me-selfcheck.ps1": {
+    "mtime": 1783058433.7852542,
+    "ast_hash": "f6aed1e213fbe1699cd30c634b4d21c1",
+    "semantic_hash": ""
+  },
+  "scripts/me-sim-replay.ps1": {
+    "mtime": 1783019152.1132903,
+    "ast_hash": "c86cc3fd829b1b5ca4462138e92a169a",
+    "semantic_hash": ""
+  },
+  "settings.gradle.kts": {
+    "mtime": 1783018236.1401951,
+    "ast_hash": "94a3dad32f737a9398c26bf65740f439",
+    "semantic_hash": ""
+  },
+  ".ai/DIGEST.md": {
+    "mtime": 1783237145.302171,
+    "ast_hash": "5f2f1b918b04afa22d9a20a46074bfcb",
+    "semantic_hash": ""
+  },
+  ".ai/memory/reference-policy.md": {
+    "mtime": 1783119090.996885,
+    "ast_hash": "105790f7ce1d8cc7bd33af7c52627ad8",
+    "semantic_hash": ""
+  },
+  ".ai/proposals/README.md": {
+    "mtime": 1783009492.5603344,
+    "ast_hash": "851a3a12bbdd97de099fb634549aed09",
+    "semantic_hash": ""
+  },
+  ".ai/proposals/port-mp-changelog-sync-cursor.md": {
+    "mtime": 1783246084.8574028,
+    "ast_hash": "e1aadc9ff9b9f1ddecff23463be1cdbf",
+    "semantic_hash": ""
+  },
+  ".ai/retro/README.md": {
+    "mtime": 1783009492.5603344,
+    "ast_hash": "daca4f9b3f37d154c1b729670063e9c5",
+    "semantic_hash": ""
+  },
+  ".ai/retro/retro-2026-07-02.md": {
+    "mtime": 1783019334.9308739,
+    "ast_hash": "a68f6da68e54999323c1f42c4012449a",
+    "semantic_hash": ""
+  },
+  ".ai/retro/retro-2026-07-04.md": {
+    "mtime": 1783194512.305576,
+    "ast_hash": "9def9fb53a1ddfef3f9e59796d0c5ddb",
+    "semantic_hash": ""
+  },
+  ".ai/retro/retro-2026-07-05.md": {
+    "mtime": 1783237358.8119562,
+    "ast_hash": "b7513e440951dfae5d4d457790e3caa7",
+    "semantic_hash": ""
+  },
+  ".ai/runs/README.md": {
+    "mtime": 1783009492.5603344,
+    "ast_hash": "2e1831eef57505ddcd368b415e1031c1",
+    "semantic_hash": ""
+  },
+  ".ai/tasks/README.md": {
+    "mtime": 1783009492.5593343,
+    "ast_hash": "d4c0e6df15667699a63add1b48e88820",
+    "semantic_hash": ""
+  },
+  ".claude/myengine/extras/README.md": {
+    "mtime": 1783019056.666114,
+    "ast_hash": "252d8c776d79858c87422107c13a8a7c",
+    "semantic_hash": ""
+  },
+  ".claude/specs/ENGINE_ROADMAP.md": {
+    "mtime": 1783236900.5166938,
+    "ast_hash": "a83264ac356e7327493f8501d955d641",
+    "semantic_hash": ""
+  },
+  ".claude/specs/active/README.md": {
+    "mtime": 1783019056.6671066,
+    "ast_hash": "bd2e2c2bd8cf3161fcce7eef592866f9",
+    "semantic_hash": ""
+  },
+  ".claude/specs/backlog/MTD-001-reward-deposit.md": {
+    "mtime": 1783236858.9294896,
+    "ast_hash": "1af5a263df9ae7d07058f05ff218ebc7",
+    "semantic_hash": ""
+  },
+  ".claude/specs/backlog/MTD-002-gold-cost-gating.md": {
+    "mtime": 1783236858.9314888,
+    "ast_hash": "32df561b497926cfb63cba7148e5a181",
+    "semantic_hash": ""
+  },
+  ".claude/specs/backlog/MTD-003-tower-upgrade-hook.md": {
+    "mtime": 1783119196.572524,
+    "ast_hash": "1c2477e706ab18ebe80fa152e544ff3b",
+    "semantic_hash": ""
+  },
+  ".claude/specs/backlog/MTD-004-difficulty-modifiers.md": {
+    "mtime": 1783119198.709456,
+    "ast_hash": "916deb37ddd6efa6d61d92a5f08cfe8b",
+    "semantic_hash": ""
+  },
+  ".claude/specs/backlog/MTD-005-render-input-surface.md": {
+    "mtime": 1783119200.2346816,
+    "ast_hash": "8f4aa8f698467287907a7e48075f6676",
+    "semantic_hash": ""
+  },
+  ".claude/specs/backlog/PROC-001-spec-backsync.md": {
+    "mtime": 1783194243.1800911,
+    "ast_hash": "abca8e49138b4cb73c790ee51124eb58",
+    "semantic_hash": ""
+  },
+  ".claude/specs/backlog/PROC-002-multirepo-adr.md": {
+    "mtime": 1783194244.0731256,
+    "ast_hash": "dcd149b72b26e50eb34270006a9f6164",
+    "semantic_hash": ""
+  },
+  ".claude/specs/backlog/PROC-003-domain-roadmap.md": {
+    "mtime": 1783194244.8892448,
+    "ast_hash": "c17784cfbeb45c0ced1b809eeefc1b93",
+    "semantic_hash": ""
+  },
+  ".claude/specs/backlog/PROC-004-perf-budgets.md": {
+    "mtime": 1783194245.6341815,
+    "ast_hash": "bee2fd870cf2e94a9fd422f0e7c31efb",
+    "semantic_hash": ""
+  },
+  ".claude/specs/backlog/PROC-005-golden-replay-hashes.md": {
+    "mtime": 1783194247.7830782,
+    "ast_hash": "1809ee151f95369c135af5a847cd14c1",
+    "semantic_hash": ""
+  },
+  ".claude/specs/backlog/PROC-006-ci-prepush.md": {
+    "mtime": 1783194255.2256117,
+    "ast_hash": "0df8a55df9e50141bf00a395205f4a19",
+    "semantic_hash": ""
+  },
+  ".claude/specs/backlog/PROC-007-save-migration-matrix.md": {
+    "mtime": 1783194255.7194521,
+    "ast_hash": "0c49ef4e0fa597bee424daca617f1d30",
+    "semantic_hash": ""
+  },
+  ".claude/specs/backlog/PROC-008-playtest-bot.md": {
+    "mtime": 1783194258.2360983,
+    "ast_hash": "caebb1a54f9613a7a84cb0389548ca9a",
+    "semantic_hash": ""
+  },
+  ".claude/specs/backlog/PROC-009-android-visual-smoke.md": {
+    "mtime": 1783194262.9436269,
+    "ast_hash": "445a353ee8c69ed62128a456abc359c6",
+    "semantic_hash": ""
+  },
+  ".claude/specs/backlog/PROC-010-cost-telemetry.md": {
+    "mtime": 1783194266.1350772,
+    "ast_hash": "7c702f3b1a0a2ea4f4178c4cc809f8d4",
+    "semantic_hash": ""
+  },
+  ".claude/specs/backlog/README.md": {
+    "mtime": 1783019056.6671066,
+    "ast_hash": "cd32ec53fca2415935fdad036bff60f5",
+    "semantic_hash": ""
+  },
+  ".claude/specs/backlog/SG-001-content-pack.md": {
+    "mtime": 1783019255.52803,
+    "ast_hash": "812b0b5b559dee39e2242943c8db3ac9",
+    "semantic_hash": ""
+  },
+  ".claude/specs/backlog/SG-002-reward-deposit.md": {
+    "mtime": 1783019255.52803,
+    "ast_hash": "cac7a4770ec3b6d86ae4855fcb9bc6e4",
+    "semantic_hash": ""
+  },
+  ".claude/specs/backlog/SG-003-render-surface.md": {
+    "mtime": 1783019255.5290353,
+    "ast_hash": "bc642236b131030ca41fea654b2ddddb",
+    "semantic_hash": ""
+  },
+  ".claude/specs/backlog/SG-004-android-save-smoke.md": {
+    "mtime": 1783235750.7259123,
+    "ast_hash": "74441ac86a4478ca7953c5c1564366fa",
+    "semantic_hash": ""
+  },
+  ".claude/specs/backlog/SG-005-balance-report.md": {
+    "mtime": 1783236050.869673,
+    "ast_hash": "08c1c7fd82ecf649be72992a1fedf2b4",
+    "semantic_hash": ""
+  },
+  ".claude/specs/done/README.md": {
+    "mtime": 1783019056.6681135,
+    "ast_hash": "57497e69e10683f8143734e221460789",
+    "semantic_hash": ""
+  },
+  ".codex/agents/README.md": {
+    "mtime": 1783019056.669126,
+    "ast_hash": "d41a82856622759b358d767b643ac4b3",
+    "semantic_hash": ""
+  },
+  ".codex/skills/README.md": {
+    "mtime": 1783019056.669126,
+    "ast_hash": "eb5cb77d1e242168f162b632ba454fae",
+    "semantic_hash": ""
+  },
+  "DOCUMENTATION.md": {
+    "mtime": 1783019430.1805868,
+    "ast_hash": "e69459193555b7f8b016f4199f6af99f",
+    "semantic_hash": ""
+  },
+  "PROMPT_PACK.md": {
+    "mtime": 1783119101.7866926,
+    "ast_hash": "718494108b4a528a55a1d1fcc915900a",
+    "semantic_hash": ""
+  },
+  "Plane/00_reference_research.md": {
+    "mtime": 1783006745.894262,
+    "ast_hash": "faceff11de0e9c2cc79fa7c1e4c73faa",
+    "semantic_hash": ""
+  },
+  "Plane/01_repository_foundation.md": {
+    "mtime": 1783119092.122944,
+    "ast_hash": "64c51c232cf313489e89f3ff646c40ee",
+    "semantic_hash": ""
+  },
+  "Plane/02_stack_adr_and_project_scaffold.md": {
+    "mtime": 1783012014.7052913,
+    "ast_hash": "749fbf6312b8a87623305ddcd2b0b8d3",
+    "semantic_hash": ""
+  },
+  "Plane/03_engine_architecture_contracts.md": {
+    "mtime": 1783012014.7062917,
+    "ast_hash": "efc06719b312270a6551473b538115c5",
+    "semantic_hash": ""
+  },
+  "Plane/04_agentic_pipeline_bootstrap.md": {
+    "mtime": 1783006745.8972547,
+    "ast_hash": "378fd27566fad427fc29e592a060239f",
+    "semantic_hash": ""
+  },
+  "Plane/05_core_simulation_runtime.md": {
+    "mtime": 1783006745.8972547,
+    "ast_hash": "7a06dc85735c716313d6686bed6bf0f1",
+    "semantic_hash": ""
+  },
+  "Plane/06_world_content_and_save.md": {
+    "mtime": 1783006745.8972547,
+    "ast_hash": "fa5f193ba2828171a890d3e7cfd4bc4a",
+    "semantic_hash": ""
+  },
+  "Plane/07_entities_ai_jobs.md": {
+    "mtime": 1783006745.8972547,
+    "ast_hash": "604453073f3c849d0fa007ad461d9d8f",
+    "semantic_hash": ""
+  },
+  "Plane/08_logistics_defense_storyteller.md": {
+    "mtime": 1783006745.8982544,
+    "ast_hash": "d6f964e18b1733817ec8129d74db4ba5",
+    "semantic_hash": ""
+  },
+  "Plane/09_render_android_input.md": {
+    "mtime": 1783006745.8982544,
+    "ast_hash": "06c5ff09d315274b80f948b54f5911ad",
+    "semantic_hash": ""
+  },
+  "Plane/10_vertical_slice_sandbox.md": {
+    "mtime": 1783006745.8982544,
+    "ast_hash": "cfec9d37bd6e13932ea7300ebd628774",
+    "semantic_hash": ""
+  },
+  "Plane/11_devtools_balance_editor.md": {
+    "mtime": 1783006745.8982544,
+    "ast_hash": "64002b74abd210803e3ffbbc6c32d228",
+    "semantic_hash": ""
+  },
+  "Plane/12_game_spec_pipeline.md": {
+    "mtime": 1783119093.245001,
+    "ast_hash": "f9479deb1119fdcf19de10e18297a1b0",
+    "semantic_hash": ""
+  },
+  "Plane/13_self_improvement_loop.md": {
+    "mtime": 1783006745.899254,
+    "ast_hash": "aecde05f95e63d4cc486983ffe77ea61",
+    "semantic_hash": ""
+  },
+  "Plane/14_hardening_release_first_game.md": {
+    "mtime": 1783006745.899254,
+    "ast_hash": "b9ca06deb65f2e64c1455f33b361c0ae",
+    "semantic_hash": ""
+  },
+  "Plane/README.md": {
+    "mtime": 1783237374.8212216,
+    "ast_hash": "9a115357174607be87833fd474832b6a",
+    "semantic_hash": ""
+  },
+  "STATE.md": {
+    "mtime": 1783237374.8192222,
+    "ast_hash": "ace79b9373f941bf502446063dbffc95",
+    "semantic_hash": ""
+  },
+  "claude-plugins/me-dev/README.md": {
+    "mtime": 1783058438.7958994,
+    "ast_hash": "7ff5c4fc020879892c97cf5ddda04f2e",
+    "semantic_hash": ""
+  },
+  "claude-plugins/me-dev/agents/me-android-performance.md": {
+    "mtime": 1783194060.1796234,
+    "ast_hash": "40bdc1bb9bc67e61181a2a75d7cc7d75",
+    "semantic_hash": ""
+  },
+  "claude-plugins/me-dev/agents/me-architect.md": {
+    "mtime": 1783194048.0287466,
+    "ast_hash": "30ac0ef4a79b407adc72467e8bddabee",
+    "semantic_hash": ""
+  },
+  "claude-plugins/me-dev/agents/me-balance-simulator.md": {
+    "mtime": 1783194054.9935608,
+    "ast_hash": "84b83bd1264419b46d37f4a8fc390cc0",
+    "semantic_hash": ""
+  },
+  "claude-plugins/me-dev/agents/me-content-schema-designer.md": {
+    "mtime": 1783194051.9914277,
+    "ast_hash": "2041110e67d5775f4c640fc56ba09815",
+    "semantic_hash": ""
+  },
+  "claude-plugins/me-dev/agents/me-docs.md": {
+    "mtime": 1783245831.3215222,
+    "ast_hash": "249a9544c1f7eaf06a46c72fa3ab6bdc",
+    "semantic_hash": ""
+  },
+  "claude-plugins/me-dev/agents/me-engine-developer.md": {
+    "mtime": 1783194049.41376,
+    "ast_hash": "aeeb072bb6b1a0baea885f5183f8d504",
+    "semantic_hash": ""
+  },
+  "claude-plugins/me-dev/agents/me-gameplay-designer.md": {
+    "mtime": 1783194050.9473455,
+    "ast_hash": "8228e406aecac6d9fdd13694edb5af41",
+    "semantic_hash": ""
+  },
+  "claude-plugins/me-dev/agents/me-improve.md": {
+    "mtime": 1783245827.5531456,
+    "ast_hash": "6fd049bf41a2c179cbcf9c33660c9dea",
+    "semantic_hash": ""
+  },
+  "claude-plugins/me-dev/agents/me-reflect.md": {
+    "mtime": 1783194074.9614012,
+    "ast_hash": "9474d0c1cc927fc5905e5255f62f308c",
+    "semantic_hash": ""
+  },
+  "claude-plugins/me-dev/agents/me-renderer-qa.md": {
+    "mtime": 1783194057.8459246,
+    "ast_hash": "6cf2df6da7b395c0a8e2a6fc78f7ca1b",
+    "semantic_hash": ""
+  },
+  "claude-plugins/me-dev/agents/me-runner.md": {
+    "mtime": 1783194087.4535973,
+    "ast_hash": "9a56e1b03ca6759d7b209945732ac9e5",
+    "semantic_hash": ""
+  },
+  "claude-plugins/me-dev/agents/me-save-compat-reviewer.md": {
+    "mtime": 1783194059.2277353,
+    "ast_hash": "009047bb2b3d51c7d9596ce217232e33",
+    "semantic_hash": ""
+  },
+  "claude-plugins/me-dev/agents/me-scout.md": {
+    "mtime": 1783194107.0641923,
+    "ast_hash": "708294f124c0070c56cdd1728bac5840",
+    "semantic_hash": ""
+  },
+  "claude-plugins/me-dev/agents/me-simulation-reviewer.md": {
+    "mtime": 1783194056.4967022,
+    "ast_hash": "9ab1d41f3200b0a693257cd5e6204880",
+    "semantic_hash": ""
+  },
+  "claude-plugins/me-dev/agents/me-tester.md": {
+    "mtime": 1783194053.6202507,
+    "ast_hash": "8a0e28a62c127d7f657211ca059b28e0",
+    "semantic_hash": ""
+  },
+  "claude-plugins/me-dev/agents/me-verifier.md": {
+    "mtime": 1783194070.2870169,
+    "ast_hash": "a106acb58fba22fbfe88a69d61fac50b",
+    "semantic_hash": ""
+  },
+  "claude-plugins/me-dev/skills/me/SKILL.md": {
+    "mtime": 1783194123.1396894,
+    "ast_hash": "cdc9cac605c4ff0f8299e1e8c4220cfa",
+    "semantic_hash": ""
+  },
+  "claude-plugins/me-spec/README.md": {
+    "mtime": 1783058442.7074006,
+    "ast_hash": "8d9640ec8c8f5b136e2b63fb5b2a13d8",
+    "semantic_hash": ""
+  },
+  "claude-plugins/me-spec/agents/me-game-spec-author.md": {
+    "mtime": 1783194140.2043371,
+    "ast_hash": "0b677980e7410534f35a24113e91e5ff",
+    "semantic_hash": ""
+  },
+  "claude-plugins/me-spec/skills/me-spec/SKILL.md": {
+    "mtime": 1783194155.2526393,
+    "ast_hash": "413724cc92333993c28cee2422274ac8",
+    "semantic_hash": ""
+  },
+  "codex-plugins/me-dev/skills/me-dev/SKILL.md": {
+    "mtime": 1783019056.6621134,
+    "ast_hash": "4cb8282def62df8098e32916038397dc",
+    "semantic_hash": ""
+  },
+  "codex-plugins/me-spec/skills/me-spec/SKILL.md": {
+    "mtime": 1783019056.6641164,
+    "ast_hash": "fca2b8764aaae99163ba3a771fe45539",
+    "semantic_hash": ""
+  },
+  "docs/API_SKETCH.md": {
+    "mtime": 1783011544.0931914,
+    "ast_hash": "824fb24de87497499d00f3b4678b27b3",
+    "semantic_hash": ""
+  },
+  "docs/API_STABILITY.md": {
+    "mtime": 1783019255.5260394,
+    "ast_hash": "6fcbbd52d15b84bbda730ab9c96af7c5",
+    "semantic_hash": ""
+  },
+  "docs/CONTENT_MODEL.md": {
+    "mtime": 1783011544.0937223,
+    "ast_hash": "72b22d54f4476a4ee807ec39e114d629",
+    "semantic_hash": ""
+  },
+  "docs/DECISIONS/ADR-0000-license-policy.md": {
+    "mtime": 1783119059.2150528,
+    "ast_hash": "e0c421c24a1190806df107e5daba6b93",
+    "semantic_hash": ""
+  },
+  "docs/DECISIONS/ADR-0001-stack.md": {
+    "mtime": 1783011732.0467381,
+    "ast_hash": "825853459d4154da7a44a35e2e723481",
+    "semantic_hash": ""
+  },
+  "docs/DECISIONS/ADR-0002-dependency-policy.md": {
+    "mtime": 1783011424.5081315,
+    "ast_hash": "224ac6e33d53ccf54e1cc8796f1208f4",
+    "semantic_hash": ""
+  },
+  "docs/EDITOR_PLAN.md": {
+    "mtime": 1783019255.5249176,
+    "ast_hash": "b419a3f87019e64dc152d43945cb5591",
+    "semantic_hash": ""
+  },
+  "docs/ENGINE_CONSTITUTION.md": {
+    "mtime": 1783119055.9440026,
+    "ast_hash": "e84ab2efa9b862bb3f1cedc34576329b",
+    "semantic_hash": ""
+  },
+  "docs/GAME_SPEC_PIPELINE.md": {
+    "mtime": 1783194143.9182706,
+    "ast_hash": "25513cf9f73edd5a89d9b12bd5df8481",
+    "semantic_hash": ""
+  },
+  "docs/HARDENING_AUDIT.md": {
+    "mtime": 1783019255.5270188,
+    "ast_hash": "018333ae93a0e792c5f1da862e0adcaf",
+    "semantic_hash": ""
+  },
+  "docs/REFERENCE_RESEARCH.md": {
+    "mtime": 1783117594.42183,
+    "ast_hash": "60ee27891f6901e3144f545b8ffbe152",
+    "semantic_hash": ""
+  },
+  "docs/RELEASE_CHECKLIST.md": {
+    "mtime": 1783019255.5270188,
+    "ast_hash": "be9af6e10b49937b68411f8642d9a661",
+    "semantic_hash": ""
+  },
+  "docs/ROADMAP.md": {
+    "mtime": 1783019563.8214293,
+    "ast_hash": "a1fa43503c358ee331c1c5df944c70fa",
+    "semantic_hash": ""
+  },
+  "docs/TESTING_STRATEGY.md": {
+    "mtime": 1783011544.0937223,
+    "ast_hash": "be6c6c3f9b76dce9b076aa710ccb6a30",
+    "semantic_hash": ""
+  },
+  "docs/agentic/AGENT_CONTRACTS.md": {
+    "mtime": 1783245823.8122504,
+    "ast_hash": "c16564862459dfa86d0246be7f20d523",
+    "semantic_hash": ""
+  },
+  "docs/agentic/PIPELINE.md": {
+    "mtime": 1783193933.6239476,
+    "ast_hash": "1b5d1acf4b095252189f468f08d808f8",
+    "semantic_hash": ""
+  },
+  "docs/agentic/SELF_IMPROVEMENT.md": {
+    "mtime": 1783245846.1116662,
+    "ast_hash": "253b090ba9c7d11bd6563f05226d5bd4",
+    "semantic_hash": ""
+  },
+  "docs/agentic/SPEC_BOARD.md": {
+    "mtime": 1783193965.1088736,
+    "ast_hash": "2937c0306a7e5f3600693698e04758d5",
+    "semantic_hash": ""
+  },
+  "docs/content-schemas/PROPERTIES_SCHEMA.md": {
+    "mtime": 1783019255.5249176,
+    "ast_hash": "a48938fa3d255ca5bc97b41f740959a2",
+    "semantic_hash": ""
+  },
+  "docs/contracts/ai.md": {
+    "mtime": 1783011544.0957208,
+    "ast_hash": "649717f57554b3e80fa94d9532ac0954",
+    "semantic_hash": ""
+  },
+  "docs/contracts/android.md": {
+    "mtime": 1783195523.6987891,
+    "ast_hash": "1c48592fd40b7e112dadb1f3a0307ed6",
+    "semantic_hash": ""
+  },
+  "docs/contracts/content.md": {
+    "mtime": 1783011544.0947218,
+    "ast_hash": "33691790fa9ca1d6ee51f084dd07bf07",
+    "semantic_hash": ""
+  },
+  "docs/contracts/core.md": {
+    "mtime": 1783011544.0937223,
+    "ast_hash": "888d6af0a0b480a56c6d23f79af4bac8",
+    "semantic_hash": ""
+  },
+  "docs/contracts/defense.md": {
+    "mtime": 1783011544.0957208,
+    "ast_hash": "f3a4e5a5cc9247f80744d8653cdfb964",
+    "semantic_hash": ""
+  },
+  "docs/contracts/devtools.md": {
+    "mtime": 1783011544.096722,
+    "ast_hash": "2f576c4b2fc7ed432fbeaf9cb68507c9",
+    "semantic_hash": ""
+  },
+  "docs/contracts/entities.md": {
+    "mtime": 1783011544.0947218,
+    "ast_hash": "0f655fee803cef07fe2c46eb509fd590",
+    "semantic_hash": ""
+  },
+  "docs/contracts/logistics.md": {
+    "mtime": 1783011544.0957208,
+    "ast_hash": "41335abedcf034313a7966afec859429",
+    "semantic_hash": ""
+  },
+  "docs/contracts/render.md": {
+    "mtime": 1783011544.0957208,
+    "ast_hash": "98bfdde5c3d617a0d44fa6f26b3ac2d0",
+    "semantic_hash": ""
+  },
+  "docs/contracts/storyteller.md": {
+    "mtime": 1783011544.0957208,
+    "ast_hash": "00436a668368a6fa6409c94ca5878291",
+    "semantic_hash": ""
+  },
+  "docs/contracts/world.md": {
+    "mtime": 1783011544.0947218,
+    "ast_hash": "545fbc4b9b41f178e7226ea94c749e55",
+    "semantic_hash": ""
+  },
+  "games/sandbox/README.md": {
+    "mtime": 1783018782.7316234,
+    "ast_hash": "47a80331a2686a0d2942ca1c0ca76e20",
+    "semantic_hash": ""
+  },
+  "games/signal-garden/ROADMAP.md": {
+    "mtime": 1783019255.52803,
+    "ast_hash": "b375bef32429d235d7eddbc38b2d99eb",
+    "semantic_hash": ""
+  },
+  "games/signal-garden/spec/00_manifest.yaml": {
+    "mtime": 1783019209.4310992,
+    "ast_hash": "f37ec8398cdb7969c193ed6fdac235a7",
+    "semantic_hash": ""
+  },
+  "games/signal-garden/spec/android-ux.md": {
+    "mtime": 1783019209.4376056,
+    "ast_hash": "32237eba83636d9a8a111f8f33e54fd7",
+    "semantic_hash": ""
+  },
+  "games/signal-garden/spec/balance-plan.md": {
+    "mtime": 1783019209.4376056,
+    "ast_hash": "a8f0f135a1e7eab300786e4e9534b6c5",
+    "semantic_hash": ""
+  },
+  "games/signal-garden/spec/content-plan.md": {
+    "mtime": 1783019209.4360974,
+    "ast_hash": "a852a5ee9b0a21659f021b0c1049feff",
+    "semantic_hash": ""
+  },
+  "games/signal-garden/spec/design.md": {
+    "mtime": 1783019209.4350975,
+    "ast_hash": "bb50a9699754555d6d2499b9a4ab8bc1",
+    "semantic_hash": ""
+  },
+  "games/signal-garden/spec/engine-gap-analysis.md": {
+    "mtime": 1783236061.8020225,
+    "ast_hash": "90dbdc0f5336d776298df1a34dc89304",
+    "semantic_hash": ""
+  },
+  "games/signal-garden/spec/nfr.md": {
+    "mtime": 1783019209.4386303,
+    "ast_hash": "a1c5b7a3d346b2bb1225d028b2de8471",
+    "semantic_hash": ""
+  },
+  "games/signal-garden/spec/product-brief.md": {
+    "mtime": 1783019209.4320984,
+    "ast_hash": "b5feb284799e5d920c4a5c3ccda1cdb3",
+    "semantic_hash": ""
+  },
+  "games/signal-garden/spec/requirements.md": {
+    "mtime": 1783019209.4330988,
+    "ast_hash": "0a2015c0d46a17148465f0d8b4197e25",
+    "semantic_hash": ""
+  },
+  "games/signal-garden/spec/risks.md": {
+    "mtime": 1783019209.4397135,
+    "ast_hash": "4e8cab5ad2180e927673cb0b136679fc",
+    "semantic_hash": ""
+  },
+  "games/signal-garden/spec/user-stories.md": {
+    "mtime": 1783019209.4330988,
+    "ast_hash": "93b257b563dd87288b5b89c73595242a",
+    "semantic_hash": ""
+  }
+}
