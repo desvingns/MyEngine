@@ -1,6 +1,6 @@
 id: SG-001
 title: Signal Garden content pack
-status: backlog
+status: done
 phase: first-game
 
 Acceptance:

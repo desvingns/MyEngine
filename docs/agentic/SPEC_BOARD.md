@@ -1,7 +1,7 @@
 # MyEngine Spec Board
 
 Status: Phase 04 accepted; PROC-2026-07-04 improvements accepted  
-Last updated: 2026-07-04
+Last updated: 2026-07-06
 
 Spec work is tracked through:
 
@@ -35,6 +35,9 @@ gates:
   - replay
   - save_compat
 ```
+
+Phase values in use: `first-game` (game vertical slice), `engine` (engine capability),
+`dx` (agent-facing tooling), `process` (pipeline/process), or a `Plane/` phase number.
 
 ## Backlog Bridge
 

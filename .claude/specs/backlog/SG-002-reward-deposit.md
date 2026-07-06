@@ -1,6 +1,6 @@
 id: SG-002
 title: Reward deposit hook
-status: backlog
+status: done
 phase: first-game
 
 Acceptance:

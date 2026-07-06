@@ -1,6 +1,6 @@
 id: SG-003
 title: Placeholder render surface
-status: backlog
+status: done
 phase: first-game
 
 Acceptance:
