@@ -4,6 +4,7 @@ import dev.myengine.core.CommandId
 import dev.myengine.core.Tick
 import dev.myengine.core.command.BuildTowerCommand
 import dev.myengine.core.command.TileCoordinate
+import dev.myengine.core.command.UpgradeTowerCommand
 import dev.myengine.world.TilePosition
 import dev.myengine.world.WorldSize
 import kotlin.math.abs
@@ -121,5 +122,27 @@ class RenderBoundaryTest {
 
         assertTrue(result.commands.isEmpty())
         assertEquals(TilePosition(32, 32), result.state.selectedTile)
+    }
+
+    @Test
+    fun upgradeUsesCallerOwnedCommandId() {
+        val state = InputState(Camera(WorldSize(64, 64), 240f, 240f))
+        val suppliedId = CommandId(77)
+
+        val result = InputAdapter().handle(
+            PlatformInputEvent.Upgrade(branch = "main", tier = 2),
+            state,
+            Tick(9),
+            InputUiState(selectedTowerEntityId = 123L),
+            suppliedId,
+        )
+
+        val command = assertIs<UpgradeTowerCommand>(result.commands.single())
+        assertEquals(suppliedId, command.id)
+        assertEquals(Tick(9), command.scheduledTick)
+        assertEquals(123L, command.towerEntityId)
+        assertEquals("main", command.branch)
+        assertEquals(2, command.tier)
+        assertEquals(state, result.state)
     }
 }

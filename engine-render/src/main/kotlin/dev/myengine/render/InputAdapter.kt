@@ -5,11 +5,13 @@ import dev.myengine.core.EngineCommand
 import dev.myengine.core.Tick
 import dev.myengine.core.command.BuildTowerCommand
 import dev.myengine.core.command.TileCoordinate
+import dev.myengine.core.command.UpgradeTowerCommand
 
 sealed class PlatformInputEvent {
     data class Tap(val point: ScreenPoint) : PlatformInputEvent()
     data class Pan(val deltaTilesX: Float, val deltaTilesY: Float) : PlatformInputEvent()
     data class Pinch(val factor: Float) : PlatformInputEvent()
+    data class Upgrade(val branch: String, val tier: Int) : PlatformInputEvent()
 }
 
 data class InputState(
@@ -19,6 +21,7 @@ data class InputState(
 
 data class InputUiState(
     val selectedTowerId: String? = null,
+    val selectedTowerEntityId: Long? = null,
 )
 
 data class InputResult(
@@ -37,6 +40,25 @@ class InputAdapter {
         when (event) {
             is PlatformInputEvent.Pan -> InputResult(state.copy(camera = state.camera.pan(event.deltaTilesX, event.deltaTilesY)), emptyList())
             is PlatformInputEvent.Pinch -> InputResult(state.copy(camera = state.camera.zoomBy(event.factor)), emptyList())
+            is PlatformInputEvent.Upgrade -> {
+                val towerEntityId = uiState.selectedTowerEntityId
+                if (towerEntityId == null || commandId == null) {
+                    InputResult(state, emptyList())
+                } else {
+                    InputResult(
+                        state,
+                        listOf(
+                            UpgradeTowerCommand(
+                                id = commandId,
+                                scheduledTick = scheduledTick,
+                                towerEntityId = towerEntityId,
+                                branch = event.branch,
+                                tier = event.tier,
+                            ),
+                        ),
+                    )
+                }
+            }
             is PlatformInputEvent.Tap -> {
                 val tile = state.camera.screenToTile(event.point)
                 val towerId = uiState.selectedTowerId

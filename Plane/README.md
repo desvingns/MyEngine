@@ -37,8 +37,9 @@
 ## Рекомендуемый порядок
 
 1. Оригинальный план Phase 00-14 закрыт.
-2. Следующая работа идёт через MyTD backlog specs.
-3. `ENG-026` accepted (scoped JVM/build/replay/save-compat proof); следующий backlog item: `ENG-027`.
+2. Первый playable Android TD milestone закрыт через `ENG-027`; ручные device/layout/performance
+   проверки остаются явно отложенными.
+3. Следующий backlog item: `ENG-002` (goal-field pathfinding + repath on world change).
 4. Hardening gaps из `docs/HARDENING_AUDIT.md` закрывать по одному, с тестами и обновлением handoff.
 
 Новые крупные фазы добавлять только после того, как backlog specs перестанут быть достаточно
@@ -881,3 +882,31 @@
     or a frame budget; Android performance review is partial pending these checks.
 - Next:
   - Implement `.claude/specs/backlog/ENG-027-hud-data-ui-commands.md`.
+
+### 2026-07-18 - MyEngine ENG-027 (HUD snapshot data and UI command surface)
+
+- Status: Done / manual device-layout-performance limitations documented
+- Owner: Codex
+- Implementation:
+  - `EngineSnapshot` and `RenderFrame` expose an immutable, content-derived HUD block: localized
+    labels, resources, wave/countdown/core state, buildable towers with costs/tiers, and selected
+    tower damage/kills/upgrades.
+  - Android draws build/select/upgrade panels from the snapshot only. A pure density-aware layout
+    model provides shared 48 dp row bounds for drawing and hit testing; build and upgrade actions
+    flow through `InputAdapter` and the existing caller-owned command queue.
+  - Defense accumulates deterministic per-tower actual damage and kills. Save v6 persists those
+    metrics; v1-v5 migrate to an empty per-tower metrics map.
+  - Tower and tier `displayKey` fields plus the nine `hud.*` localization keys are required and
+    covered by content validation.
+- Verification:
+  - Full Gradle tests -> pass; content validation -> pass (`2` packs); save-compat -> pass;
+    `android:assembleDebug` -> pass.
+  - Replay -> pass with canonical `9c495d8ff30fd83d` and kill `83a65da1a7881b2c` unchanged.
+  - Benchmark -> pass (`canonical=295 ms`, `kill=45 ms`); final verifier accepted every criterion.
+- Limitations:
+  - Device/emulator build, tower selection, upgrade, and lifecycle smoke remain manual-pending.
+  - Check non-default fontScale and long localized labels; profile FrameMetrics/JankStats and
+    allocations before asserting UI smoothness or a frame/allocation budget.
+  - Harden malformed save v6 handling for a missing `towerMetrics` field and duplicate tower ids.
+- Next:
+  - Implement `.claude/specs/backlog/ENG-002-flow-field-repath.md`.

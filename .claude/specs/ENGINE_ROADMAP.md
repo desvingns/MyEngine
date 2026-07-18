@@ -7,7 +7,7 @@ two or more games outranks single-game gaps of the same severity.
 Updated by: the `/me-spec` backlog bridge (new gaps / new demand) and `/me`
 close-out (status changes).
 
-Last updated: 2026-07-16
+Last updated: 2026-07-18
 
 ## Capabilities
 
@@ -25,7 +25,7 @@ Last updated: 2026-07-16
 | Map definitions in content packs (size, terrain, spawns, core) | ENG-005 | mytd, vision:td, vision:rimworld-like, vision:mindustry-like | 4 | **done** (2026-07-16; DX-008 hybrid JSON map asset, validated `maps.json`, data-driven sandbox world/routing, v4 map/content save identity, canonical hashes unchanged) |
 | Win/lose conditions + run summary | ENG-014 | mytd, vision:td, vision:rimworld-like, vision:mindustry-like | 4 | **done** (2026-07-16; map-defined terminal rules, immutable snapshot summary, save v5 terminal-state persistence, all gates pass) |
 | Android SurfaceView renderer + Choreographer fixed-tick loop | ENG-026 | mytd, vision:td, vision:rimworld-like, vision:mindustry-like | 4 | **done** (2026-07-16; 20 Hz Android-local Choreographer policy, immutable RenderFrame SurfaceView, command-queue-only input, pause/save/Bundle command-ID restoration; JVM/build/replay/save-compat gates pass, device/performance checks manual-pending) |
-| HUD snapshot data + UI command surface | ENG-027 | mytd, vision:td, vision:rimworld-like, vision:mindustry-like | 4 | backlog |
+| HUD snapshot data + UI command surface | ENG-027 | mytd, vision:td, vision:rimworld-like, vision:mindustry-like | 4 | **done** (2026-07-18; content-derived immutable HUD snapshot, Android build/select/upgrade panels through `InputAdapter`, deterministic per-tower damage/kills, save v6 metrics persistence; full gates pass, device/layout/performance checks manual-pending) |
 | Goal-field pathfinding + repath on world change (mazing) | ENG-002 | mytd, vision:td, vision:mindustry-like | 3 | backlog |
 | Multiple spawn points + per-wave routing | ENG-007 | vision:td, vision:mindustry-like | 2 | backlog |
 | Targeting priority modes | ENG-008 | mytd, vision:td | 2 | backlog |
@@ -93,8 +93,10 @@ Last updated: 2026-07-16
 
 1. Human: commit the in-flight MTD-003 close-out changes; then run PROC-013 (board hygiene).
 2. MTD-004 -> ENG-024 -> ENG-005 -> ENG-014 -> MTD-005 -> ENG-026 -> ENG-027 =
-   **first playable Android TD milestone**.
-3. P1 opener: ENG-002 -> ENG-013 -> ENG-008 -> ENG-015 -> ENG-030.
+   **first playable Android TD milestone** (complete 2026-07-18; manual device/layout/performance
+   evidence remains explicitly pending).
+3. P1 opener: ENG-002 -> ENG-013 -> ENG-008 -> ENG-015 -> ENG-030. The next exact backlog action
+   is `ENG-002`.
 4. DX-008 is done: use its hybrid-format ADR for ENG-017/ENG-028 schema work. Other high-leverage
    pipeline cards remain DX-002, DX-006, and DX-005.
 

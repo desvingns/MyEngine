@@ -1,8 +1,8 @@
 # MyEngine State
 
-Last updated: 2026-07-16
-Active phase: Phase 00-14 complete; Signal Garden SG-001..005 complete; MyTD MTD-001..005 complete; DX-008, ENG-005, ENG-014, and ENG-026 complete; pipeline at v0.2.0; next engine backlog is `ENG-027` HUD snapshot data + UI command surface
-Owner of last update: Codex (2026-07-16: ENG-026 accepted; device/performance checks pending)
+Last updated: 2026-07-18
+Active phase: Phase 00-14 complete; Signal Garden SG-001..005 complete; MyTD MTD-001..005 complete; DX-008, ENG-005, ENG-014, ENG-026, and ENG-027 complete; pipeline at v0.2.0; next engine backlog is `ENG-002` goal-field pathfinding + repath on world change
+Owner of last update: Codex (2026-07-18: ENG-027 accepted; manual device/layout/performance checks pending)
 
 ## Current Status
 
@@ -172,22 +172,38 @@ Owner of last update: Codex (2026-07-16: ENG-026 accepted; device/performance ch
   `onPause` cancels ticking and saves pending commands, while Bundle restoration preserves the next
   command ID and replay continuity. JVM/build/replay/save-compat gates pass. Device gesture/lifecycle
   smoke and FrameMetrics/JankStats plus Allocation Tracker profiling remain manual-pending.
+- MyEngine ENG-027 (HUD snapshot data + UI command surface, 2026-07-18) is accepted.
+  `EngineSnapshot`/`RenderFrame` carry immutable, content-derived HUD data for localized labels,
+  resources, wave/countdown/core state, buildable towers, costs, tiers, and placed-tower info.
+  Android renders build/select/upgrade panels from that snapshot; 48 dp rows share one pure layout
+  model for drawing and hit testing, while build/upgrade taps emit existing commands through
+  `InputAdapter` and the caller-owned command queue. Defense records deterministic per-tower actual
+  damage and kills; `SandboxSaveCodec` v6 persists those metrics with v1-v5 migration to an empty
+  map. Content validation now requires tower/tier `displayKey` references and nine HUD string keys.
+  Headless HUD, render/input/layout, defense metrics, content, and save tests pass; all runner gates
+  pass with replay hashes unchanged. Device/layout/performance checks remain manual-pending.
 
 ## Next Exact Action
 
-Implement engine backlog item `ENG-027` (HUD snapshot data + UI command surface):
+Implement engine backlog item `ENG-002` (goal-field pathfinding + repath on world change):
 
 ```powershell
 Get-Content -Raw .claude\specs\ENGINE_ROADMAP.md
-Get-Content -Raw .claude\specs\backlog\ENG-027-hud-data-ui-commands.md
+Get-Content -Raw .claude\specs\backlog\ENG-002-flow-field-repath.md
 ```
 
 Expected next output:
 
-- HUD snapshot data and a presentation-only UI command surface use the existing command boundary
+- Deterministic goal-field routing replaces per-enemy path searches and repaths after world changes
 
 ## Known Blockers
 
+- ENG-027 is accepted with non-blocking manual limitations: on a device/emulator, smoke build-tower,
+  tower selection, upgrade, and pause/recreate lifecycle continuity; exercise non-default fontScale
+  and long localized labels; capture FrameMetrics/JankStats and Allocation Tracker evidence before
+  claiming smoothness or an allocation/frame budget. Save v6 hardening should also add explicit
+  rejection tests/policy for a missing `towerMetrics` field and duplicate tower entity ids inside
+  that field; current compatibility tests cover valid v1-v6 data.
 - ENG-026 remains device/performance-pending: run tap, pan, pinch, and pause/recreate with a
   pending command on a device/emulator, confirming next command ID and replay-hash continuity.
   Capture FrameMetrics/JankStats and Allocation Tracker evidence before claiming a frame budget or
@@ -284,6 +300,12 @@ Expected next output:
 
 ## Verification
 
+- ENG-027 (2026-07-18): full `gradlew test` -> pass; content validation -> pass for 2 packs;
+  replay -> pass with canonical `9c495d8ff30fd83d` and kill `83a65da1a7881b2c`; save-compat ->
+  pass; benchmark -> pass (`canonical=295 ms`, `kill=45 ms`); `android:assembleDebug` -> pass.
+  `me-verifier` accepted all criteria and boundary checks. No device/emulator build/select/upgrade/
+  lifecycle smoke, fontScale/long-label visual check, or FrameMetrics/JankStats/allocation profile
+  was run; malformed v6 missing/duplicate `towerMetrics` hardening remains non-blocking.
 - ENG-026: `:android:testDebugUnitTest --tests dev.myengine.android.FixedTickFrameLoopTest
   --rerun-tasks` -> pass; `:android:assembleDebug` -> pass; replay -> pass with canonical
   `9c495d8ff30fd83d` and kill `83a65da1a7881b2c`; save-compat -> pass. `me-tester` reported no

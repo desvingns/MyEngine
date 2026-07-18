@@ -36,6 +36,7 @@ data class TowerContent(
     val costResource: String,
     val costAmount: Int,
     val upgradeTiers: Map<String, TowerUpgradeTier> = emptyMap(),
+    val displayKey: String = "tower.$id",
 ) : ContentDefinition
 
 data class TowerUpgradeTier(
@@ -46,6 +47,7 @@ data class TowerUpgradeTier(
     val cooldownTicks: Int,
     val costResource: String,
     val costAmount: Int,
+    val displayKey: String = "tower.upgrade.$branch.$tier",
 ) {
     init {
         require(branch.matches(BRANCH_ID_REGEX)) { "Upgrade branch must match ${BRANCH_ID_REGEX.pattern}." }
@@ -192,6 +194,8 @@ data class ContentRegistry(
         else -> error("Map id is required because this content pack defines ${maps.size} maps.")
     }
 
+    fun requireString(key: String): String = strings[key] ?: error("Unknown localization key '$key'.")
+
     /**
      * Materializes one data-defined difficulty before the registry enters simulation.
      * Existing packs remain unchanged when no difficulty is selected.
@@ -222,4 +226,29 @@ data class ContentRegistry(
             resolvedDifficultyId = id,
         )
     }
+}
+
+
+object HudStringKeys {
+    const val RESOURCES = "hud.resources"
+    const val WAVE = "hud.wave"
+    const val NEXT_WAVE = "hud.nextWave"
+    const val CORE_HEALTH = "hud.coreHealth"
+    const val BUILD = "hud.build"
+    const val UPGRADE = "hud.upgrade"
+    const val DAMAGE = "hud.damage"
+    const val KILLS = "hud.kills"
+    const val TIER = "hud.tier"
+
+    val required: List<String> = listOf(
+        RESOURCES,
+        WAVE,
+        NEXT_WAVE,
+        CORE_HEALTH,
+        BUILD,
+        UPGRADE,
+        DAMAGE,
+        KILLS,
+        TIER,
+    )
 }

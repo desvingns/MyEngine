@@ -5,6 +5,7 @@ import dev.myengine.content.ContentRegistry
 import dev.myengine.content.MapContent
 import dev.myengine.content.MapWinCondition
 import dev.myengine.content.TowerUpgradeTier
+import dev.myengine.content.HudStringKeys
 import dev.myengine.ai.GridPathfinder
 import dev.myengine.ai.PathRequest
 import dev.myengine.ai.PathResult
@@ -37,6 +38,12 @@ import dev.myengine.logistics.Producer
 import dev.myengine.logistics.ProducerSystem
 import dev.myengine.render.DebugOverlay
 import dev.myengine.render.EngineSnapshot
+import dev.myengine.render.HudBuildTower
+import dev.myengine.render.HudLabels
+import dev.myengine.render.HudResourceAmount
+import dev.myengine.render.HudSnapshot
+import dev.myengine.render.HudTowerInfo
+import dev.myengine.render.HudTowerTier
 import dev.myengine.render.RenderEntity
 import dev.myengine.render.RenderTile
 import dev.myengine.storyteller.IncidentDirector
@@ -160,7 +167,7 @@ class SandboxRuntime(
             updateProduction()
             state.defense = defenseRuntime.spawnDueWaves(state.tick, state.defense, state.registry, state.world, state.entities, spawn, core)
             val towerResult = defenseRuntime.updateTowers(state.registry, state.entities)
-            state.defense = state.defense.record(towerResult.metrics)
+            state.defense = state.defense.record(towerResult.metrics).recordTowerMetrics(towerResult.towerMetrics)
             val deposit = depositRewards(state.inventory, towerResult.rewards)
             state.inventory = deposit.inventory
             if (deposit.dropped.isNotEmpty()) {
@@ -208,6 +215,81 @@ class SandboxRuntime(
             terminalReason = state.run.terminalReason,
             terminalTick = state.run.terminalTick,
             runSummary = state.run.summary ?: currentRunSummary(),
+            hud = hudSnapshot(),
+        )
+    }
+
+    private fun hudSnapshot(): HudSnapshot {
+        val registry = state.registry
+        fun text(key: String): String = registry.strings[key].orEmpty()
+        fun resourceAmount(resourceId: String, amount: Int): HudResourceAmount {
+            val resource = registry.requireResource(resourceId)
+            return HudResourceAmount(resourceId, text(resource.displayKey), amount)
+        }
+        fun tier(tier: TowerUpgradeTier): HudTowerTier = HudTowerTier(
+            branch = tier.branch,
+            tier = tier.tier,
+            label = text(tier.displayKey),
+            cost = resourceAmount(tier.costResource, tier.costAmount),
+            damage = tier.damage,
+        )
+
+        val buildTowers = registry.towers.values.sortedBy { it.id }.map { tower ->
+            HudBuildTower(
+                towerId = tower.id,
+                label = text(tower.displayKey),
+                cost = resourceAmount(tower.costResource, tower.costAmount),
+                tiers = tower.upgradeTiers.values
+                    .sortedWith(compareBy<TowerUpgradeTier> { it.branch }.thenBy { it.tier })
+                    .map(::tier),
+            )
+        }
+        val towerInfo = state.entities.byTag("tower").sortedBy { it.id.value }.mapNotNull { entity ->
+            val component = entity.tower ?: return@mapNotNull null
+            val tower = registry.towers[component.towerId] ?: return@mapNotNull null
+            val metrics = state.defense.towerMetrics[entity.id.value]
+            val upgrades = tower.upgradeTiers.values.filter { candidate ->
+                if (component.upgradeBranch == null) {
+                    candidate.tier == 1
+                } else {
+                    candidate.branch == component.upgradeBranch && candidate.tier == component.upgradeTier + 1
+                }
+            }.sortedWith(compareBy<TowerUpgradeTier> { it.branch }.thenBy { it.tier }).map(::tier)
+            HudTowerInfo(
+                entityId = entity.id.value,
+                towerId = tower.id,
+                label = text(tower.displayKey),
+                branch = component.upgradeBranch,
+                tier = component.upgradeTier,
+                damage = entity.attack?.damage ?: tower.damage,
+                actualDamage = metrics?.actualDamage ?: 0,
+                kills = metrics?.kills ?: 0,
+                availableUpgrades = upgrades,
+            )
+        }
+        val nextWave = registry.waves.values
+            .filter { it.id !in state.defense.spawnedWaveIds }
+            .minWithOrNull(compareBy({ it.startTick }, { it.id }))
+        return HudSnapshot(
+            labels = HudLabels(
+                resources = text(HudStringKeys.RESOURCES),
+                wave = text(HudStringKeys.WAVE),
+                nextWave = text(HudStringKeys.NEXT_WAVE),
+                coreHealth = text(HudStringKeys.CORE_HEALTH),
+                build = text(HudStringKeys.BUILD),
+                upgrade = text(HudStringKeys.UPGRADE),
+                damage = text(HudStringKeys.DAMAGE),
+                kills = text(HudStringKeys.KILLS),
+                tier = text(HudStringKeys.TIER),
+            ),
+            resources = registry.resources.values.sortedBy { it.id }
+                .map { resourceAmount(it.id, state.inventory.amount(it.id)) },
+            wave = state.defense.spawnedWaveIds.size,
+            totalWaves = registry.waves.size,
+            nextWaveInTicks = nextWave?.let { (it.startTick - state.tick.value).coerceAtLeast(0) },
+            coreHealth = state.defense.coreHealth,
+            buildTowers = buildTowers,
+            towers = towerInfo,
         )
     }
 
@@ -334,7 +416,7 @@ class SandboxRuntime(
 }
 
 object SandboxSaveCodec {
-    const val SAVE_VERSION: Int = 5
+    const val SAVE_VERSION: Int = 6
 
     fun encode(state: SandboxState, seed: Long, pendingCommands: List<EngineCommand> = emptyList()): String {
         val props = Properties()
@@ -364,6 +446,9 @@ object SandboxSaveCodec {
             state.defense.metrics.coreDamage,
             state.defense.metrics.towerShots,
         ).joinToString(",")
+        props["towerMetrics"] = state.defense.towerMetrics.toSortedMap().entries.joinToString(";") { (entityId, metrics) ->
+            "$entityId|${metrics.actualDamage}|${metrics.kills}"
+        }
         props["inventory"] = state.inventory.resources.toSortedMap().entries.joinToString(";") { "${it.key}:${it.value}" }
         props["producers"] = state.producers.sortedBy { it.id }.joinToString(";") { "${it.id}|${it.recipeId}|${it.progressTicks}" }
         props["nextEntityId"] = state.entities.nextIdSnapshot().toString()
@@ -415,6 +500,7 @@ object SandboxSaveCodec {
             coreHealth = props.getProperty("coreHealth").toInt(),
             spawnedWaveIds = props.getProperty("spawnedWaves", "").split(',').filter { it.isNotBlank() }.toSet(),
             metrics = dev.myengine.defense.DefenseMetrics(metrics[0], metrics[1], metrics[2], metrics[3], metrics[4]),
+            towerMetrics = if (version >= 6) parseTowerMetrics(props.getProperty("towerMetrics", "")) else emptyMap(),
         )
         state.inventory = Inventory(parseResources(props.getProperty("inventory", "")))
         state.producers = props.getProperty("producers", "")
@@ -509,6 +595,17 @@ object SandboxSaveCodec {
             val parts = it.split(':')
             parts[0] to parts[1].toInt()
         }
+
+    private fun parseTowerMetrics(text: String): Map<Long, dev.myengine.defense.TowerDefenseMetrics> =
+        text.split(';').filter { it.isNotBlank() }.associate { encoded ->
+            val parts = encoded.split('|')
+            require(parts.size == 3) { "Invalid tower metrics entry '$encoded'." }
+            val entityId = parts[0].toLong()
+            val actualDamage = parts[1].toLong()
+            val kills = parts[2].toInt()
+            require(entityId > 0 && actualDamage >= 0 && kills >= 0) { "Invalid tower metrics entry '$encoded'." }
+            entityId to dev.myengine.defense.TowerDefenseMetrics(actualDamage, kills)
+        }.toSortedMap()
 
     private fun parseEntities(text: String): List<Entity> =
         text.split(';').filter { it.isNotBlank() }.map { encoded ->

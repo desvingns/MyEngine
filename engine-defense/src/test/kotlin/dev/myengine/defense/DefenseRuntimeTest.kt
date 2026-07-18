@@ -57,6 +57,55 @@ class DefenseRuntimeTest {
     }
 
     @Test
+    fun towersContendingForOneEnemyUseCurrentHealthAndAttributeCappedDamageDeterministically() {
+        fun runOnce(): Pair<TowerUpdateResult, List<Long>> {
+            val base = testRegistry()
+            val registry = base.copy(
+                enemies = base.enemies.mapValues { (_, enemy) -> enemy.copy(health = 3) },
+            )
+            val terrain = mapOf("floor" to TerrainRule("floor", buildable = true, blocksMovement = false))
+            val world = TileWorld.filled(WorldSize(3, 5), terrain, "floor")
+            val entities = EntityStore()
+            val runtime = DefenseRuntime()
+            val firstTower = assertIs<TowerPlacementResult.Placed>(
+                runtime.placeTower("basic", TilePosition(0, 0), registry, world, entities),
+            ).entityId.value
+            val secondTower = assertIs<TowerPlacementResult.Placed>(
+                runtime.placeTower("basic", TilePosition(2, 0), registry, world, entities),
+            ).entityId.value
+            runtime.spawnDueWaves(
+                Tick(1),
+                DefenseState(3),
+                registry,
+                world,
+                entities,
+                TilePosition(1, 0),
+                TilePosition(1, 4),
+            )
+
+            val result = runtime.updateTowers(registry, entities)
+
+            assertTrue(entities.byTag("enemy").isEmpty())
+            return result to listOf(firstTower, secondTower)
+        }
+
+        val (first, towerIds) = runOnce()
+        val (second, repeatedTowerIds) = runOnce()
+        val enemy = testRegistry().enemies.getValue("scout").copy(health = 3)
+
+        assertEquals(towerIds, repeatedTowerIds)
+        assertEquals(first, second)
+        assertEquals(2, first.metrics.towerShots)
+        assertEquals(1, first.metrics.enemiesKilled)
+        assertEquals(mapOf(enemy.rewardResource to enemy.rewardAmount), first.rewards)
+        assertEquals(towerIds, first.towerMetrics.keys.toList())
+        assertEquals(TowerDefenseMetrics(actualDamage = 2, kills = 0), first.towerMetrics.getValue(towerIds[0]))
+        assertEquals(TowerDefenseMetrics(actualDamage = 1, kills = 1), first.towerMetrics.getValue(towerIds[1]))
+        assertEquals(enemy.health.toLong(), first.towerMetrics.values.sumOf { it.actualDamage })
+        assertEquals(1, first.towerMetrics.values.sumOf { it.kills })
+    }
+
+    @Test
     fun killedEnemyDepositsContentDerivedReward() {
         val registry = testRegistry()
         val terrain = mapOf("floor" to TerrainRule("floor", buildable = true, blocksMovement = false))
@@ -152,6 +201,7 @@ class DefenseRuntimeTest {
         root.resolve("resources.properties").writeText("bolt.displayKey=resource.bolt\n")
         root.resolve("towers.properties").writeText(
             """
+            basic.displayKey=tower.basic
             basic.range=2
             basic.damage=2
             basic.cooldownTicks=1
@@ -171,7 +221,21 @@ class DefenseRuntimeTest {
         root.resolve("recipes.properties").writeText("gen.outputResource=bolt\ngen.outputAmount=1\ngen.durationTicks=1\n")
         root.resolve("waves.properties").writeText("w1.startTick=1\nw1.spawns=scout:1\n")
         root.resolve("incidents.properties").writeText("spark.minThreat=0\nspark.maxThreat=3\nspark.weight=1\n")
-        root.resolve("strings.properties").writeText("resource.bolt=Bolt\n")
+        root.resolve("strings.properties").writeText(
+            """
+            resource.bolt=Bolt
+            tower.basic=Basic
+            hud.resources=Resources
+            hud.wave=Wave
+            hud.nextWave=Next wave
+            hud.coreHealth=Core
+            hud.build=Build
+            hud.upgrade=Upgrade
+            hud.damage=Damage
+            hud.kills=Kills
+            hud.tier=Tier
+            """.trimIndent(),
+        )
         ContentPackLoader.load(root).registry ?: error("test registry invalid")
     }
 }

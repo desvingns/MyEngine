@@ -1,6 +1,6 @@
 id: ENG-027
 title: HUD snapshot data + UI command surface
-status: backlog
+status: done
 phase: engine
 source: engine gap sweep 2026-07-06 (project review)
 

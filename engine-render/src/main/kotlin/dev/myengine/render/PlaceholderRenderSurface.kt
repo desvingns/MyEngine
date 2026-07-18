@@ -27,6 +27,7 @@ data class RenderPrimitive(
     val screen: ScreenPoint,
     val health: Int? = null,
     val towerTier: Int? = null,
+    val entityId: Long? = null,
 )
 
 /**
@@ -38,6 +39,7 @@ data class RenderFrame(
     val path: List<ScreenPoint>,
     val coreHealth: Int,
     val tick: Tick,
+    val hud: HudSnapshot = HudSnapshot.EMPTY,
 )
 
 /**
@@ -70,6 +72,7 @@ class PlaceholderRenderSurface {
                 screen = tileCenterScreen(entity.position, camera),
                 health = if (kind == RenderKind.ENEMY) entity.health else null,
                 towerTier = if (kind == RenderKind.TOWER) entity.towerTier else null,
+                entityId = entity.id,
             )
         }
 
@@ -78,6 +81,7 @@ class PlaceholderRenderSurface {
             path = snapshot.path.map { tileCenterScreen(it, camera) },
             coreHealth = snapshot.coreHealth,
             tick = snapshot.debug.tick,
+            hud = snapshot.hud,
         )
     }
 

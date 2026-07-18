@@ -13,6 +13,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertIs
 import kotlin.test.assertNotEquals
+import kotlin.test.assertTrue
 
 /**
  * SG-004 (Android lifecycle save smoke), pure-JVM device-independent surface.
@@ -22,7 +23,7 @@ import kotlin.test.assertNotEquals
  * [SandboxSession] holder the lifecycle delegates to: that a save-at-pause then
  * restore-and-resume is behaviorally indistinguishable from an uninterrupted run.
  *
- * Save format v4 persists `state`, tower upgrade branch/tier markers, the data-defined map identity,
+ * Save format v6 persists `state`, tower upgrade branch/tier markers, per-tower metrics, the data-defined map identity,
  * content version, and the runtime's pending
  * (not-yet-drained) [dev.myengine.core.CommandQueue] contents, so [SandboxSession.save] is sound at ANY tick.
  * Tests below cover both shapes: saves taken at a quiescent tick where the submitted build
@@ -123,11 +124,11 @@ class SandboxSessionLifecycleTest {
     @Test
     fun v1SaveWithoutPendingCommandsMigratesToEmptyQueue() {
         val registry = SandboxGame.loadRegistry()
-        val v5Save = SandboxSession.start(registry).also { it.step(5) }.save()
+        val v6Save = SandboxSession.start(registry).also { it.step(5) }.save()
 
         // Simulate a pre-map v1 save. Legacy formats have no map/content metadata and must choose
         // the only map provided by the loaded pack.
-        val v1Save = legacySave(v5Save, version = 1, dropPendingCommands = true)
+        val v1Save = legacySave(v6Save, version = 1, dropPendingCommands = true)
 
         val decodedState = SandboxSaveCodec.decode(v1Save, registry)
         assertEquals(Tick(5), decodedState.tick)
@@ -139,32 +140,39 @@ class SandboxSessionLifecycleTest {
     }
 
     @Test
-    fun v1ThroughV4SavesMigrateToActiveRunsThroughSoleAvailableMap() {
+    fun v1ThroughV5SavesMigrateWithoutPerTowerMetrics() {
         val registry = SandboxGame.loadRegistry()
         assertEquals(1, registry.maps.size, "legacy migration is only valid while the content pack has one map")
-        val v5Save = SandboxSession.start(registry).also { it.step(5) }.save()
+        val v6Save = SandboxSession.start(registry).also { it.step(5) }.save()
 
-        (1..4).forEach { version ->
-            val legacy = legacySave(v5Save, version, dropPendingCommands = version == 1)
+        (1..5).forEach { version ->
+            val legacy = legacySave(v6Save, version, dropPendingCommands = version == 1)
 
             val decoded = SandboxSaveCodec.decode(legacy, registry)
 
             assertEquals(Tick(5), decoded.tick, "v$version tick")
             assertEquals(registry.requireMap().id, decoded.mapId, "v$version map")
             assertEquals(RunStatus.ACTIVE, decoded.run.status, "v$version must migrate without terminal state")
+            assertEquals(emptyMap(), decoded.defense.towerMetrics, "v$version tower metrics")
         }
     }
 
     @Test
-    fun v5SavePersistsMapAndContentVersionAndRejectsMismatches() {
+    fun v6SavePersistsMapContentVersionAndTowerMetrics() {
         val registry = SandboxGame.loadRegistry()
         val map = registry.requireMap("sandbox-canonical")
-        val save = SandboxSession.start(registry, mapId = map.id).also { it.step(5) }.save()
+        val session = SandboxSession.start(registry, mapId = map.id)
+        session.submit(buildPulseAt(1, TilePosition(2, 2)))
+        session.step(12)
+        val expectedTowerMetrics = session.runtime.state.defense.towerMetrics
+        val save = session.save()
 
-        assertEquals(5, SandboxSaveCodec.SAVE_VERSION)
+        assertEquals(6, SandboxSaveCodec.SAVE_VERSION)
         assertEquals(map.id, saveProperty(save, "mapId"))
         assertEquals(registry.manifest.version, saveProperty(save, "contentVersion"))
         assertEquals(map.id, SandboxSaveCodec.decode(save, registry).mapId)
+        assertTrue(expectedTowerMetrics.isNotEmpty())
+        assertEquals(expectedTowerMetrics, SandboxSaveCodec.decode(save, registry).defense.towerMetrics)
 
         val unknownMap = save.replace("mapId=${map.id}", "mapId=unknown-map")
         assertFailsWith<IllegalStateException> { SandboxSaveCodec.decode(unknownMap, registry) }
@@ -291,10 +299,10 @@ class SandboxSessionLifecycleTest {
 
         val valid = session.save()
         // Sanity: the valid save carries the codec's current version and decodes cleanly.
-        assertEquals(5, SandboxSaveCodec.SAVE_VERSION)
+        assertEquals(6, SandboxSaveCodec.SAVE_VERSION)
         SandboxSaveCodec.decode(valid, registry)
 
-        val future = valid.replace("saveVersion=5", "saveVersion=6")
+        val future = valid.replace("saveVersion=6", "saveVersion=7")
         // Guard against a silent no-op swap if the encoded key/format ever changes.
         assertNotEquals(valid, future)
 
@@ -312,7 +320,7 @@ class SandboxSessionLifecycleTest {
         val registry = SandboxGame.loadRegistry()
         val valid = SandboxSession.start(registry).also { it.step(5) }.save()
 
-        val garbled = valid.replace("saveVersion=5", "saveVersion=x")
+        val garbled = valid.replace("saveVersion=6", "saveVersion=x")
         assertNotEquals(valid, garbled)
 
         assertFailsWith<IllegalArgumentException> { SandboxSaveCodec.decode(garbled, registry) }
@@ -323,9 +331,9 @@ class SandboxSessionLifecycleTest {
         val registry = SandboxGame.loadRegistry()
         val valid = SandboxSession.start(registry).also { it.step(5) }.save()
         val unsupportedSaves = listOf(
-            valid.replace("saveVersion=5", "saveVersion=6"),
-            valid.replace("saveVersion=5", "saveVersion=x"),
-            valid.replace("saveVersion=5", "saveVersion=0"),
+            valid.replace("saveVersion=6", "saveVersion=7"),
+            valid.replace("saveVersion=6", "saveVersion=x"),
+            valid.replace("saveVersion=6", "saveVersion=0"),
         )
 
         unsupportedSaves.forEach { save ->
@@ -348,6 +356,7 @@ class SandboxSessionLifecycleTest {
                         it.startsWith("runSummary=") ||
                         it.startsWith("runResources=")
                     )) ||
+                (version < 6 && it.startsWith("towerMetrics=")) ||
                 (dropPendingCommands && it.startsWith("pendingCommands="))
         }
         .joinToString("\n") { if (it.startsWith("saveVersion=")) "saveVersion=$version" else it }

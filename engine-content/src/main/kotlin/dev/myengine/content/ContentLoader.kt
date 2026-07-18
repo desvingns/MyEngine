@@ -55,7 +55,7 @@ object ContentPackLoader {
 
         validateReferences(towers, enemies, recipes, waves, resources, errors)
         validateTerminalRules(maps, waves, errors)
-        validateLocalization(resources, strings, errors)
+        validateLocalization(resources, towers, strings, errors)
 
         if (errors.isNotEmpty() || manifest == null) {
             return ContentLoadResult(null, errors)
@@ -157,6 +157,7 @@ object ContentPackLoader {
     private fun parseTower(id: String, fields: Map<String, String>, errors: MutableList<ContentValidationError>, file: String): TowerContent? =
         TowerContent(
             id = id,
+            displayKey = fields.required(file, id, "displayKey", errors) ?: return null,
             range = fields.requiredPositiveInt(file, id, "range", errors) ?: return null,
             damage = fields.requiredPositiveInt(file, id, "damage", errors) ?: return null,
             cooldownTicks = fields.requiredPositiveInt(file, id, "cooldownTicks", errors) ?: return null,
@@ -201,6 +202,7 @@ object ContentPackLoader {
                 TowerUpgradeTier(
                     branch = branch,
                     tier = tier,
+                    displayKey = scopedFields.required(file, id, "$prefix.displayKey", errors) ?: return@mapNotNull null,
                     range = scopedFields.requiredPositiveInt(file, id, "$prefix.range", errors) ?: return@mapNotNull null,
                     damage = scopedFields.requiredPositiveInt(file, id, "$prefix.damage", errors) ?: return@mapNotNull null,
                     cooldownTicks = scopedFields.requiredPositiveInt(file, id, "$prefix.cooldownTicks", errors) ?: return@mapNotNull null,
@@ -658,10 +660,35 @@ object ContentPackLoader {
             }
     }
 
-    private fun validateLocalization(resources: Map<String, ResourceContent>, strings: Map<String, String>, errors: MutableList<ContentValidationError>) {
+    private fun validateLocalization(
+        resources: Map<String, ResourceContent>,
+        towers: Map<String, TowerContent>,
+        strings: Map<String, String>,
+        errors: MutableList<ContentValidationError>,
+    ) {
         resources.values.forEach {
             if (!strings.containsKey(it.displayKey)) {
                 errors += ContentValidationError("strings.properties", it.id, "displayKey", "Missing localization key '${it.displayKey}'.")
+            }
+        }
+        towers.values.forEach { tower ->
+            if (!strings.containsKey(tower.displayKey)) {
+                errors += ContentValidationError("strings.properties", tower.id, "displayKey", "Missing localization key '${tower.displayKey}'.")
+            }
+            tower.upgradeTiers.values.forEach { tier ->
+                if (!strings.containsKey(tier.displayKey)) {
+                    errors += ContentValidationError(
+                        "strings.properties",
+                        tower.id,
+                        "upgrade.${tier.branch}.${tier.tier}.displayKey",
+                        "Missing localization key '${tier.displayKey}'.",
+                    )
+                }
+            }
+        }
+        HudStringKeys.required.forEach { key ->
+            if (!strings.containsKey(key)) {
+                errors += ContentValidationError("strings.properties", "hud", key, "Missing required HUD localization key '$key'.")
             }
         }
     }

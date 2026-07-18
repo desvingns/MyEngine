@@ -1,7 +1,7 @@
 # MyEngine Content Properties Schema
 
 Status: Phase 06 accepted; DX-008 hybrid format accepted
-Last updated: 2026-07-16
+Last updated: 2026-07-18
 
 Content packs use the DX-008 hybrid format defined by
 [`ADR-0003-content-format-hybrid.md`](../DECISIONS/ADR-0003-content-format-hybrid.md): flat entity
@@ -36,11 +36,13 @@ Definition files use `<id>.<field>=<value>`.
 
 ### Towers
 
+- `displayKey`: required localization key
 - `range`: positive int
 - `damage`: positive int
 - `cooldownTicks`: positive int
 - `costResource`: resource id
 - `costAmount`: non-negative int
+- `upgrade.<branch>.<tier>.displayKey`: required localization key when the tier exists
 - `upgrade.<branch>.<tier>.range`: optional positive int
 - `upgrade.<branch>.<tier>.damage`: optional positive int
 - `upgrade.<branch>.<tier>.cooldownTicks`: optional positive int
@@ -48,8 +50,9 @@ Definition files use `<id>.<field>=<value>`.
 - `upgrade.<branch>.<tier>.costAmount`: optional non-negative int
 
 Upgrade tier fields are authored inside `towers.properties` under the base tower id. If any
-field for a tier is present, all five tier fields are required. Branch ids must not contain dots,
-and tiers are positive integers.
+field for a tier is present, all six tier fields are required. Branch ids must not contain dots,
+and tiers are positive integers. Every tower and tier `displayKey` must resolve in
+`strings.properties`.
 
 ### Difficulties
 
@@ -95,7 +98,19 @@ result half-up. Multipliers are parsed as decimal values and never through binar
 
 ### Strings
 
-Arbitrary localization keys to display strings.
+Arbitrary localization keys map to display strings. In addition to resource, tower, and tower-tier
+`displayKey` references, every pack must define the HUD keys below; content validation rejects a
+missing reference or required HUD key.
+
+- `hud.resources`
+- `hud.wave`
+- `hud.nextWave`
+- `hud.coreHealth`
+- `hud.build`
+- `hud.upgrade`
+- `hud.damage`
+- `hud.kills`
+- `hud.tier`
 
 ## Nested Map Assets
 

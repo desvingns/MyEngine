@@ -1,6 +1,6 @@
 # MyEngine Handoff
 
-Last updated: 2026-07-16 (ENG-026 SurfaceView/Choreographer accepted; device/performance checks pending)
+Last updated: 2026-07-18 (ENG-027 HUD/UI accepted; manual device/layout/performance checks pending)
 Owner: Codex
 
 ## DONE
@@ -342,6 +342,15 @@ Owner: Codex
   to the command queue. `onPause` cancels/saves pending commands and Bundle restoration preserves the
   next command ID plus replay continuity. JVM/build/replay/save-compat gates pass; device gesture/
   lifecycle smoke and performance profiling remain manual-pending.
+- ENG-027 is complete/accepted: `EngineSnapshot`/`RenderFrame` expose immutable, content-derived HUD
+  labels and data for resources, wave/countdown/core state, build tower costs/tiers, and selected
+  tower stats/upgrades. Android draws build/select/upgrade panels from this snapshot and shares one
+  density-aware 48 dp layout model between drawing and hit testing; taps emit `BuildTowerCommand` or
+  `UpgradeTowerCommand` through `InputAdapter` and the existing caller-owned queue boundary.
+  Defense records deterministic per-tower actual damage/kills, and `SandboxSaveCodec` v6 persists
+  them while v1-v5 migrate to an empty metrics map. Content validation now requires tower/tier
+  `displayKey` references and all nine `hud.*` string keys. Full gates and final verification pass;
+  manual device/layout/performance limitations remain documented below.
 
 ## DECISIONS
 
@@ -356,6 +365,13 @@ Owner: Codex
   a callback. `MyEngineActivity`, outside `engine-render`, allocates `CommandId` and performs the
   authoritative command-queue submit/step transition. No ADR: this consumes the existing render/input
   boundary without a new engine dependency edge. `docs/contracts/render.md` now makes this durable.
+
+- ENG-027 keeps authoritative state outside presentation: HUD data is projected read-only from the
+  runtime snapshot, Android owns only selection/layout state, and all build/upgrade mutations enter
+  through existing queued command DTOs. Localization is content-owned and validated at load time.
+  Save v6 is required because per-tower metrics affect restored HUD continuity; older saves preserve
+  compatibility by decoding with no historical per-tower metrics. No ADR is needed because this is
+  an additive Experimental snapshot/content/save extension with no new dependency edge.
 
 - Android remains the only shipping platform; desktop/JVM is a dev harness.
 - Simulation modules remain Android/render-free.
@@ -453,15 +469,21 @@ Owner: Codex
 
 ## NEXT
 
-Implement MyEngine `ENG-027` (HUD snapshot data + UI command surface):
+Implement MyEngine `ENG-002` (goal-field pathfinding + repath on world change):
 
 ```powershell
 Get-Content -Raw .claude\specs\ENGINE_ROADMAP.md
-Get-Content -Raw .claude\specs\backlog\ENG-027-hud-data-ui-commands.md
+Get-Content -Raw .claude\specs\backlog\ENG-002-flow-field-repath.md
 ```
 
 ## BLOCKERS
 
+- ENG-027 is accepted with non-blocking manual limitations: run build-tower, tower-selection,
+  upgrade, and pause/recreate lifecycle smoke on a device/emulator; check non-default fontScale and
+  long localized labels; capture FrameMetrics/JankStats and Allocation Tracker evidence before any
+  smoothness or frame/allocation-budget claim. Save v6 malformed-input hardening should explicitly
+  define/test missing `towerMetrics` and duplicate tower-id entries; valid v1-v6 migration and
+  roundtrip are covered.
 - ENG-026 device/performance checks remain pending: on a device/emulator, verify tap, pan, pinch,
   and pause/recreate with a pending command while checking next command ID and replay-hash continuity.
   Capture FrameMetrics/JankStats and Allocation Tracker evidence before claiming a frame budget or
@@ -543,6 +565,13 @@ Get-Content -Raw .claude\specs\backlog\ENG-027-hud-data-ui-commands.md
 
 ## VERIFICATION
 
+- ENG-027 (2026-07-18): final runner -> pass. Full tests pass; content validation passes for 2 packs;
+  replay hashes remain canonical `9c495d8ff30fd83d` and kill `83a65da1a7881b2c`; save-compat passes;
+  benchmark passes at `canonical=295 ms`, `kill=45 ms`; `android:assembleDebug` passes. Headless HUD,
+  content localization, deterministic per-tower metrics, input/render boundary, density-aware layout,
+  and save v1-v6 coverage are included. `me-verifier` accepted all criteria and boundary checks.
+  Device build/select/upgrade/lifecycle, fontScale/long labels, FrameMetrics/JankStats/allocations,
+  and malformed-v6 missing/duplicate `towerMetrics` remain non-blocking manual/hardening work.
 - ENG-026 (2026-07-16): `:android:testDebugUnitTest --tests
   dev.myengine.android.FixedTickFrameLoopTest --rerun-tasks` -> pass; `:android:assembleDebug` ->
   pass; replay -> pass with canonical `9c495d8ff30fd83d` and kill `83a65da1a7881b2c`; save-compat

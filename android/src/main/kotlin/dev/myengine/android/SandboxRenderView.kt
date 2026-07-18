@@ -23,6 +23,99 @@ import dev.myengine.render.RenderPalette
 import dev.myengine.render.ScreenPoint
 import dev.myengine.render.WorldPoint
 
+internal data class HudBounds(
+    val left: Float,
+    val top: Float,
+    val right: Float,
+    val bottom: Float,
+) {
+    fun contains(point: ScreenPoint): Boolean = point.x in left..right && point.y in top..bottom
+}
+
+internal data class SandboxHudLayout(
+    val padding: Float,
+    val buildPanel: HudBounds,
+    val buildHeader: HudBounds,
+    val buildRows: List<HudBounds>,
+    val selectedPanel: HudBounds?,
+    val selectedHeader: HudBounds?,
+    val selectedInfoRows: List<HudBounds>,
+    val upgradeRows: List<HudBounds>,
+    val resourcesBaseline: Float,
+)
+
+/** Pure pixel layout derived from dp policy; drawing and hit testing share this result. */
+internal object SandboxHudLayoutModel {
+    fun calculate(
+        viewWidth: Float,
+        viewHeight: Float,
+        density: Float,
+        buildRowCount: Int,
+        upgradeRowCount: Int,
+        hasSelection: Boolean,
+    ): SandboxHudLayout {
+        require(viewWidth >= 0f && viewHeight >= 0f)
+        require(density > 0f)
+        require(buildRowCount >= 0 && upgradeRowCount >= 0)
+
+        val padding = 8f * density
+        val gap = 8f * density
+        val overlayHeight = 48f * density
+        val headerHeight = 32f * density
+        val rowHeight = 48f * density
+        val contentWidth = (viewWidth - padding * 2f).coerceAtLeast(0f)
+        val sideBySide = hasSelection && contentWidth >= (280f * density * 2f + gap)
+        val buildWidth = if (sideBySide) (contentWidth - gap) / 2f else contentWidth
+        val buildTop = overlayHeight + gap
+        val buildHeader = HudBounds(padding, buildTop, padding + buildWidth, buildTop + headerHeight)
+        val buildRows = rows(buildHeader.bottom, padding, buildWidth, rowHeight, buildRowCount)
+        val buildBottom = buildRows.lastOrNull()?.bottom ?: buildHeader.bottom
+        val buildPanel = HudBounds(padding, buildTop, padding + buildWidth, buildBottom)
+
+        val selectedWidth = if (sideBySide) contentWidth - buildWidth - gap else contentWidth
+        val selectedLeft = if (sideBySide) buildPanel.right + gap else padding
+        val selectedTop = if (sideBySide) buildTop else buildPanel.bottom + gap
+        val selectedHeader = if (hasSelection) {
+            HudBounds(selectedLeft, selectedTop, selectedLeft + selectedWidth, selectedTop + headerHeight)
+        } else {
+            null
+        }
+        val infoRows = selectedHeader?.let { rows(it.bottom, selectedLeft, selectedWidth, rowHeight, 3) }.orEmpty()
+        val upgradeRows = rows(
+            infoRows.lastOrNull()?.bottom ?: selectedHeader?.bottom ?: selectedTop,
+            selectedLeft,
+            selectedWidth,
+            rowHeight,
+            if (hasSelection) upgradeRowCount else 0,
+        )
+        val selectedBottom = upgradeRows.lastOrNull()?.bottom
+            ?: infoRows.lastOrNull()?.bottom
+            ?: selectedHeader?.bottom
+        val selectedPanel = if (selectedHeader != null && selectedBottom != null) {
+            HudBounds(selectedLeft, selectedTop, selectedLeft + selectedWidth, selectedBottom)
+        } else {
+            null
+        }
+        return SandboxHudLayout(
+            padding = padding,
+            buildPanel = buildPanel,
+            buildHeader = buildHeader,
+            buildRows = buildRows,
+            selectedPanel = selectedPanel,
+            selectedHeader = selectedHeader,
+            selectedInfoRows = infoRows,
+            upgradeRows = upgradeRows,
+            resourcesBaseline = (viewHeight - padding).coerceAtLeast(0f),
+        )
+    }
+
+    private fun rows(top: Float, left: Float, width: Float, height: Float, count: Int): List<HudBounds> =
+        List(count) { index ->
+            val rowTop = top + height * index
+            HudBounds(left, rowTop, left + width, rowTop + height)
+        }
+}
+
 /**
  * Android-only [SurfaceView] consumer of immutable snapshots supplied by the activity loop.
  *
@@ -35,19 +128,21 @@ class SandboxRenderView(
     private val commandIdProvider: () -> CommandId,
     private val onCommand: (EngineCommand) -> Unit,
 ) : SurfaceView(context), SurfaceHolder.Callback {
+    private val density = context.resources.displayMetrics.density
+    private val scaledDensity = density * context.resources.configuration.fontScale
     private val renderer = PlaceholderRenderSurface()
     private val inputAdapter = InputAdapter()
     private val fillPaint = Paint(Paint.ANTI_ALIAS_FLAG)
     private val strokePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         style = Paint.Style.STROKE
-        strokeWidth = 4f
+        strokeWidth = STROKE_WIDTH_DP * density
     }
     private val textPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        textSize = 28f
+        textSize = TEXT_SIZE_SP * scaledDensity
     }
 
     private var inputState: InputState? = null
-    private val uiState = InputUiState(selectedTowerId = DEFAULT_TOWER_ID)
+    private var uiState = InputUiState()
     private var lastPoint: ScreenPoint? = null
     private var dragged = false
     private var scaled = false
@@ -123,7 +218,7 @@ class SandboxRenderView(
 
             MotionEvent.ACTION_UP -> {
                 if (!dragged && !scaled) {
-                    dispatchInput(PlatformInputEvent.Tap(ScreenPoint(event.x, event.y)))
+                    handleTap(ScreenPoint(event.x, event.y))
                 }
                 lastPoint = null
             }
@@ -151,7 +246,10 @@ class SandboxRenderView(
     private fun dispatchInput(event: PlatformInputEvent) {
         val current = inputState ?: return
         val snapshot = latestSnapshot() ?: return
-        val commandId = if (event is PlatformInputEvent.Tap) commandIdProvider() else null
+        val commandId = if (
+            event is PlatformInputEvent.Upgrade ||
+            (event is PlatformInputEvent.Tap && uiState.selectedTowerId != null)
+        ) commandIdProvider() else null
         val result = inputAdapter.handle(
             event = event,
             state = current,
@@ -164,12 +262,61 @@ class SandboxRenderView(
         renderLatestFrame()
     }
 
+    private fun handleTap(point: ScreenPoint) {
+        val current = inputState ?: return
+        val snapshot = latestSnapshot() ?: return
+        val frame = renderer.project(snapshot, current.camera)
+        val selectedInfo = uiState.selectedTowerEntityId?.let { id -> frame.hud.towers.firstOrNull { it.entityId == id } }
+        val layout = hudLayout(frame, selectedInfo?.availableUpgrades?.size ?: 0, selectedInfo != null)
+        // Upgrade wins first by policy; calculated panels are disjoint even in narrow portrait.
+        val upgradeIndex = layout.upgradeRows.indexOfFirst { it.contains(point) }.takeIf { it >= 0 }
+        if (selectedInfo != null && upgradeIndex != null) {
+            val upgrade = selectedInfo.availableUpgrades[upgradeIndex]
+            dispatchInput(PlatformInputEvent.Upgrade(upgrade.branch, upgrade.tier))
+            return
+        }
+
+        val buildIndex = layout.buildRows.indexOfFirst { it.contains(point) }.takeIf { it >= 0 }
+        if (buildIndex != null) {
+            uiState = InputUiState(selectedTowerId = frame.hud.buildTowers[buildIndex].towerId)
+            renderLatestFrame()
+            return
+        }
+
+        // Panel chrome consumes taps so it never leaks through into the world/build surface.
+        if (layout.buildPanel.contains(point) || layout.selectedPanel?.contains(point) == true) return
+
+        val halfTile = tilePixels(current.camera) / 2f
+        val tower = frame.primitives.firstOrNull { primitive ->
+            primitive.kind == RenderKind.TOWER &&
+                point.x in (primitive.screen.x - halfTile)..(primitive.screen.x + halfTile) &&
+                point.y in (primitive.screen.y - halfTile)..(primitive.screen.y + halfTile)
+        }
+        if (tower != null) {
+            uiState = InputUiState(selectedTowerEntityId = tower.entityId)
+            renderLatestFrame()
+            return
+        }
+        dispatchInput(PlatformInputEvent.Tap(point))
+    }
+
+    private fun hudLayout(frame: RenderFrame, upgradeCount: Int, hasSelection: Boolean): SandboxHudLayout =
+        SandboxHudLayoutModel.calculate(
+            viewWidth = width.toFloat(),
+            viewHeight = height.toFloat(),
+            density = density,
+            buildRowCount = frame.hud.buildTowers.size,
+            upgradeRowCount = upgradeCount,
+            hasSelection = hasSelection,
+        )
+
     private fun drawFrame(canvas: Canvas, frame: RenderFrame, camera: Camera) {
         canvas.drawColor(androidColor(RenderPalette.background))
         drawTiles(canvas, frame, camera)
         drawPath(canvas, frame)
         drawEntities(canvas, frame, camera)
         drawOverlay(canvas, frame)
+        drawHud(canvas, frame)
     }
 
     private fun drawPath(canvas: Canvas, frame: RenderFrame) {
@@ -183,17 +330,18 @@ class SandboxRenderView(
     }
 
     private fun drawTiles(canvas: Canvas, frame: RenderFrame, camera: Camera) {
-        drawPrimitives(canvas, frame.primitives.filter { it.kind.isTile() }, camera)
+        drawPrimitives(canvas, frame.primitives.filter { it.kind.isTile() }, camera, frame.hud.labels.tier)
     }
 
     private fun drawEntities(canvas: Canvas, frame: RenderFrame, camera: Camera) {
-        drawPrimitives(canvas, frame.primitives.filterNot { it.kind.isTile() }, camera)
+        drawPrimitives(canvas, frame.primitives.filterNot { it.kind.isTile() }, camera, frame.hud.labels.tier)
     }
 
     private fun drawPrimitives(
         canvas: Canvas,
         primitives: List<dev.myengine.render.RenderPrimitive>,
         camera: Camera,
+        tierLabel: String,
     ) {
         val halfTile = tilePixels(camera) / 2f
         primitives.forEach { primitive ->
@@ -208,7 +356,7 @@ class SandboxRenderView(
             if (primitive.kind == RenderKind.TOWER) {
                 textPaint.color = androidColor(RenderPalette.coreHealthText)
                 canvas.drawText(
-                    "T${primitive.towerTier ?: 0}",
+                    "$tierLabel ${primitive.towerTier ?: 0}",
                     primitive.screen.x - halfTile / 2f,
                     primitive.screen.y,
                     textPaint,
@@ -219,11 +367,61 @@ class SandboxRenderView(
 
     private fun drawOverlay(canvas: Canvas, frame: RenderFrame) {
         textPaint.color = androidColor(RenderPalette.coreHealthText)
-        canvas.drawText("tick ${frame.tick.value}  core ${frame.coreHealth}", 16f, 36f, textPaint)
+        val hud = frame.hud
+        val nextWave = hud.nextWaveInTicks?.let { "  ${hud.labels.nextWave} $it" }.orEmpty()
+        canvas.drawText(
+            "${hud.labels.wave} ${hud.wave}/${hud.totalWaves}$nextWave  ${hud.labels.coreHealth} ${hud.coreHealth}",
+            dp(8f),
+            dp(32f),
+            textPaint,
+        )
+    }
+
+    private fun drawHud(canvas: Canvas, frame: RenderFrame) {
+        val hud = frame.hud
+        textPaint.color = androidColor(RenderPalette.coreHealthText)
+        val selected = uiState.selectedTowerEntityId?.let { id -> hud.towers.firstOrNull { it.entityId == id } }
+        val layout = hudLayout(frame, selected?.availableUpgrades?.size ?: 0, selected != null)
+        drawTextIn(canvas, hud.labels.build, layout.buildHeader)
+        hud.buildTowers.forEachIndexed { index, tower ->
+            val bounds = layout.buildRows[index]
+            val selected = tower.towerId == uiState.selectedTowerId
+            if (selected) {
+                fillPaint.color = androidColor(RenderPalette.enemyPip)
+                canvas.drawRect(bounds.left, bounds.top, bounds.right, bounds.bottom, fillPaint)
+            }
+            drawTextIn(canvas, "${tower.label}  ${tower.cost.amount} ${tower.cost.label}", bounds)
+        }
+
+        val resourceText = hud.resources.joinToString("  ") { "${it.label} ${it.amount}" }
+        canvas.drawText("${hud.labels.resources}: $resourceText", layout.padding, layout.resourcesBaseline, textPaint)
+
+        if (selected == null) return
+        drawTextIn(canvas, selected.label, requireNotNull(layout.selectedHeader))
+        val infoText = listOf(
+            "${hud.labels.tier} ${selected.tier}",
+            "${hud.labels.damage} ${selected.damage}/${selected.actualDamage}",
+            "${hud.labels.kills} ${selected.kills}",
+        )
+        infoText.zip(layout.selectedInfoRows).forEach { (text, bounds) -> drawTextIn(canvas, text, bounds) }
+        selected.availableUpgrades.zip(layout.upgradeRows).forEach { (upgrade, bounds) ->
+            drawTextIn(
+                canvas,
+                "${hud.labels.upgrade} ${upgrade.label}  ${upgrade.cost.amount} ${upgrade.cost.label}",
+                bounds,
+            )
+        }
+    }
+
+    private fun drawTextIn(canvas: Canvas, text: String, bounds: HudBounds) {
+        val baseline = bounds.top + (bounds.bottom - bounds.top + textPaint.textSize * 0.7f) / 2f
+        canvas.drawText(text, bounds.left + dp(4f), baseline, textPaint)
     }
 
     private fun tilePixels(camera: Camera): Float =
         camera.worldToScreen(WorldPoint(1f, 0f)).x - camera.worldToScreen(WorldPoint(0f, 0f)).x
+
+    private fun dp(value: Float): Float = value * density
 
     private fun androidColor(color: dev.myengine.render.Rgb): Int =
         0xff000000.toInt() or color.toRgbInt()
@@ -236,6 +434,7 @@ class SandboxRenderView(
     )
 
     private companion object {
-        const val DEFAULT_TOWER_ID = "pulse"
+        const val STROKE_WIDTH_DP = 2f
+        const val TEXT_SIZE_SP = 18f
     }
 }

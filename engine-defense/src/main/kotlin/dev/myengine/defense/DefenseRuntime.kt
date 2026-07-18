@@ -34,12 +34,32 @@ data class DefenseMetrics(
     )
 }
 
+data class TowerDefenseMetrics(
+    val actualDamage: Long = 0,
+    val kills: Int = 0,
+) {
+    fun plus(other: TowerDefenseMetrics): TowerDefenseMetrics = TowerDefenseMetrics(
+        actualDamage = actualDamage + other.actualDamage,
+        kills = kills + other.kills,
+    )
+}
+
 data class DefenseState(
     val coreHealth: Int,
     val spawnedWaveIds: Set<String> = emptySet(),
     val metrics: DefenseMetrics = DefenseMetrics(),
+    val towerMetrics: Map<Long, TowerDefenseMetrics> = emptyMap(),
 ) {
     fun record(metrics: DefenseMetrics): DefenseState = copy(metrics = this.metrics.plus(metrics))
+
+    fun recordTowerMetrics(metrics: Map<Long, TowerDefenseMetrics>): DefenseState {
+        if (metrics.isEmpty()) return this
+        val next = towerMetrics.toMutableMap()
+        metrics.toSortedMap().forEach { (towerId, delta) ->
+            next[towerId] = (next[towerId] ?: TowerDefenseMetrics()).plus(delta)
+        }
+        return copy(towerMetrics = next.toSortedMap())
+    }
 }
 
 sealed class TowerPlacementResult {
@@ -50,6 +70,7 @@ sealed class TowerPlacementResult {
 data class TowerUpdateResult(
     val metrics: DefenseMetrics,
     val rewards: Map<String, Int> = emptyMap(),
+    val towerMetrics: Map<Long, TowerDefenseMetrics> = emptyMap(),
 )
 
 class DefenseRuntime(private val pathfinder: GridPathfinder = GridPathfinder()) {
@@ -105,7 +126,7 @@ class DefenseRuntime(private val pathfinder: GridPathfinder = GridPathfinder()) 
     fun updateTowers(registry: ContentRegistry, entities: EntityStore): TowerUpdateResult {
         var metrics = DefenseMetrics()
         val rewards = mutableMapOf<String, Int>()
-        val enemiesById = entities.byTag("enemy").associateBy { it.id }
+        val towerMetrics = mutableMapOf<Long, TowerDefenseMetrics>()
         entities.byTag("tower").sortedBy { it.id.value }.forEach { towerEntity ->
             val towerComponent = towerEntity.tower ?: return@forEach
             val attack = towerEntity.attack ?: return@forEach
@@ -114,7 +135,9 @@ class DefenseRuntime(private val pathfinder: GridPathfinder = GridPathfinder()) 
                 return@forEach
             }
             val towerPosition = towerEntity.position?.tile ?: return@forEach
-            val target = enemiesById.values
+            // Query the store for every firing tower: earlier towers may already have changed
+            // health or killed a target during this same deterministic update pass.
+            val target = entities.byTag("enemy")
                 .filter { enemy ->
                     val position = enemy.position?.tile ?: return@filter false
                     val health = enemy.health ?: return@filter false
@@ -127,9 +150,15 @@ class DefenseRuntime(private val pathfinder: GridPathfinder = GridPathfinder()) 
             val health = target.health ?: return@forEach
             val damaged = health.damage(attack.damage)
             metrics = metrics.plus(DefenseMetrics(towerShots = 1))
-            if (damaged.isAlive()) {
-                entities.update(target.id) { it.copy(health = damaged) }
-            } else {
+            val towerDelta = TowerDefenseMetrics(
+                actualDamage = minOf(attack.damage, health.current).toLong(),
+                kills = if (damaged.isAlive()) 0 else 1,
+            )
+            towerMetrics[towerEntity.id.value] = (towerMetrics[towerEntity.id.value] ?: TowerDefenseMetrics()).plus(towerDelta)
+            // Persist even terminal damage until the final flush so subsequent towers observe the
+            // dead health and cannot double-count damage, kills, or content rewards.
+            entities.update(target.id) { it.copy(health = damaged) }
+            if (!damaged.isAlive()) {
                 entities.markRemove(target.id)
                 metrics = metrics.plus(DefenseMetrics(enemiesKilled = 1))
                 val enemyId = target.type.substringAfter("enemy:")
@@ -141,7 +170,7 @@ class DefenseRuntime(private val pathfinder: GridPathfinder = GridPathfinder()) 
             entities.update(towerEntity.id) { it.copy(tower = towerComponent.copy(cooldownRemaining = attack.cooldownTicks)) }
         }
         entities.flushRemovals()
-        return TowerUpdateResult(metrics, rewards)
+        return TowerUpdateResult(metrics, rewards, towerMetrics.toSortedMap())
     }
 
     fun updateEnemies(registry: ContentRegistry, state: DefenseState, entities: EntityStore): DefenseState {

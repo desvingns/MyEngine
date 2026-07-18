@@ -22,6 +22,29 @@ class ContentPackLoaderTest {
     }
 
     @Test
+    fun missingTowerTierAndHudLocalizationKeysAreActionable() {
+        listOf(
+            Triple("tower.basic", "basic", "displayKey"),
+            Triple("tower.basic.upgrade.main.1", "basic", "upgrade.main.1.displayKey"),
+            Triple("hud.wave", "hud", "hud.wave"),
+        ).forEach { (missingKey, expectedId, expectedField) ->
+            val root = createPack()
+            val strings = root.resolve("strings.properties").toFile().readLines()
+                .filterNot { it.startsWith("$missingKey=") }
+                .joinToString("\n")
+            root.resolve("strings.properties").writeText(strings)
+
+            val result = ContentPackLoader.load(root)
+
+            assertFalse(result.isValid)
+            assertTrue(
+                result.errors.any { it.file == "strings.properties" && it.id == expectedId && it.field == expectedField },
+                result.errors.joinToString("\n"),
+            )
+        }
+    }
+
+    @Test
     fun difficultyDefinitionsResolveWithDeterministicDecimalScaling() {
         val root = createPack()
         root.resolve("enemies.properties").writeText(
@@ -94,6 +117,7 @@ class ContentPackLoaderTest {
         val root = createPack()
         root.resolve("towers.properties").writeText(
             """
+            basic.displayKey=tower.basic
             basic.range=3
             basic.damage=1
             basic.cooldownTicks=2
@@ -113,11 +137,13 @@ class ContentPackLoaderTest {
         val root = createPack()
         root.resolve("towers.properties").writeText(
             """
+            basic.displayKey=tower.basic
             basic.range=3
             basic.damage=1
             basic.cooldownTicks=2
             basic.costResource=bolt
             basic.costAmount=2
+            basic.upgrade.main.1.displayKey=tower.basic.upgrade.main.1
             basic.upgrade.main.1.range=4
             basic.upgrade.main.1.damage=4
             basic.upgrade.main.1.cooldownTicks=1
@@ -137,11 +163,13 @@ class ContentPackLoaderTest {
         val root = createPack()
         root.resolve("towers.properties").writeText(
             """
+            basic.displayKey=tower.basic
             basic.range=3
             basic.damage=1
             basic.cooldownTicks=2
             basic.costResource=bolt
             basic.costAmount=2
+            basic.upgrade.bad|branch.1.displayKey=tower.basic.upgrade.bad
             basic.upgrade.bad|branch.1.range=4
             basic.upgrade.bad|branch.1.damage=4
             basic.upgrade.bad|branch.1.cooldownTicks=1
@@ -371,11 +399,13 @@ class ContentPackLoaderTest {
         root.resolve("resources.properties").writeText("bolt.displayKey=resource.bolt\n")
         root.resolve("towers.properties").writeText(
             """
+            basic.displayKey=tower.basic
             basic.range=3
             basic.damage=1
             basic.cooldownTicks=2
             basic.costResource=bolt
             basic.costAmount=2
+            basic.upgrade.main.1.displayKey=tower.basic.upgrade.main.1
             basic.upgrade.main.1.range=4
             basic.upgrade.main.1.damage=4
             basic.upgrade.main.1.cooldownTicks=1
@@ -412,6 +442,21 @@ class ContentPackLoaderTest {
             spark.weight=1
             """.trimIndent(),
         )
-        root.resolve("strings.properties").writeText("resource.bolt=Bolt\n")
+        root.resolve("strings.properties").writeText(
+            """
+            resource.bolt=Bolt
+            tower.basic=Basic
+            tower.basic.upgrade.main.1=Improved basic
+            hud.resources=Resources
+            hud.wave=Wave
+            hud.nextWave=Next wave
+            hud.coreHealth=Core
+            hud.build=Build
+            hud.upgrade=Upgrade
+            hud.damage=Damage
+            hud.kills=Kills
+            hud.tier=Tier
+            """.trimIndent(),
+        )
     }
 }
