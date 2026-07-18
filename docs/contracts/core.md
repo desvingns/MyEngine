@@ -10,6 +10,8 @@ Owner: core runtime
 - Seeded RNG services.
 - Stable system ordering.
 - Replay hash inputs.
+- Shared lifecycle/outcome value types for deterministic runs (`RunState`, `RunStatus`,
+  `TerminalReason`, and immutable `RunSummary`).
 - Shared value types that do not belong to a narrower module.
 
 ## Non-Responsibilities
@@ -31,6 +33,8 @@ Owner: core runtime
 - `Command`
 - `EngineSystem`
 - `EntityId` until `engine-entities` owns it.
+- Run outcome types: an active run has no terminal reason/tick/frozen summary; terminal runs carry
+  all three. `RunSummary` resource totals are immutable and stably sorted before hashing.
 
 ## Test Gates
 
@@ -38,4 +42,4 @@ Owner: core runtime
 - Command ordering tests.
 - RNG repeatability tests.
 - Replay hash drift tests.
-
+- Terminal-state determinism tests.

@@ -7,24 +7,24 @@ two or more games outranks single-game gaps of the same severity.
 Updated by: the `/me-spec` backlog bridge (new gaps / new demand) and `/me`
 close-out (status changes).
 
-Last updated: 2026-07-06
+Last updated: 2026-07-16
 
 ## Capabilities
 
 | Capability | Cards | Demanded by | Demand | Status |
 |---|---|---|---:|---|
 | Defense kill-reward deposit into player resources | SG-002, MTD-001 | signal-garden, mytd | 2 | **done** (SG-002 implemented 2026-07-04; MTD-001 closed 2026-07-05 as duplicate; MyTD gold maps to content-defined `rewardResource`) |
-| Render surface + palette (snapshot -> RenderFrame) | SG-003 (+follow-up), MTD-005 | signal-garden, mytd | 2 | **partial** (desktop rasterizer done; MTD-005 adds touch input + Android wiring, still backlog) |
+| Render surface + palette (snapshot -> RenderFrame) | SG-003 (+follow-up), MTD-005 | signal-garden, mytd | 2 | **done** (MTD-005 accepted 2026-07-16: Android Canvas consumes immutable RenderFrame, MotionEvent uses InputAdapter, scoped JVM/build/replay gates pass; device smoke and performance profiling remain manual-pending) |
 | Content pack authoring/validation (game pack) | SG-001 | signal-garden | 1 | done (2026-07-04) |
 | Android lifecycle save smoke (incl. any-tick save via pending-CommandQueue persistence) | SG-004 (+follow-up) | signal-garden | 1 | **done** (SG-004 implemented 2026-07-04; follow-up closed 2026-07-05; `SandboxSaveCodec` v1->v2, quiescent-save precondition dropped) |
 | Balance report with suspicious-value checks | SG-005 | signal-garden | 1 | **done** (SG-005 implemented 2026-07-05: devtools `balance-report`/`balance-delta` JSON compares baseline vs changed content and flags enemy/core/resource deltas) |
 | Gold cost gating in placeTower | MTD-002 | mytd | 1 | **done** (2026-07-05; existing generic `tower.costResource`/`costAmount` gate verified with `SandboxTowerCostGatingTest`) |
 | Tower upgrade hook | MTD-003 | mytd | 1 | **done** (2026-07-05; content-defined upgrade tiers, `UpgradeTowerCommand`, deterministic spend/reject, save v3 branch+tier persistence) |
-| Difficulty modifiers | MTD-004 | mytd | 1 | backlog |
-| Command DTO relocation out of engine-render + InputAdapter state fix | ENG-024 | mytd, vision:td, vision:rimworld-like, vision:mindustry-like | 4 | backlog |
-| Map definitions in content packs (size, terrain, spawns, core) | ENG-005 | mytd, vision:td, vision:rimworld-like, vision:mindustry-like | 4 | backlog |
-| Win/lose conditions + run summary | ENG-014 | mytd, vision:td, vision:rimworld-like, vision:mindustry-like | 4 | backlog |
-| Android SurfaceView renderer + Choreographer fixed-tick loop | ENG-026 | mytd, vision:td, vision:rimworld-like, vision:mindustry-like | 4 | backlog |
+| Difficulty modifiers | MTD-004 | mytd | 1 | **done** (2026-07-16; data-defined `DifficultyContent`, deterministic pre-tick materialization, easy/normal/hard values from the MyTD balance plan) |
+| Command DTO relocation out of engine-render + InputAdapter state fix | ENG-024 | mytd, vision:td, vision:rimworld-like, vision:mindustry-like | 4 | **done** (2026-07-16; DTOs in `engine-core` command package, explicit `InputUiState`, caller-owned `CommandId`; full test/replay/save-compat/Android/static gates pass; hashes unchanged) |
+| Map definitions in content packs (size, terrain, spawns, core) | ENG-005 | mytd, vision:td, vision:rimworld-like, vision:mindustry-like | 4 | **done** (2026-07-16; DX-008 hybrid JSON map asset, validated `maps.json`, data-driven sandbox world/routing, v4 map/content save identity, canonical hashes unchanged) |
+| Win/lose conditions + run summary | ENG-014 | mytd, vision:td, vision:rimworld-like, vision:mindustry-like | 4 | **done** (2026-07-16; map-defined terminal rules, immutable snapshot summary, save v5 terminal-state persistence, all gates pass) |
+| Android SurfaceView renderer + Choreographer fixed-tick loop | ENG-026 | mytd, vision:td, vision:rimworld-like, vision:mindustry-like | 4 | **done** (2026-07-16; 20 Hz Android-local Choreographer policy, immutable RenderFrame SurfaceView, command-queue-only input, pause/save/Bundle command-ID restoration; JVM/build/replay/save-compat gates pass, device/performance checks manual-pending) |
 | HUD snapshot data + UI command surface | ENG-027 | mytd, vision:td, vision:rimworld-like, vision:mindustry-like | 4 | backlog |
 | Goal-field pathfinding + repath on world change (mazing) | ENG-002 | mytd, vision:td, vision:mindustry-like | 3 | backlog |
 | Multiple spawn points + per-wave routing | ENG-007 | vision:td, vision:mindustry-like | 2 | backlog |
@@ -63,7 +63,7 @@ Last updated: 2026-07-06
 | Schema-docs drift gate | DX-005 | agent pipeline | - | backlog |
 | Engine cookbook (agent task recipes) | DX-006 | agent pipeline | - | backlog |
 | Fuzz tests for ContentLoader + SaveCodec | DX-007 | agent pipeline | - | backlog |
-| ADR: JSON vs properties content format | DX-008 | agent pipeline | - | backlog |
+| ADR: JSON vs properties content format | DX-008 | agent pipeline | - | **done** (2026-07-16; ADR-0003 accepts `.properties` for flat definitions and JSON for nested assets) |
 | Codex adapter parity audit + selfcheck coverage | PROC-011 | process | - | backlog |
 | Emulator provisioning lane (managed devices) | PROC-012 | process | - | backlog |
 | Spec board hygiene | PROC-013 | process | - | backlog |
@@ -95,8 +95,8 @@ Last updated: 2026-07-06
 2. MTD-004 -> ENG-024 -> ENG-005 -> ENG-014 -> MTD-005 -> ENG-026 -> ENG-027 =
    **first playable Android TD milestone**.
 3. P1 opener: ENG-002 -> ENG-013 -> ENG-008 -> ENG-015 -> ENG-030.
-4. Anytime, high leverage for the agent pipeline: DX-002, DX-006, DX-005. DX-008
-   (content-format ADR) before ENG-005/ENG-017/ENG-028 schema work.
+4. DX-008 is done: use its hybrid-format ADR for ENG-017/ENG-028 schema work. Other high-leverage
+   pipeline cards remain DX-002, DX-006, and DX-005.
 
 ## Deliberately not carded (2026-07-06, bounded scope)
 

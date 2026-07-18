@@ -1,6 +1,6 @@
 # MyEngine Handoff
 
-Last updated: 2026-07-05 (MTD-001 closed as SG-002 duplicate; MTD-002 gold-cost gating acceptance coverage added; MyTD MTD-003 next)  
+Last updated: 2026-07-16 (ENG-026 SurfaceView/Choreographer accepted; device/performance checks pending)
 Owner: Codex
 
 ## DONE
@@ -327,7 +327,35 @@ Owner: Codex
   - Versions: both plugins 0.1.0 -> 0.2.0; logged in `.ai/changes/agent-skill-log.md`.
     User should reinstall/update the `myengine` marketplace plugins to refresh the cache.
 
+- ENG-014 is complete: map terminal rules, deterministic terminal rejection, immutable snapshot
+  summary, and save v5 persistence. No ADR: additive data-driven capability with no new dependency
+  edge.
+- MTD-005 is complete/accepted: Android `SandboxRenderView` consumes immutable snapshots through
+  `PlaceholderRenderSurface` and draws tiles, path, core, tower tiers, enemies, and overlay with
+  `Canvas`/`RenderPalette`. `MotionEvent` tap, drag-pan, and pinch flow through `InputAdapter`;
+  `MyEngineActivity` owns command-id issuance and the sole submit -> step -> invalidate callback.
+  The View owns presentation state only, so it cannot mutate authoritative simulation state.
+  Acceptance is backed by scoped JVM/build/replay proof; the outstanding device smoke and performance
+  profile are deliberately recorded as pending, not treated as completed acceptance.
+- ENG-026 is complete/accepted: Android-local `TickScheduler` applies a 20 Hz Choreographer policy;
+  the `SurfaceView` renders the latest immutable `RenderFrame`; and `InputAdapter` routes input only
+  to the command queue. `onPause` cancels/saves pending commands and Bundle restoration preserves the
+  next command ID plus replay continuity. JVM/build/replay/save-compat gates pass; device gesture/
+  lifecycle smoke and performance profiling remain manual-pending.
+
 ## DECISIONS
+
+- ENG-014 is an additive, data-driven terminal-run capability with no new dependency edge, so no
+  ADR is needed. Map-owned `terminalRules` select finite-wave victory or no-win/endless behavior;
+  core-health loss is mandatory and a positive leak budget is optional. Terminal summaries freeze in
+  the authoritative run state, are projected read-only on `EngineSnapshot`, participate in the
+  stable hash, and persist through `SandboxSaveCodec` v5 (v1-v4 decode as active runs).
+
+- MTD-005 keeps the Android Canvas/InputController boundary one-way: `SandboxRenderView` holds camera,
+  selection, and gesture bookkeeping; it projects read-only snapshots and emits commands only through
+  a callback. `MyEngineActivity`, outside `engine-render`, allocates `CommandId` and performs the
+  authoritative command-queue submit/step transition. No ADR: this consumes the existing render/input
+  boundary without a new engine dependency edge. `docs/contracts/render.md` now makes this durable.
 
 - Android remains the only shipping platform; desktop/JVM is a dev harness.
 - Simulation modules remain Android/render-free.
@@ -383,6 +411,34 @@ Owner: Codex
   not a hardcoded engine economy concept. `MTD-001` is closed by SG-002; `MTD-002` is closed by the
   existing generic build command flow plus `SandboxTowerCostGatingTest`. `engine-defense` remains
   inventory-free.
+- MyTD `MTD-004` uses the existing content boundary: difficulty data is materialized into an
+  effective registry before simulation, with no per-mode engine branching. No ADR is needed because
+  this is an additive, data-driven Experimental capability with no new dependency edge and no
+  save/Android/render change.
+- MyTD `MTD-003` tower upgrade hook is complete. Upgrade tiers are optional content fields under
+  `towers.properties`; `UpgradeTowerCommand` mutates a placed tower's `AttackComponent` through
+  legal tier transitions, spends the content-defined tier resource only after affordability checks,
+  and `SandboxSaveCodec` v3 persists tower `upgradeBranch`/`upgradeTier` plus pending upgrade
+  commands. Sandbox `pulse.upgrade.main.1` is proof content only, not final MyTD balance. All gates
+  and reviewers pass.
+- MyTD `MTD-004` difficulty modifiers are complete. `DifficultyContent` plus optional
+  `difficulties.properties` provide data-only easy/normal/hard multipliers; `ContentRegistry.resolveDifficulty`
+  materializes deterministic `BigDecimal` health/count/reward/gold-rate scaling before the first tick.
+  `SandboxGame` and `SandboxSession` wire setup selection. Values come from the MyTD balance plan;
+  no save-format, Android, or render changes and no ADR. All tests/gates and verifier boundaries pass.
+- MyEngine `ENG-024` command DTO relocation and InputAdapter state fix are complete (approved
+  variant A). `BuildTowerCommand`/`UpgradeTowerCommand` and `TileCoordinate` now live in the
+  render-free `engine-core` command package; `InputState` no longer owns `nextCommandId` or
+  `selectedTowerId`; `InputUiState` is explicit; callers supply `CommandId`; sandbox boundary
+  conversion remains the adapter seam. `docs/contracts/render.md` was already updated by the
+  implementation run and is unchanged in this close-out.
+- DX-008 and ENG-005 are complete (2026-07-16). ADR-0003 accepts the hybrid content policy:
+  `.properties` remains canonical for flat definitions and additive `maps.json` serves nested maps.
+  The sandbox now materializes the canonical 64x64 map, named spawn `(1,1)`, core `(32,32)`, and
+  `bolt` resource node `(5,5)=100` from content; loader fixtures cover malformed rows, bounds,
+  unknown refs, core count, and blocked spawn paths. `SandboxSaveCodec` v4 persists map id and
+  content version, validates map/pack/content identity, and migrates v1-v3 saves via the sole map.
+  The canonical replay hashes remain `9c495d8ff30fd83d` and `83a65da1a7881b2c`.
 
 —
 ## MyTD (2026-07-04)
@@ -392,22 +448,37 @@ Owner: Codex
 - Both human gates passed. Mechanics cloned; all names/numbers original; art own-style; reference-IP
   reuse gated behind a dedicated ADR.
 - Backlog bridge added: `MTD-001` reward deposit (done/duplicate of SG-002), `MTD-002` gold-cost
-  gating (done), `MTD-003` tower upgrade hook, `MTD-004` difficulty modifiers, `MTD-005` render/input
+  gating (done), `MTD-003` tower upgrade hook (done), `MTD-004` difficulty modifiers (done), `MTD-005` render/input
   surface. Content (EG-006) stays in the MyTD bundle.
 
 ## NEXT
 
-Implement MyTD `MTD-003` (tower upgrade hook):
+Implement MyEngine `ENG-027` (HUD snapshot data + UI command surface):
 
 ```powershell
 Get-Content -Raw .claude\specs\ENGINE_ROADMAP.md
-Get-Content -Raw .claude\specs\backlog\MTD-003-tower-upgrade-hook.md
-Get-Content -Raw D:\Pet\MyTD\spec\engine-gap-analysis.md
+Get-Content -Raw .claude\specs\backlog\ENG-027-hud-data-ui-commands.md
 ```
 
 ## BLOCKERS
 
-- None for `MTD-003`.
+- ENG-026 device/performance checks remain pending: on a device/emulator, verify tap, pan, pinch,
+  and pause/recreate with a pending command while checking next command ID and replay-hash continuity.
+  Capture FrameMetrics/JankStats and Allocation Tracker evidence before claiming a frame budget or
+  smoothness target. `me-android-performance` is partial only for these manual checks.
+- MTD-005 is accepted but device-pending: no device/emulator smoke verified tap-build after one tick,
+  drag-without-build, pinch zoom, tiles -> path -> entities draw order, or debug
+  rotation/process recreation with a pending command and the next caller-owned `CommandId`.
+- MTD-005 known performance risk: each redraw creates a snapshot/frame and intermediate primitive
+  lists. Capture FrameMetrics/JankStats and Allocation Tracker data during sustained pan/pinch before
+  claiming frame-budget compliance or smoothness.
+- ENG-005 low, non-blocking: the Android module packages sandbox content, but
+  `SandboxGame.loadRegistry()` still seeks a filesystem path rather than `AssetManager`; device
+  startup/content loading remains unverified.
+- ENG-005 low, non-blocking: `BalanceDeltaReport` does not summarize map-local resource-node amounts
+  or geometry, so future map-only economy changes will be invisible to balance deltas.
+- MTD-004 low, non-blocking follow-up: `difficultyId` is not serialized; save restore requires the
+  same effective difficulty-resolved registry.
 - RESOLVED (2026-07-05, SG-005): content suspicious-value/balance reporting is covered by the
   devtools `balance-report` / `balance-delta` JSON report.
 - SG-004 DEVICE BLOCKER (2026-07-04, acceptance #3): no connected Android device/emulator is
@@ -471,6 +542,20 @@ Get-Content -Raw D:\Pet\MyTD\spec\engine-gap-analysis.md
   (unit add/drop + capacity-bound `step` telemetry) without shipping capacities in default content.
 
 ## VERIFICATION
+
+- ENG-026 (2026-07-16): `:android:testDebugUnitTest --tests
+  dev.myengine.android.FixedTickFrameLoopTest --rerun-tasks` -> pass; `:android:assembleDebug` ->
+  pass; replay -> pass with canonical `9c495d8ff30fd83d` and kill `83a65da1a7881b2c`; save-compat
+  -> pass. `me-tester` reported no test-file changes; `me-verifier` -> pass. No device/emulator
+  smoke or FrameMetrics/JankStats / Allocation Tracker profile was run.
+
+- MTD-005 (2026-07-16): runner -> pass. With Android Studio JBR,
+  `:engine-render:test` -> BUILD SUCCESSFUL (17s), `:games:sandbox:test` -> BUILD SUCCESSFUL (17s),
+  and `:android:assembleDebug` -> BUILD SUCCESSFUL (22s). `scripts\me-sim-replay.ps1` -> pass at
+  tick 35; canonical hash `9c495d8ff30fd83d` and kill hash `83a65da1a7881b2c` are unchanged.
+  Content validation, save-compat, and benchmark were not run by scope. `me-verifier` -> pass with
+  Android-free simulation, snapshot-only rendering, external content, and versioned saves all true.
+  No device smoke or FrameMetrics/JankStats/Allocation Tracker profile was run.
 
 - Plugin validation for `codex-plugins/me-dev` -> pass.
 - Plugin validation for `codex-plugins/me-spec` -> pass.
@@ -546,12 +631,54 @@ Get-Content -Raw D:\Pet\MyTD\spec\engine-gap-analysis.md
   `.ai/retro/retro-2026-07-05.md` with no failure clusters. Initial bare Gradle invocation failed
   before testing because inherited `JAVA_HOME` was invalid; reruns with the documented Android Studio
   JBR passed.
+- MTD-003 (2026-07-05): `.\gradlew.bat :engine-content:test :games:sandbox:test` -> pass (incl.
+  `ContentPackLoaderTest` upgrade-tier validation and new `SandboxTowerUpgradeTest`); full
+  `.\gradlew.bat test` -> pass; `scripts\me-content-validate.ps1` -> pass (`validated 2 pack(s)`);
+  `scripts\me-sim-replay.ps1` -> pass (canonical `9c495d8ff30fd83d`, kill `83a65da1a7881b2c`
+  unchanged); `scripts\me-save-compat.ps1` -> pass; `scripts\me-benchmark.ps1` -> pass. Reviews:
+  `me-architect` no ADR, `me-tester` pass, `me-simulation-reviewer` pass, `me-save-compat-reviewer`
+  pass (two stale KDoc lows fixed), `me-renderer-qa` pass (one low future command-API refactor note),
+  `me-balance-simulator` pass, `me-verifier` pass with all four boundary checks true.
+  `scripts\me-record-run.ps1` -> recorded event 11 with `reflect_required=false`.
+- MTD-004 (2026-07-16): `DifficultyContent` + optional `difficulties.properties`,
+  `ContentRegistry.resolveDifficulty`, deterministic `BigDecimal` scaling before tick 0, and
+  `SandboxGame`/`SandboxSession` setup wiring; source values from the MyTD balance plan. No
+  save-format/Android/render changes; no ADR. `.\gradlew.bat :engine-content:test :games:sandbox:test` ->
+  pass; full `.\gradlew.bat test` -> pass; `scripts\me-content-validate.ps1` -> pass
+  (`validated 2 pack(s)`); `scripts\me-sim-replay.ps1` -> pass (`9c495d8ff30fd83d`,
+  `83a65da1a7881b2c`); `scripts\me-save-compat.ps1` -> pass; `scripts\me-benchmark.ps1` -> pass
+  (`sim_ms=429` implementation run). `me-verifier` -> pass with all boundary checks true.
 
 - PROC v0.2.0 (2026-07-04): `scripts\me-selfcheck.ps1` -> pass after all adapter edits;
   `scripts\me-record-run.ps1` (improve event, events=6) -> new fields present in the JSONL and
   `reflect_required` in the output; `scripts\me-retro.ps1` -> pass, wrote
   `.ai/retro/retro-2026-07-04.md` (legacy events without new fields aggregate cleanly);
   `.\gradlew.bat test` -> pass (engine code untouched by this batch).
+
+## ENG-024 VERIFICATION CLOSE-OUT
+
+- Full `./gradlew.bat test`, canonical replay, save-compat, `./gradlew.bat android:assembleDebug`,
+  and static scan -> pass.
+- Canonical replay hashes `9c495d8ff30fd83d` and `83a65da1a7881b2c` unchanged.
+- `me-verifier` -> pass; all `boundary_checks` true.
+- Content validation and benchmark were not run by scope.
+
+## DX-008 / ENG-005 VERIFICATION CLOSE-OUT
+
+- `./gradlew.bat test` -> pass (including map loader fixtures, canonical-map parity, and save v4
+  migration/restore coverage).
+- `scripts\me-content-validate.ps1` -> pass (`validated 2 pack(s)`);
+  `scripts\me-sim-replay.ps1` -> pass (`9c495d8ff30fd83d`, `83a65da1a7881b2c` unchanged);
+  `scripts\me-save-compat.ps1` -> pass; `scripts\me-benchmark.ps1` -> pass.
+- Reviews/verifier -> pass. Low non-blocking Android asset-loading and map-balance-report follow-ups
+  are recorded in BLOCKERS.
+
+## ENG-014 VERIFICATION CLOSE-OUT
+
+- Serial full Gradle suite (--no-daemon --max-workers=1) -> pass; serial mode followed earlier
+  parallel native-memory exhaustion only, not an assertion failure.
+- Content validation (2 packs), replay hashes (9c495d8ff30fd83d, 83a65da1a7881b2c), save-compat,
+  benchmark, and Android assemble -> pass.
 
 ## NOTES
 

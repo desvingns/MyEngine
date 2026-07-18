@@ -37,8 +37,8 @@
 ## Рекомендуемый порядок
 
 1. Оригинальный план Phase 00-14 закрыт.
-2. Следующая работа идёт через Signal Garden backlog specs.
-3. Начинать с `.claude/specs/backlog/SG-001-content-pack.md`.
+2. Следующая работа идёт через MyTD backlog specs.
+3. `ENG-026` accepted (scoped JVM/build/replay/save-compat proof); следующий backlog item: `ENG-027`.
 4. Hardening gaps из `docs/HARDENING_AUDIT.md` закрывать по одному, с тестами и обновлением handoff.
 
 Новые крупные фазы добавлять только после того, как backlog specs перестанут быть достаточно
@@ -705,3 +705,179 @@
   - No ADR needed; no dependency direction changed and no reference IP/content was copied.
 - Next:
   - Implement `.claude/specs/backlog/MTD-003-tower-upgrade-hook.md`.
+
+### 2026-07-05 - MyTD MTD-003 (tower upgrade hook)
+
+- Status: Done
+- Owner: Codex
+- Created/changed:
+  - `engine-content/src/main/kotlin/dev/myengine/content/ContentDefinitions.kt`
+  - `engine-content/src/main/kotlin/dev/myengine/content/ContentLoader.kt`
+  - `engine-content/src/test/kotlin/dev/myengine/content/ContentPackLoaderTest.kt`
+  - `engine-entities/src/main/kotlin/dev/myengine/entities/EntityModel.kt`
+  - `engine-render/src/main/kotlin/dev/myengine/render/RenderModel.kt`
+  - `games/sandbox/content/sandbox/towers.properties`
+  - `games/sandbox/src/main/kotlin/dev/myengine/games/sandbox/SandboxGame.kt`
+  - `games/sandbox/src/test/kotlin/dev/myengine/games/sandbox/SandboxSessionLifecycleTest.kt`
+  - `games/sandbox/src/test/kotlin/dev/myengine/games/sandbox/SandboxTowerUpgradeTest.kt`
+  - `docs/content-schemas/PROPERTIES_SCHEMA.md`
+  - `.claude/specs/backlog/MTD-003-tower-upgrade-hook.md`
+  - `.claude/specs/ENGINE_ROADMAP.md`
+  - `D:/Pet/MyTD/spec/engine-gap-analysis.md`
+  - `D:/Pet/MyTD/spec/traceability.csv`
+  - `D:/Pet/MyTD/spec/risks.md`
+  - `STATE.md`
+  - `.ai/handoff.md`
+  - `.ai/DIGEST.md`
+- Verification:
+  - `.\gradlew.bat :engine-content:test :games:sandbox:test` -> pass
+  - `.\gradlew.bat test` -> pass
+  - `scripts\me-content-validate.ps1` -> pass
+  - `scripts\me-sim-replay.ps1` -> pass (`9c495d8ff30fd83d`, `83a65da1a7881b2c`)
+  - `scripts\me-save-compat.ps1` -> pass
+  - `scripts\me-benchmark.ps1` -> pass
+- Decisions:
+  - No ADR: scoped Experimental content/sandbox/save extension, no new dependency edge, no copied
+    reference content.
+  - Upgrade branch ids are delimiter-safe (`[A-Za-z0-9_-]+`); legal transitions are unupgraded ->
+    tier 1, then same-branch `current+1`.
+  - `UpgradeTowerCommand` stays beside existing `BuildTowerCommand` for this slice; future refactor
+    may move gameplay command DTOs to a neutral command API.
+- Next:
+  - Implement `.claude/specs/backlog/MTD-004-difficulty-modifiers.md`.
+
+### 2026-07-16 - MyTD MTD-004 (difficulty modifiers)
+
+- Status: Done
+- Owner: Codex
+- Created/changed:
+  - `engine-content/src/main/kotlin/dev/myengine/content/ContentDefinitions.kt`
+  - `engine-content/src/main/kotlin/dev/myengine/content/ContentLoader.kt`
+  - `engine-content/src/main/kotlin/dev/myengine/content/DifficultyScaling.kt`
+  - `engine-content/src/test/kotlin/dev/myengine/content/ContentPackLoaderTest.kt`
+  - `games/sandbox/content/sandbox/difficulties.properties`
+  - `games/sandbox/src/main/kotlin/dev/myengine/games/sandbox/SandboxGame.kt`
+  - `games/sandbox/src/main/kotlin/dev/myengine/games/sandbox/SandboxSession.kt`
+  - `games/sandbox/src/test/kotlin/dev/myengine/games/sandbox/SandboxDifficultyTest.kt`
+  - MTD-004 roadmap/backlog and MyTD gap/traceability/risk docs
+- Implementation:
+  - `DifficultyContent` and optional difficulty properties are resolved through
+    `ContentRegistry.resolveDifficulty`; `BigDecimal` scaling materializes health, count, reward,
+    and gold rate deterministically before the first tick.
+  - Easy/normal/hard values come from the MyTD balance plan. Setup selection is wired in
+    `SandboxGame`/`SandboxSession`; no save-format, Android, or render changes; no ADR.
+- Verification:
+  - `.\gradlew.bat :engine-content:test :games:sandbox:test` -> pass; `.\gradlew.bat test` -> pass
+  - `scripts\me-content-validate.ps1` -> pass (`validated 2 pack(s)`)
+  - `scripts\me-sim-replay.ps1` -> pass (`9c495d8ff30fd83d`, `83a65da1a7881b2c`)
+  - `scripts\me-save-compat.ps1` -> pass; `scripts\me-benchmark.ps1` -> pass (`sim_ms=429` implementation run)
+  - `me-verifier` -> pass with all boundary checks true
+- Follow-up:
+  - Low, non-blocking: `difficultyId` is not serialized; restore requires the same effective
+    difficulty-resolved registry.
+- Next:
+  - Implement `.claude/specs/backlog/ENG-024-command-dto-relocation.md`.
+
+### 2026-07-16 - MyEngine ENG-024 (command DTO relocation and InputAdapter state fix)
+
+- Status: Done
+- Owner: Codex
+- Implementation:
+  - Approved variant A moved `BuildTowerCommand`/`UpgradeTowerCommand` to
+    `engine-core/src/main/kotlin/dev/myengine/core/command/TowerCommands.kt` with `TileCoordinate`.
+  - `InputState` no longer owns `nextCommandId`/`selectedTowerId`; `InputUiState` is explicit,
+    `CommandId` is caller-owned, and the sandbox performs boundary conversion.
+- Verification:
+  - Full tests, replay, save-compat, `android:assembleDebug`, and static scan -> pass.
+  - Canonical hashes `9c495d8ff30fd83d` and `83a65da1a7881b2c` unchanged; `me-verifier` pass,
+    all `boundary_checks` true.
+  - Content validation and benchmark: not run by scope.
+- Next:
+  - Implement the existing `.claude/specs/backlog/ENG-005-map-content-definitions.md` card.
+
+### 2026-07-16 - DX-008 hybrid format and MyEngine ENG-005 (map definitions)
+
+- Status: Done
+- Owner: Codex
+- Implementation:
+  - Accepted `docs/DECISIONS/ADR-0003-content-format-hybrid.md`: flat definitions remain
+    `.properties`; nested map assets use additive structured `maps.json`.
+  - The sandbox creates `TileWorld`, spawn, and core from `sandbox-canonical`; the fixture preserves
+    the previous 64x64 map, spawn `(1,1)`, core `(32,32)`, and `bolt` node `(5,5)=100`.
+  - `SandboxSaveCodec` v4 persists map id/content version, validates map/pack/content identity, and
+    migrates v1-v3 saves through the sole available map.
+- Verification:
+  - Full `./gradlew.bat test` -> pass.
+  - `scripts\me-content-validate.ps1` -> pass (`validated 2 pack(s)`); replay -> pass with
+    `9c495d8ff30fd83d` and `83a65da1a7881b2c` unchanged; save-compat -> pass; benchmark -> pass.
+  - Reviewer/verifier verdicts -> pass.
+- Follow-ups:
+  - Low, non-blocking: Android shell does not yet load packaged maps through `AssetManager`.
+  - Low, non-blocking: `BalanceDeltaReport` omits map-local resource-node/geometry metrics.
+- Next:
+  - Implement `.claude/specs/backlog/ENG-014-win-lose-run-summary.md`.
+
+### 2026-07-16 - MyEngine ENG-014 (win/lose conditions and run summary)
+
+- Status: Done
+- Owner: Codex
+- Implementation:
+  - Map terminal rules provide finite-wave win, no-win/endless mode, mandatory core-health loss,
+    and an optional positive leak budget; terminal runs reject commands and freeze summaries.
+  - Immutable RunSummary reaches EngineSnapshot; save v5 persists completed runs.
+- Verification:
+  - Serial full Gradle suite (--no-daemon --max-workers=1), content validation (2 packs),
+    canonical/kill replay hashes (9c495d8ff30fd83d, 83a65da1a7881b2c), save-compat, benchmark,
+    and Android assemble -> pass. Serial mode followed earlier parallel native-memory exhaustion,
+    not an assertion failure.
+- Decisions:
+  - No ADR: additive data-driven terminal policy, no new dependency edge.
+- Next:
+  - MTD-005 real render surface and touch input.
+
+### 2026-07-16 - MyTD MTD-005 (real render surface and touch input)
+
+- Status: Done / device-pending limitations documented
+- Owner: Codex
+- Implementation:
+  - Android `SandboxRenderView` consumes immutable `EngineSnapshot` through
+    `PlaceholderRenderSurface` and `RenderPalette`, drawing tiles, path, core, tower tiers, enemies,
+    and overlay with `Canvas` in tiles -> path -> entities order.
+  - `MotionEvent` maps tap, one-finger drag-pan, and pinch to the existing `InputAdapter`.
+    The View owns only presentation state; `MyEngineActivity` owns command ids and the callback that
+    submits a resulting command, advances one session tick, and invalidates the View.
+- Verification:
+  - `:engine-render:test` -> pass; `:games:sandbox:test` -> pass; `:android:assembleDebug` -> pass.
+  - `scripts\me-sim-replay.ps1` -> pass, canonical `9c495d8ff30fd83d` and kill
+    `83a65da1a7881b2c` unchanged at tick 35; `me-verifier` -> pass with all boundary checks true.
+- Limitations:
+  - No device/emulator smoke was run. Validate tap-build, drag-without-build, pinch, draw order, and
+    debug rotate/process recreation with a pending command before calling device acceptance complete.
+  - Profile sustained pan/pinch with FrameMetrics/JankStats and Allocation Tracker; the current
+    redraw path creates a snapshot/frame and intermediate primitive lists.
+- Next:
+  - Implement `.claude/specs/backlog/ENG-026-android-surface-renderer-loop.md`.
+
+### 2026-07-16 - MyEngine ENG-026 (Android SurfaceView renderer and Choreographer loop)
+
+- Status: Done / device-performance limitations documented
+- Owner: Codex
+- Implementation:
+  - Android-local `TickScheduler` uses a 20 Hz Choreographer fixed-tick policy; the `SurfaceView`
+    renders only the latest immutable `RenderFrame`.
+  - Tap/pan/pinch use the existing `InputAdapter`; presentation code queues commands only. The
+    Activity retains command-ID ownership.
+  - `onPause` cancels ticking and saves pending commands; Bundle restoration resumes with the
+    preserved next command ID and replay continuity.
+- Verification:
+  - `:android:testDebugUnitTest --tests dev.myengine.android.FixedTickFrameLoopTest --rerun-tasks`
+    -> pass; `:android:assembleDebug` -> pass.
+  - Replay -> pass, canonical `9c495d8ff30fd83d`, kill `83a65da1a7881b2c`; save-compat -> pass.
+  - `me-verifier` -> pass. `me-tester` reported no test-file changes.
+- Limitations:
+  - Device/emulator tap, pan, pinch, pause/recreate-with-pending-command, command-ID, and hash
+    continuity checks remain pending.
+  - FrameMetrics/JankStats and Allocation Tracker evidence is required before asserting smoothness
+    or a frame budget; Android performance review is partial pending these checks.
+- Next:
+  - Implement `.claude/specs/backlog/ENG-027-hud-data-ui-commands.md`.

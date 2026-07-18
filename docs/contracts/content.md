@@ -11,6 +11,8 @@ Owner: content model and validation
 - Validation and cross-reference checks.
 - Localization key checks.
 - Content migrations.
+- Validation of map-owned terminal rules (`finite_waves`/`no_win` and an optional positive
+  leak budget) before simulation receives the immutable registry.
 
 ## Non-Responsibilities
 
@@ -29,6 +31,7 @@ Owner: content model and validation
 - `ContentDefinition`
 - `ContentId`
 - `ContentPackRef`
+- `MapContent` / `MapTerminalRules`
 - validation result types.
 
 ## Test Gates
@@ -38,4 +41,3 @@ Owner: content model and validation
 - Cross-reference tests.
 - Localization completeness tests.
 - Migration fixture tests.
-
