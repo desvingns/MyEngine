@@ -1,12 +1,17 @@
 package dev.myengine.games.sandbox
 
 import dev.myengine.core.CommandId
+import dev.myengine.core.EngineCommand
+import dev.myengine.core.RunStatus
 import dev.myengine.core.Tick
-import dev.myengine.render.BuildTowerCommand
+import dev.myengine.core.command.BuildTowerCommand
+import dev.myengine.core.command.TileCoordinate
+import dev.myengine.core.command.UpgradeTowerCommand
 import dev.myengine.world.TilePosition
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
+import kotlin.test.assertIs
 import kotlin.test.assertNotEquals
 
 /**
@@ -17,8 +22,9 @@ import kotlin.test.assertNotEquals
  * [SandboxSession] holder the lifecycle delegates to: that a save-at-pause then
  * restore-and-resume is behaviorally indistinguishable from an uninterrupted run.
  *
- * Save format v2 persists both `state` and the runtime's pending (not-yet-drained)
- * [dev.myengine.core.CommandQueue] contents, so [SandboxSession.save] is sound at ANY tick.
+ * Save format v4 persists `state`, tower upgrade branch/tier markers, the data-defined map identity,
+ * content version, and the runtime's pending
+ * (not-yet-drained) [dev.myengine.core.CommandQueue] contents, so [SandboxSession.save] is sound at ANY tick.
  * Tests below cover both shapes: saves taken at a quiescent tick where the submitted build
  * command has already been drained, and saves taken while a future-tick command is still
  * queued — the latter is the regression coverage for the bug this save-format bump fixes.
@@ -27,7 +33,7 @@ import kotlin.test.assertNotEquals
 class SandboxSessionLifecycleTest {
 
     private fun buildPulseAt(tick: Long, position: TilePosition) =
-        BuildTowerCommand(CommandId(1), Tick(tick), "pulse", position)
+        BuildTowerCommand(CommandId(1), Tick(tick), "pulse", TileCoordinate(position.x, position.y))
 
     /** A. Save at a quiescent tick, restore, and the reconstructed state hashes identically. */
     @Test
@@ -117,20 +123,57 @@ class SandboxSessionLifecycleTest {
     @Test
     fun v1SaveWithoutPendingCommandsMigratesToEmptyQueue() {
         val registry = SandboxGame.loadRegistry()
-        val v2Save = SandboxSession.start(registry).also { it.step(5) }.save()
+        val v5Save = SandboxSession.start(registry).also { it.step(5) }.save()
 
-        // Simulate a v1 save: strip the `pendingCommands` property entirely and roll the
-        // version back, rather than duplicating the codec's own encoding internals.
-        val v1Save = v2Save.lines()
-            .filterNot { it.startsWith("pendingCommands=") }
-            .joinToString("\n") { if (it.startsWith("saveVersion=")) "saveVersion=1" else it }
+        // Simulate a pre-map v1 save. Legacy formats have no map/content metadata and must choose
+        // the only map provided by the loaded pack.
+        val v1Save = legacySave(v5Save, version = 1, dropPendingCommands = true)
 
         val decodedState = SandboxSaveCodec.decode(v1Save, registry)
         assertEquals(Tick(5), decodedState.tick)
+        assertEquals(registry.requireMap().id, decodedState.mapId)
         assertEquals(emptyList(), SandboxSaveCodec.decodePendingCommands(v1Save))
 
         val restored = SandboxSession.restore(v1Save, registry)
         assertEquals(emptyList(), restored.runtime.pendingCommands())
+    }
+
+    @Test
+    fun v1ThroughV4SavesMigrateToActiveRunsThroughSoleAvailableMap() {
+        val registry = SandboxGame.loadRegistry()
+        assertEquals(1, registry.maps.size, "legacy migration is only valid while the content pack has one map")
+        val v5Save = SandboxSession.start(registry).also { it.step(5) }.save()
+
+        (1..4).forEach { version ->
+            val legacy = legacySave(v5Save, version, dropPendingCommands = version == 1)
+
+            val decoded = SandboxSaveCodec.decode(legacy, registry)
+
+            assertEquals(Tick(5), decoded.tick, "v$version tick")
+            assertEquals(registry.requireMap().id, decoded.mapId, "v$version map")
+            assertEquals(RunStatus.ACTIVE, decoded.run.status, "v$version must migrate without terminal state")
+        }
+    }
+
+    @Test
+    fun v5SavePersistsMapAndContentVersionAndRejectsMismatches() {
+        val registry = SandboxGame.loadRegistry()
+        val map = registry.requireMap("sandbox-canonical")
+        val save = SandboxSession.start(registry, mapId = map.id).also { it.step(5) }.save()
+
+        assertEquals(5, SandboxSaveCodec.SAVE_VERSION)
+        assertEquals(map.id, saveProperty(save, "mapId"))
+        assertEquals(registry.manifest.version, saveProperty(save, "contentVersion"))
+        assertEquals(map.id, SandboxSaveCodec.decode(save, registry).mapId)
+
+        val unknownMap = save.replace("mapId=${map.id}", "mapId=unknown-map")
+        assertFailsWith<IllegalStateException> { SandboxSaveCodec.decode(unknownMap, registry) }
+
+        val wrongContentVersion = save.replace(
+            "contentVersion=${registry.manifest.version}",
+            "contentVersion=999.0.0",
+        )
+        assertFailsWith<IllegalArgumentException> { SandboxSaveCodec.decode(wrongContentVersion, registry) }
     }
 
     /**
@@ -140,8 +183,8 @@ class SandboxSessionLifecycleTest {
     @Test
     fun pendingCommandsPreserveOriginalIdsAndTicksThroughRoundtrip() {
         val registry = SandboxGame.loadRegistry()
-        val first = BuildTowerCommand(CommandId(9), Tick(30), "pulse", TilePosition(2, 2))
-        val second = BuildTowerCommand(CommandId(4), Tick(28), "pulse", TilePosition(3, 3))
+        val first = BuildTowerCommand(CommandId(9), Tick(30), "pulse", TileCoordinate(2, 2))
+        val second = BuildTowerCommand(CommandId(4), Tick(28), "pulse", TileCoordinate(3, 3))
 
         val session = SandboxSession.start(registry)
         // Submitted out of id/tick order on purpose: the queue is order-preserving on submit,
@@ -155,6 +198,49 @@ class SandboxSessionLifecycleTest {
         val expected = listOf(first, second).map { it.id to it.scheduledTick }
         val actual = restored.runtime.pendingCommands().map { it.id to it.scheduledTick }
         assertEquals(expected, actual)
+    }
+
+    @Test
+    fun pendingCommandActorIdsAndStablePayloadsRoundtripExactly() {
+        val registry = SandboxGame.loadRegistry()
+        val commands: List<EngineCommand> = listOf(
+            BuildTowerCommand(
+                id = CommandId(12),
+                scheduledTick = Tick(30),
+                towerId = "pulse",
+                position = TileCoordinate(4, 5),
+                actorId = 101L,
+            ),
+            UpgradeTowerCommand(
+                id = CommandId(13),
+                scheduledTick = Tick(31),
+                towerEntityId = 123L,
+                branch = "main",
+                tier = 2,
+                actorId = 202L,
+            ),
+        )
+
+        val save = SandboxSaveCodec.encode(
+            state = SandboxGame.createInitialState(registry),
+            seed = 7,
+            pendingCommands = commands,
+        )
+        val restored = SandboxSaveCodec.decodePendingCommands(save)
+
+        assertEquals(commands.size, restored.size)
+        assertEquals(commands.map { it.type }, restored.map { it.type })
+        assertEquals(commands.map { it.id }, restored.map { it.id })
+        assertEquals(commands.map { it.scheduledTick }, restored.map { it.scheduledTick })
+        assertEquals(commands.map { it.actorId }, restored.map { it.actorId })
+        assertEquals(commands.map { it.stablePayload() }, restored.map { it.stablePayload() })
+
+        val restoredBuild = assertIs<BuildTowerCommand>(restored[0])
+        assertEquals(101L, restoredBuild.actorId)
+        assertEquals("pulse:4:5", restoredBuild.stablePayload())
+        val restoredUpgrade = assertIs<UpgradeTowerCommand>(restored[1])
+        assertEquals(202L, restoredUpgrade.actorId)
+        assertEquals("123:main:2", restoredUpgrade.stablePayload())
     }
 
     /** C. The seed roundtrips through save/restore, and re-saving reproduces the same seed line. */
@@ -205,10 +291,10 @@ class SandboxSessionLifecycleTest {
 
         val valid = session.save()
         // Sanity: the valid save carries the codec's current version and decodes cleanly.
-        assertEquals(SandboxSaveCodec.SAVE_VERSION, 2)
+        assertEquals(5, SandboxSaveCodec.SAVE_VERSION)
         SandboxSaveCodec.decode(valid, registry)
 
-        val future = valid.replace("saveVersion=2", "saveVersion=3")
+        val future = valid.replace("saveVersion=5", "saveVersion=6")
         // Guard against a silent no-op swap if the encoded key/format ever changes.
         assertNotEquals(valid, future)
 
@@ -226,13 +312,50 @@ class SandboxSessionLifecycleTest {
         val registry = SandboxGame.loadRegistry()
         val valid = SandboxSession.start(registry).also { it.step(5) }.save()
 
-        val garbled = valid.replace("saveVersion=2", "saveVersion=x")
+        val garbled = valid.replace("saveVersion=5", "saveVersion=x")
         assertNotEquals(valid, garbled)
 
         assertFailsWith<IllegalArgumentException> { SandboxSaveCodec.decode(garbled, registry) }
     }
 
+    @Test
+    fun decodePendingCommandsRejectsMalformedFutureAndOutOfRangeVersionsLikeDecode() {
+        val registry = SandboxGame.loadRegistry()
+        val valid = SandboxSession.start(registry).also { it.step(5) }.save()
+        val unsupportedSaves = listOf(
+            valid.replace("saveVersion=5", "saveVersion=6"),
+            valid.replace("saveVersion=5", "saveVersion=x"),
+            valid.replace("saveVersion=5", "saveVersion=0"),
+        )
+
+        unsupportedSaves.forEach { save ->
+            assertFailsWith<IllegalArgumentException> { SandboxSaveCodec.decode(save, registry) }
+            assertFailsWith<IllegalArgumentException> { SandboxSaveCodec.decodePendingCommands(save) }
+        }
+    }
+
+    private fun legacySave(text: String, version: Int, dropPendingCommands: Boolean): String = text.lines()
+        .filterNot {
+            (version < 4 && (
+                it.startsWith("mapId=") ||
+                    it.startsWith("contentVersion=") ||
+                    it.startsWith("packId=")
+                )) ||
+                (version < 5 && (
+                    it.startsWith("runStatus=") ||
+                        it.startsWith("terminalReason=") ||
+                        it.startsWith("terminalTick=") ||
+                        it.startsWith("runSummary=") ||
+                        it.startsWith("runResources=")
+                    )) ||
+                (dropPendingCommands && it.startsWith("pendingCommands="))
+        }
+        .joinToString("\n") { if (it.startsWith("saveVersion=")) "saveVersion=$version" else it }
+
+    private fun saveProperty(text: String, key: String): String? =
+        java.util.Properties().also { it.load(java.io.StringReader(text)) }.getProperty(key)
+
     /** Reads the `seed` value out of a save's property text without decoding full state. */
     private fun seedProperty(text: String): String =
-        java.util.Properties().also { it.load(java.io.StringReader(text)) }.getProperty("seed")
+        requireNotNull(saveProperty(text, "seed"))
 }

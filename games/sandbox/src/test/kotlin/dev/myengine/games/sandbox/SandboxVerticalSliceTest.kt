@@ -2,7 +2,8 @@ package dev.myengine.games.sandbox
 
 import dev.myengine.core.CommandId
 import dev.myengine.core.Tick
-import dev.myengine.render.BuildTowerCommand
+import dev.myengine.core.command.BuildTowerCommand
+import dev.myengine.core.command.TileCoordinate
 import dev.myengine.world.TilePosition
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -16,7 +17,28 @@ class SandboxVerticalSliceTest {
         val second = SandboxGame.runScriptedScenario()
 
         assertEquals(first.hash, second.hash)
+        assertEquals("9c495d8ff30fd83d", first.hash)
         assertTrue(first.snapshot.entities.isNotEmpty())
+    }
+
+    @Test
+    fun canonicalMapContentMaterializesWithoutChangingReplayHash() {
+        val registry = SandboxGame.loadRegistry()
+        val map = registry.requireMap("sandbox-canonical")
+
+        val runtime = SandboxGame.createRuntime(registry, mapId = map.id)
+
+        assertEquals(map.id, runtime.state.mapId)
+        assertEquals(map.width, runtime.state.world.size.width)
+        assertEquals(map.height, runtime.state.world.size.height)
+        val coreTile = runtime.state.world.tileAt(TilePosition(map.core.x, map.core.y))
+        assertEquals("core", coreTile.tile.terrainId)
+        assertTrue(coreTile.terrain.isCore)
+        val resourceTile = runtime.state.world.tileAt(TilePosition(5, 5)).tile
+        assertEquals("resource", resourceTile.terrainId)
+        assertEquals("bolt", resourceTile.resourceNode?.resourceId)
+        assertEquals(100, resourceTile.resourceNode?.amount)
+        assertEquals("9c495d8ff30fd83d", SandboxGame.runScriptedScenario(mapId = map.id).hash)
     }
 
     @Test
@@ -24,7 +46,7 @@ class SandboxVerticalSliceTest {
         val registry = SandboxGame.loadRegistry()
         fun runAt(position: TilePosition): String {
             val runtime = SandboxGame.createRuntime(registry)
-            runtime.submit(BuildTowerCommand(CommandId(1), Tick(1), "pulse", position))
+            runtime.submit(BuildTowerCommand(CommandId(1), Tick(1), "pulse", TileCoordinate(position.x, position.y)))
             runtime.step(20)
             return runtime.state.stableHash()
         }
@@ -36,7 +58,7 @@ class SandboxVerticalSliceTest {
     fun saveLoadRoundtripPreservesHash() {
         val registry = SandboxGame.loadRegistry()
         val runtime = SandboxGame.createRuntime(registry)
-        runtime.submit(BuildTowerCommand(CommandId(1), Tick(1), "pulse", TilePosition(30, 32)))
+        runtime.submit(BuildTowerCommand(CommandId(1), Tick(1), "pulse", TileCoordinate(30, 32)))
         runtime.step(5)
 
         val save = SandboxSaveCodec.encode(runtime.state, seed = 7)
@@ -52,7 +74,7 @@ class SandboxVerticalSliceTest {
             val runtime = SandboxGame.createRuntime(registry)
             // Tower adjacent to the enemy spawn (1,1) -> guaranteed kills within step(35),
             // so the reward-deposit path is actually exercised (unlike the (30,32) scenario).
-            runtime.submit(BuildTowerCommand(CommandId(1), Tick(1), "pulse", TilePosition(2, 2)))
+            runtime.submit(BuildTowerCommand(CommandId(1), Tick(1), "pulse", TileCoordinate(2, 2)))
             runtime.step(35)
             return runtime.state.stableHash() to runtime.state.defense.metrics.enemiesKilled
         }
@@ -77,6 +99,7 @@ class SandboxVerticalSliceTest {
         assertTrue(first.metrics.towerShots > 0, "kill scenario never fired")
         // ...be replay-stable...
         assertEquals(first.hash, second.hash)
+        assertEquals("83a65da1a7881b2c", first.hash)
         // ...and carry its own hash distinct from the (no-kill) canonical baseline.
         assertNotEquals(canonical.hash, first.hash)
         assertEquals(0, canonical.metrics.enemiesKilled)
@@ -95,7 +118,7 @@ class SandboxVerticalSliceTest {
         val rewardResource = registry.enemies[enemyId]!!.rewardResource
 
         val runtime = SandboxGame.createRuntime(registry)
-        runtime.submit(BuildTowerCommand(CommandId(1), Tick(1), "pulse", TilePosition(2, 2)))
+        runtime.submit(BuildTowerCommand(CommandId(1), Tick(1), "pulse", TileCoordinate(2, 2)))
         runtime.step(35)
 
         // Precondition: kills happened, so the reward-inflated inventory is non-empty.

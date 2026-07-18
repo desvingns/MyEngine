@@ -1,6 +1,9 @@
 package dev.myengine.render
 
+import dev.myengine.core.CommandId
 import dev.myengine.core.Tick
+import dev.myengine.core.command.BuildTowerCommand
+import dev.myengine.core.command.TileCoordinate
 import dev.myengine.world.TilePosition
 import dev.myengine.world.WorldSize
 import kotlin.math.abs
@@ -72,12 +75,51 @@ class RenderBoundaryTest {
     @Test
     fun tapCreatesBuildCommandWhenTowerSelected() {
         val camera = Camera(WorldSize(64, 64), viewportWidth = 240f, viewportHeight = 240f)
-        val state = InputState(camera = camera, selectedTowerId = "basic")
+        val state = InputState(camera = camera)
+        val uiState = InputUiState(selectedTowerId = "basic")
+        val suppliedId = CommandId(42)
 
-        val result = InputAdapter().handle(PlatformInputEvent.Tap(ScreenPoint(120f, 120f)), state, Tick(3))
+        val result = InputAdapter().handle(
+            PlatformInputEvent.Tap(ScreenPoint(120f, 120f)),
+            state,
+            Tick(3),
+            uiState,
+            suppliedId,
+        )
 
         assertEquals(1, result.commands.size)
-        assertIs<BuildTowerCommand>(result.commands.single())
-        assertTrue(result.state.nextCommandId > state.nextCommandId)
+        val command = assertIs<BuildTowerCommand>(result.commands.single())
+        assertEquals(suppliedId, command.id)
+        assertEquals(Tick(3), command.scheduledTick)
+        assertEquals("basic", command.towerId)
+        assertEquals(TileCoordinate(32, 32), command.position)
+        assertEquals(TilePosition(32, 32), result.state.selectedTile)
+        assertEquals(camera, result.state.camera)
+
+        // The adapter is a pure translator: repeated handling with the same caller ID
+        // must not issue a fresh ID or mutate the supplied one.
+        val repeated = InputAdapter().handle(
+            PlatformInputEvent.Tap(ScreenPoint(120f, 120f)),
+            state,
+            Tick(3),
+            uiState,
+            suppliedId,
+        )
+        assertEquals(suppliedId, assertIs<BuildTowerCommand>(repeated.commands.single()).id)
+    }
+
+    @Test
+    fun tapWithoutCallerCommandIdDoesNotIssueACommand() {
+        val state = InputState(Camera(WorldSize(64, 64), 240f, 240f))
+
+        val result = InputAdapter().handle(
+            PlatformInputEvent.Tap(ScreenPoint(120f, 120f)),
+            state,
+            Tick(3),
+            InputUiState(selectedTowerId = "basic"),
+        )
+
+        assertTrue(result.commands.isEmpty())
+        assertEquals(TilePosition(32, 32), result.state.selectedTile)
     }
 }

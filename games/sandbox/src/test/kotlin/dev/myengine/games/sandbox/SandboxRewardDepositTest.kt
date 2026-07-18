@@ -2,8 +2,8 @@ package dev.myengine.games.sandbox
 
 import dev.myengine.core.CommandId
 import dev.myengine.core.Tick
-import dev.myengine.render.BuildTowerCommand
-import dev.myengine.world.TilePosition
+import dev.myengine.core.command.BuildTowerCommand
+import dev.myengine.core.command.TileCoordinate
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -40,7 +40,7 @@ class SandboxRewardDepositTest {
         // within a couple of ticks -> at least one kill within step(35). (2,2) is buildable
         // floor (walls are only the x=0/x=63/y=0/y=63 border; core is (32,32); resource (5,5)).
         val killing = SandboxGame.createRuntime(registry)
-        killing.submit(BuildTowerCommand(CommandId(1), Tick(1), "pulse", TilePosition(2, 2)))
+        killing.submit(BuildTowerCommand(CommandId(1), Tick(1), "pulse", TileCoordinate(2, 2)))
         killing.step(35)
 
         // Scenario B: tower far from the (1,1)->(32,32) enemy corridor. Every enemy-occupied
@@ -48,7 +48,7 @@ class SandboxRewardDepositTest {
         // 5 -> guaranteed 0 kills. Same build spend, same deterministic production, so the
         // balance delta isolates exactly the kill rewards. (40,40) is buildable floor.
         val idle = SandboxGame.createRuntime(registry)
-        idle.submit(BuildTowerCommand(CommandId(1), Tick(1), "pulse", TilePosition(40, 40)))
+        idle.submit(BuildTowerCommand(CommandId(1), Tick(1), "pulse", TileCoordinate(40, 40)))
         idle.step(35)
 
         val enemiesKilled = killing.state.defense.metrics.enemiesKilled

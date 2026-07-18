@@ -1,7 +1,8 @@
 package dev.myengine.render
 
-import dev.myengine.core.CommandId
-import dev.myengine.core.EngineCommand
+import dev.myengine.core.RunStatus
+import dev.myengine.core.RunSummary
+import dev.myengine.core.TerminalReason
 import dev.myengine.core.Tick
 import dev.myengine.world.TilePosition
 import dev.myengine.world.WorldSize
@@ -17,6 +18,7 @@ data class RenderEntity(
     val type: String,
     val position: TilePosition,
     val health: Int? = null,
+    val towerTier: Int? = null,
 )
 
 data class DebugOverlay(
@@ -31,17 +33,11 @@ data class EngineSnapshot(
     val worldSize: WorldSize,
     val tiles: List<RenderTile>,
     val entities: List<RenderEntity>,
+    val path: List<TilePosition> = emptyList(),
     val coreHealth: Int,
     val debug: DebugOverlay,
+    val runStatus: RunStatus = RunStatus.ACTIVE,
+    val terminalReason: TerminalReason? = null,
+    val terminalTick: Tick? = null,
+    val runSummary: RunSummary = RunSummary(),
 )
-
-data class BuildTowerCommand(
-    override val id: CommandId,
-    override val scheduledTick: Tick,
-    val towerId: String,
-    val position: TilePosition,
-    override val actorId: Long? = null,
-) : EngineCommand {
-    override val type: String = "build_tower"
-    override fun stablePayload(): String = "$towerId:${position.x}:${position.y}"
-}

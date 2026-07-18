@@ -2,12 +2,25 @@ package dev.myengine.games.sandbox
 
 import dev.myengine.content.ContentPackLoader
 import dev.myengine.content.ContentRegistry
+import dev.myengine.content.MapContent
+import dev.myengine.content.MapWinCondition
+import dev.myengine.content.TowerUpgradeTier
+import dev.myengine.ai.GridPathfinder
+import dev.myengine.ai.PathRequest
+import dev.myengine.ai.PathResult
 import dev.myengine.core.CommandQueue
 import dev.myengine.core.EngineCommand
 import dev.myengine.core.EngineInfo
 import dev.myengine.core.HashableState
+import dev.myengine.core.RunState
+import dev.myengine.core.RunStatus
+import dev.myengine.core.RunSummary
 import dev.myengine.core.StableHash
+import dev.myengine.core.TerminalReason
 import dev.myengine.core.Tick
+import dev.myengine.core.command.BuildTowerCommand
+import dev.myengine.core.command.TileCoordinate
+import dev.myengine.core.command.UpgradeTowerCommand
 import dev.myengine.defense.DefenseRuntime
 import dev.myengine.defense.DefenseState
 import dev.myengine.defense.TowerPlacementResult
@@ -22,7 +35,6 @@ import dev.myengine.entities.TowerComponent
 import dev.myengine.logistics.Inventory
 import dev.myengine.logistics.Producer
 import dev.myengine.logistics.ProducerSystem
-import dev.myengine.render.BuildTowerCommand
 import dev.myengine.render.DebugOverlay
 import dev.myengine.render.EngineSnapshot
 import dev.myengine.render.RenderEntity
@@ -49,11 +61,13 @@ data class SandboxDescriptor(
 data class SandboxState(
     var tick: Tick,
     val registry: ContentRegistry,
+    val mapId: String,
     val world: TileWorld,
     val entities: EntityStore,
     var inventory: Inventory,
     var producers: List<Producer>,
     var defense: DefenseState,
+    var run: RunState = RunState(),
     var lastCommandOrError: String? = null,
 ) : HashableState {
     override fun appendHash(hash: StableHash) {
@@ -70,6 +84,7 @@ data class SandboxState(
             .add(defense.metrics.enemiesLeaked)
             .add(defense.metrics.coreDamage)
             .add(defense.metrics.towerShots)
+        if (run.isTerminal) run.appendHash(hash)
     }
 
     fun stableHash(): String = StableHash().also(::appendHash).digest()
@@ -105,23 +120,40 @@ class SandboxRuntime(
     private val commandQueue: CommandQueue = CommandQueue(),
 ) {
     private val producerSystem = ProducerSystem(state.registry.recipes)
-    private val spawn = TilePosition(1, 1)
-    private val core = TilePosition(32, 32)
+    private val map = state.registry.requireMap(state.mapId)
+    private val spawn = map.primarySpawn.position.let { TilePosition(it.x, it.y) }
+    private val core = map.core.let { TilePosition(it.x, it.y) }
+    private val renderPath: List<TilePosition> = when (val result = GridPathfinder().find(state.world, PathRequest(spawn, core))) {
+        is PathResult.Found -> result.tiles
+        is PathResult.NoPath -> emptyList()
+    }
 
-    fun submit(command: EngineCommand) {
+    /** Returns false without mutating state when the run has already reached its terminal boundary. */
+    fun submit(command: EngineCommand): Boolean {
+        if (state.run.isTerminal) return false
         commandQueue.submit(command)
+        return true
     }
 
     /** Non-destructive snapshot of the runtime's not-yet-drained pending commands. */
     fun pendingCommands(): List<EngineCommand> = commandQueue.pending()
 
-    /** Loads previously-decoded commands into this runtime's queue, preserving their original ids/ticks. */
+    /** Submits a command batch subject to the same terminal rejection as [submit]. */
     fun submitAll(commands: List<EngineCommand>) {
         commands.forEach(::submit)
     }
 
+    /**
+     * Restore-only path that preserves a serialized pre-terminal queue without reopening command
+     * submission. Terminal [step] calls still return before draining these commands.
+     */
+    internal fun restorePendingCommands(commands: List<EngineCommand>) {
+        commands.forEach(commandQueue::submit)
+    }
+
     fun step(ticks: Int = 1) {
         repeat(ticks) {
+            if (state.run.isTerminal) return
             state.tick = state.tick.next()
             val commands = commandQueue.drainFor(state.tick)
             commands.forEach(::applyCommand)
@@ -138,6 +170,8 @@ class SandboxRuntime(
                     .joinToString(",", prefix = "reward_dropped:") { "${it.key}:${it.value}" }
             }
             state.defense = defenseRuntime.updateEnemies(state.registry, state.defense, state.entities)
+            evaluateTerminalState()
+            if (state.run.isTerminal) return
             IncidentDirector(state.registry.incidents.values).select(state.defense.metrics.enemiesSpawned, dev.myengine.core.SeededRandom(17))
         }
     }
@@ -149,12 +183,19 @@ class SandboxRuntime(
         }
         val renderEntities = state.entities.all().mapNotNull {
             val position = it.position?.tile ?: return@mapNotNull null
-            RenderEntity(it.id.value, it.type, position, it.health?.current)
+            RenderEntity(
+                id = it.id.value,
+                type = it.type,
+                position = position,
+                health = it.health?.current,
+                towerTier = it.tower?.upgradeTier,
+            )
         }
         return EngineSnapshot(
             worldSize = state.world.size,
             tiles = renderTiles,
             entities = renderEntities,
+            path = renderPath,
             coreHealth = state.defense.coreHealth,
             debug = DebugOverlay(
                 tick = state.tick,
@@ -163,12 +204,17 @@ class SandboxRuntime(
                 selectedTile = null,
                 lastCommandOrError = state.lastCommandOrError,
             ),
+            runStatus = state.run.status,
+            terminalReason = state.run.terminalReason,
+            terminalTick = state.run.terminalTick,
+            runSummary = state.run.summary ?: currentRunSummary(),
         )
     }
 
     private fun applyCommand(command: EngineCommand) {
         when (command) {
             is BuildTowerCommand -> buildTower(command)
+            is UpgradeTowerCommand -> upgradeTower(command)
             else -> state.lastCommandOrError = "ignored:${command.type}"
         }
     }
@@ -183,7 +229,8 @@ class SandboxRuntime(
             state.lastCommandOrError = "missing_resource:${tower.costResource}"
             return
         }
-        when (val result = defenseRuntime.placeTower(command.towerId, command.position, state.registry, state.world, state.entities)) {
+        val position = TilePosition(command.position.x, command.position.y)
+        when (val result = defenseRuntime.placeTower(command.towerId, position, state.registry, state.world, state.entities)) {
             is TowerPlacementResult.Placed -> {
                 state.inventory = state.inventory.remove(tower.costResource, tower.costAmount)
                 state.lastCommandOrError = "placed:${result.entityId.value}"
@@ -191,6 +238,91 @@ class SandboxRuntime(
             is TowerPlacementResult.Rejected -> state.lastCommandOrError = result.reason
         }
     }
+
+    private fun upgradeTower(command: UpgradeTowerCommand) {
+        val entityId = EntityId(command.towerEntityId)
+        val entity = state.entities.get(entityId)
+        val towerComponent = entity?.tower
+        if (entity == null || towerComponent == null) {
+            state.lastCommandOrError = "unknown_tower_entity:${command.towerEntityId}"
+            return
+        }
+        val tower = state.registry.towers[towerComponent.towerId]
+        if (tower == null) {
+            state.lastCommandOrError = "unknown_tower:${towerComponent.towerId}"
+            return
+        }
+        val tier = tower.upgradeTiers[TowerUpgradeTier.key(command.branch, command.tier)]
+        if (tier == null) {
+            state.lastCommandOrError = "unknown_upgrade:${tower.id}:${command.branch}:${command.tier}"
+            return
+        }
+        if (!canApplyUpgrade(towerComponent, command)) {
+            val currentBranch = towerComponent.upgradeBranch ?: "none"
+            state.lastCommandOrError = "invalid_upgrade_transition:$currentBranch:${towerComponent.upgradeTier}->${command.branch}:${command.tier}"
+            return
+        }
+        if (entity.attack == null) {
+            state.lastCommandOrError = "tower_missing_attack:${command.towerEntityId}"
+            return
+        }
+        if (!state.inventory.canRemove(tier.costResource, tier.costAmount)) {
+            state.lastCommandOrError = "missing_resource:${tier.costResource}"
+            return
+        }
+
+        state.entities.update(entityId) {
+            it.copy(
+                tower = towerComponent.copy(upgradeBranch = tier.branch, upgradeTier = tier.tier),
+                attack = AttackComponent(tier.range, tier.damage, tier.cooldownTicks),
+            )
+        }
+        state.inventory = state.inventory.remove(tier.costResource, tier.costAmount)
+        state.lastCommandOrError = "upgraded:${command.towerEntityId}:${tier.branch}:${tier.tier}"
+    }
+
+    private fun canApplyUpgrade(current: TowerComponent, command: UpgradeTowerCommand): Boolean {
+        val branch = current.upgradeBranch
+        return if (branch == null) {
+            command.tier == 1
+        } else {
+            command.branch == branch && command.tier == current.upgradeTier + 1
+        }
+    }
+
+    /**
+     * The terminal decision runs only at this end-of-tick boundary, after spawning, towers,
+     * reward deposits, and enemy movement/leaks have all settled. Losses win ties over victory.
+     */
+    private fun evaluateTerminalState() {
+        if (state.run.isTerminal) return
+        val terminal = when {
+            state.defense.coreHealth <= 0 -> RunStatus.LOST to TerminalReason.CORE_HEALTH_EXHAUSTED
+            map.terminalRules.leakBudget?.let { state.defense.metrics.enemiesLeaked >= it } == true ->
+                RunStatus.LOST to TerminalReason.LEAK_BUDGET_EXHAUSTED
+            map.terminalRules.winCondition == MapWinCondition.FINITE_WAVES &&
+                state.registry.waves.isNotEmpty() &&
+                state.registry.waves.keys.all(state.defense.spawnedWaveIds::contains) &&
+                state.entities.byTag("enemy").isEmpty() -> RunStatus.WON to TerminalReason.ALL_WAVES_CLEARED
+            else -> null
+        }
+        terminal?.let { (status, reason) ->
+            state.run = RunState(
+                status = status,
+                terminalReason = reason,
+                terminalTick = state.tick,
+                summary = currentRunSummary(),
+            )
+        }
+    }
+
+    private fun currentRunSummary(): RunSummary = RunSummary(
+        waves = state.defense.spawnedWaveIds.size,
+        kills = state.defense.metrics.enemiesKilled,
+        leaks = state.defense.metrics.enemiesLeaked,
+        resources = state.inventory.resources.toSortedMap(),
+        ticks = state.tick,
+    )
 
     private fun updateProduction() {
         state.producers = state.producers.map { producer ->
@@ -202,7 +334,7 @@ class SandboxRuntime(
 }
 
 object SandboxSaveCodec {
-    const val SAVE_VERSION: Int = 2
+    const val SAVE_VERSION: Int = 5
 
     fun encode(state: SandboxState, seed: Long, pendingCommands: List<EngineCommand> = emptyList()): String {
         val props = Properties()
@@ -210,8 +342,19 @@ object SandboxSaveCodec {
         props["engineVersion"] = EngineInfo.SCAFFOLD_PHASE.toString()
         props["packId"] = state.registry.manifest.id
         props["packVersion"] = state.registry.manifest.version
+        props["mapId"] = state.mapId
+        props["contentVersion"] = state.registry.manifest.version
         props["seed"] = seed.toString()
         props["tick"] = state.tick.value.toString()
+        props["runStatus"] = state.run.status.name
+        props["terminalReason"] = state.run.terminalReason?.name.orEmpty()
+        props["terminalTick"] = state.run.terminalTick?.value?.toString().orEmpty()
+        props["runSummary"] = state.run.summary?.let { summary ->
+            listOf(summary.waves, summary.kills, summary.leaks, summary.ticks.value).joinToString(",")
+        }.orEmpty()
+        props["runResources"] = state.run.summary?.resources?.toSortedMap()?.entries
+            ?.joinToString(";") { "${it.key}:${it.value}" }
+            .orEmpty()
         props["coreHealth"] = state.defense.coreHealth.toString()
         props["spawnedWaves"] = state.defense.spawnedWaveIds.sorted().joinToString(",")
         props["metrics"] = listOf(
@@ -240,6 +383,8 @@ object SandboxSaveCodec {
                 entity.attack?.cooldownTicks ?: "",
                 path,
                 entity.movement?.pathIndex ?: "",
+                entity.tower?.upgradeBranch ?: "",
+                entity.tower?.upgradeTier?.takeIf { entity.tower?.upgradeBranch != null } ?: "",
             ).joinToString("|")
         }
         props["pendingCommands"] = pendingCommands.joinToString(";") { cmd ->
@@ -250,9 +395,20 @@ object SandboxSaveCodec {
 
     fun decode(text: String, registry: ContentRegistry): SandboxState {
         val props = Properties().also { it.load(StringReader(text)) }
-        val version = props.getProperty("saveVersion")?.toIntOrNull()
-        require(version == 1 || version == 2) { "Unsupported save version '$version'." }
-        val state = SandboxGame.createInitialState(registry)
+        val version = requireSupportedSaveVersion(props)
+        val mapId = if (version >= 4) {
+            require(props.getProperty("packId") == registry.manifest.id) {
+                "Save pack '${props.getProperty("packId")}' does not match loaded pack '${registry.manifest.id}'."
+            }
+            require(props.getProperty("contentVersion") == registry.manifest.version) {
+                "Save content version '${props.getProperty("contentVersion")}' does not match loaded content version '${registry.manifest.version}'."
+            }
+            props.getProperty("mapId")?.takeIf { it.isNotBlank() }
+                ?: error("Save version 4+ is missing mapId.")
+        } else {
+            null
+        }
+        val state = SandboxGame.createInitialState(registry = registry, mapId = mapId)
         state.tick = Tick(props.getProperty("tick").toLong())
         val metrics = props.getProperty("metrics", "0,0,0,0,0").split(',').map { it.toInt() }
         state.defense = DefenseState(
@@ -268,6 +424,7 @@ object SandboxSaveCodec {
                 val parts = it.split('|')
                 Producer(parts[0], parts[1], parts[2].toInt())
             }
+        state.run = if (version >= 5) parseRunState(props) else RunState()
         val entities = parseEntities(props.getProperty("entities", ""))
         state.world.positions().forEach { state.world.clearOccupancy(it) }
         val loadedStore = EntityStore(props.getProperty("nextEntityId").toLong(), entities)
@@ -284,7 +441,48 @@ object SandboxSaveCodec {
      */
     fun decodePendingCommands(text: String): List<EngineCommand> {
         val props = Properties().also { it.load(StringReader(text)) }
+        val version = requireSupportedSaveVersion(props)
+        if (version >= 5) parseRunState(props)
         return parsePendingCommands(props.getProperty("pendingCommands", ""))
+    }
+
+    private fun requireSupportedSaveVersion(props: Properties): Int {
+        val version = props.getProperty("saveVersion")?.toIntOrNull()
+        require(version != null && version in 1..SAVE_VERSION) { "Unsupported save version '$version'." }
+        return version
+    }
+
+    private fun parseRunState(props: Properties): RunState {
+        val status = RunStatus.values().firstOrNull { it.name == props.getProperty("runStatus") }
+            ?: error("Save version 5 has an invalid runStatus.")
+        if (status == RunStatus.ACTIVE) {
+            require(props.getProperty("terminalReason").isNullOrBlank()) { "Active run cannot contain terminalReason." }
+            require(props.getProperty("terminalTick").isNullOrBlank()) { "Active run cannot contain terminalTick." }
+            require(props.getProperty("runSummary").isNullOrBlank()) { "Active run cannot contain runSummary." }
+            require(props.getProperty("runResources").isNullOrBlank()) { "Active run cannot contain runResources." }
+            return RunState()
+        }
+
+        val reason = TerminalReason.values().firstOrNull { it.name == props.getProperty("terminalReason") }
+            ?: error("Terminal run is missing or has an invalid terminalReason.")
+        require(
+            (status == RunStatus.WON && reason == TerminalReason.ALL_WAVES_CLEARED) ||
+                (status == RunStatus.LOST && reason != TerminalReason.ALL_WAVES_CLEARED),
+        ) { "Run status and terminal reason do not agree." }
+        val terminalTick = props.getProperty("terminalTick")?.toLongOrNull()?.let(::Tick)
+            ?: error("Terminal run is missing or has an invalid terminalTick.")
+        val summaryValues = props.getProperty("runSummary")?.split(',')?.map { it.toLongOrNull() }
+        require(summaryValues?.size == 4 && summaryValues.all { it != null && it >= 0 }) {
+            "Terminal run is missing or has an invalid runSummary."
+        }
+        val summary = RunSummary(
+            waves = summaryValues[0]!!.toInt(),
+            kills = summaryValues[1]!!.toInt(),
+            leaks = summaryValues[2]!!.toInt(),
+            resources = parseResources(props.getProperty("runResources", "")).toSortedMap(),
+            ticks = Tick(summaryValues[3]!!),
+        )
+        return RunState(status, reason, terminalTick, summary)
     }
 
     private fun parsePendingCommands(text: String): List<EngineCommand> =
@@ -297,7 +495,10 @@ object SandboxSaveCodec {
             val payload = parts[4]
             if (type == "build_tower") {
                 val payloadParts = payload.split(':')
-                BuildTowerCommand(id, scheduledTick, payloadParts[0], TilePosition(payloadParts[1].toInt(), payloadParts[2].toInt()), actorId)
+                BuildTowerCommand(id, scheduledTick, payloadParts[0], TileCoordinate(payloadParts[1].toInt(), payloadParts[2].toInt()), actorId)
+            } else if (type == "upgrade_tower") {
+                val payloadParts = payload.split(':')
+                UpgradeTowerCommand(id, scheduledTick, payloadParts[0].toLong(), payloadParts[1], payloadParts[2].toInt(), actorId)
             } else {
                 dev.myengine.core.TextCommand(id, scheduledTick, type, payload, actorId)
             }
@@ -328,6 +529,8 @@ object SandboxSaveCodec {
                 TilePosition(xy[0].toInt(), xy[1].toInt())
             }
             val pathIndex = parts[12].toIntOrNull()
+            val upgradeBranch = parts.getOrNull(13)?.takeIf { it.isNotBlank() }
+            val upgradeTier = parts.getOrNull(14)?.toIntOrNull() ?: 0
             Entity(
                 id = id,
                 type = type,
@@ -338,7 +541,7 @@ object SandboxSaveCodec {
                 },
                 position = if (x != null && y != null) PositionComponent(TilePosition(x, y)) else null,
                 health = if (health != null && maxHealth != null) HealthComponent(health, maxHealth) else null,
-                tower = if (towerId != null && cooldown != null) TowerComponent(towerId, cooldown) else null,
+                tower = if (towerId != null && cooldown != null) TowerComponent(towerId, cooldown, upgradeBranch, upgradeTier) else null,
                 attack = if (range != null && damage != null && cooldownTicks != null) AttackComponent(range, damage, cooldownTicks) else null,
                 movement = if (path.isNotEmpty() && pathIndex != null) MovementComponent(path, pathIndex) else null,
             )
@@ -357,17 +560,25 @@ object SandboxGame {
 
     fun banner(): String = "${EngineInfo.banner()} / ${descriptor.id}"
 
-    fun loadRegistry(root: Path = contentRoot()): ContentRegistry {
+    fun loadRegistry(root: Path = contentRoot(), difficultyId: String? = null): ContentRegistry {
         val result = ContentPackLoader.load(root)
         require(result.isValid) { result.errors.joinToString("\n") }
-        return result.registry!!
+        val registry = result.registry!!
+        return difficultyId?.let(registry::resolveDifficulty) ?: registry
     }
 
-    fun createInitialState(registry: ContentRegistry = loadRegistry()): SandboxState {
-        val world = createWorld(registry)
+    fun createInitialState(
+        registry: ContentRegistry = loadRegistry(),
+        difficultyId: String? = null,
+        mapId: String? = null,
+    ): SandboxState {
+        val effectiveRegistry = difficultyId?.let(registry::resolveDifficulty) ?: registry
+        val map = effectiveRegistry.requireMap(mapId)
+        val world = createWorld(effectiveRegistry, map)
         return SandboxState(
             tick = Tick(0),
-            registry = registry,
+            registry = effectiveRegistry,
+            mapId = map.id,
             world = world,
             entities = EntityStore(),
             inventory = Inventory(mapOf("bolt" to 6)),
@@ -376,8 +587,12 @@ object SandboxGame {
         )
     }
 
-    fun createRuntime(registry: ContentRegistry = loadRegistry()): SandboxRuntime =
-        SandboxRuntime(createInitialState(registry))
+    fun createRuntime(
+        registry: ContentRegistry = loadRegistry(),
+        difficultyId: String? = null,
+        mapId: String? = null,
+    ): SandboxRuntime =
+        SandboxRuntime(createInitialState(registry, difficultyId, mapId))
 
     /**
      * Canonical replay/benchmark scenario. The pulse tower at (30,32) is adjacent to the core and
@@ -385,8 +600,8 @@ object SandboxGame {
      * Its hash is the long-standing baseline; kept stable on purpose. Use [runScriptedKillScenario]
      * to exercise the kill+reward path.
      */
-    fun runScriptedScenario(seed: Long = 7): SandboxScenarioResult =
-        runScriptedScenario(TilePosition(30, 32), seed)
+    fun runScriptedScenario(seed: Long = 7, difficultyId: String? = null, mapId: String? = null): SandboxScenarioResult =
+        runScriptedScenario(TilePosition(30, 32), seed, difficultyId, mapId)
 
     /**
      * Second canonical scenario that DOES exercise kills and the reward-deposit path. The pulse
@@ -394,13 +609,18 @@ object SandboxGame {
      * budget and their content-derived rewards are deposited into the inventory. Proven to kill by
      * SandboxRewardDepositTest / SandboxVerticalSliceTest; its hash is a stable, kill-bearing gate.
      */
-    fun runScriptedKillScenario(seed: Long = 7): SandboxScenarioResult =
-        runScriptedScenario(TilePosition(2, 2), seed)
+    fun runScriptedKillScenario(seed: Long = 7, difficultyId: String? = null, mapId: String? = null): SandboxScenarioResult =
+        runScriptedScenario(TilePosition(2, 2), seed, difficultyId, mapId)
 
-    private fun runScriptedScenario(towerPosition: TilePosition, seed: Long): SandboxScenarioResult {
-        val registry = loadRegistry()
-        val runtime = createRuntime(registry)
-        runtime.submit(BuildTowerCommand(dev.myengine.core.CommandId(1), Tick(1), "pulse", towerPosition))
+    private fun runScriptedScenario(
+        towerPosition: TilePosition,
+        seed: Long,
+        difficultyId: String?,
+        mapId: String?,
+    ): SandboxScenarioResult {
+        val registry = loadRegistry(difficultyId = difficultyId)
+        val runtime = createRuntime(registry, mapId = mapId)
+        runtime.submit(BuildTowerCommand(dev.myengine.core.CommandId(1), Tick(1), "pulse", TileCoordinate(towerPosition.x, towerPosition.y)))
         runtime.step(35)
         val save = SandboxSaveCodec.encode(runtime.state, seed)
         return SandboxScenarioResult(runtime.state.stableHash(), runtime.snapshot(), save, runtime.state.defense.metrics)
@@ -419,21 +639,19 @@ object SandboxGame {
             ?: cwd.resolve(Paths.get("games", "sandbox", "content", "sandbox"))
     }
 
-    private fun createWorld(registry: ContentRegistry): TileWorld {
+    private fun createWorld(registry: ContentRegistry, map: MapContent): TileWorld {
         val terrain = registry.tiles.values.associate {
             it.id to TerrainRule(it.id, it.buildable, it.blocksMovement, it.isCore)
         }
-        val world = TileWorld.filled(WorldSize(64, 64), terrain, "floor")
-        for (x in 0 until 64) {
-            world.setTile(TilePosition(x, 0), WorldTile("wall"))
-            world.setTile(TilePosition(x, 63), WorldTile("wall"))
+        val worldTiles = map.terrainRows.flatMap { row ->
+            row.map { symbol ->
+                val mapping = map.terrainMapping.getValue(symbol)
+                WorldTile(
+                    terrainId = mapping.terrainId,
+                    resourceNode = mapping.resourceNode?.let { ResourceNode(it.resourceId, it.amount) },
+                )
+            }
         }
-        for (y in 0 until 64) {
-            world.setTile(TilePosition(0, y), WorldTile("wall"))
-            world.setTile(TilePosition(63, y), WorldTile("wall"))
-        }
-        world.setTile(TilePosition(32, 32), WorldTile("core"))
-        world.setTile(TilePosition(5, 5), WorldTile("resource", ResourceNode("bolt", 100)))
-        return world
+        return TileWorld(WorldSize(map.width, map.height), terrain, worldTiles)
     }
 }

@@ -80,9 +80,20 @@ data class InventoryComponent(
 data class TowerComponent(
     val towerId: String,
     val cooldownRemaining: Int = 0,
+    val upgradeBranch: String? = null,
+    val upgradeTier: Int = 0,
 ) {
+    init {
+        require(upgradeBranch == null || upgradeBranch.isNotBlank()) { "Upgrade branch cannot be blank." }
+        require(upgradeTier >= 0) { "Upgrade tier cannot be negative." }
+        require((upgradeBranch == null) == (upgradeTier == 0)) { "Upgrade branch and tier must be set together." }
+    }
+
     fun appendHash(hash: StableHash) {
         hash.add(towerId).add(cooldownRemaining)
+        if (upgradeBranch != null) {
+            hash.add("upgrade").add(upgradeBranch).add(upgradeTier)
+        }
     }
 }
 

@@ -76,6 +76,43 @@ class PlaceholderRenderSurfaceTest {
     }
 
     @Test
+    fun projectsPathInSnapshotOrderAndTowerTierThroughTheSuppliedCamera() {
+        val pathTiles = listOf(
+            TilePosition(1, 1),
+            TilePosition(2, 1),
+            TilePosition(2, 2),
+        )
+        val snapshot = EngineSnapshot(
+            worldSize = WorldSize(64, 64),
+            tiles = listOf(tile(1, 1, "floor")),
+            entities = listOf(
+                RenderEntity(id = 1, type = "tower:pulse", position = TilePosition(5, 5), towerTier = 2),
+                RenderEntity(id = 2, type = "enemy:grunt", position = TilePosition(6, 6), health = 5, towerTier = 9),
+            ),
+            path = pathTiles,
+            coreHealth = 20,
+            debug = overlay(),
+        )
+
+        val pathCamera = Camera(WorldSize(64, 64), viewportWidth = 240f, viewportHeight = 240f)
+            .pan(3f, -4f)
+            .zoomBy(1.5f)
+        val frame = surface.project(snapshot, pathCamera)
+
+        // Path points, like primitives, are projected at tile centres and keep their snapshot order.
+        val expectedPath = pathTiles.map {
+            pathCamera.worldToScreen(WorldPoint(it.x + 0.5f, it.y + 0.5f))
+        }
+        assertEquals(expectedPath, frame.path)
+
+        // Tier is presentation data for towers only; it must not leak from other entity kinds.
+        val tower = frame.primitives.single { it.kind == RenderKind.TOWER }
+        assertEquals(2, tower.towerTier)
+        val enemy = frame.primitives.single { it.kind == RenderKind.ENEMY }
+        assertNull(enemy.towerTier)
+    }
+
+    @Test
     fun tilesPrecedeEntitiesAndEntitiesAreSortedByIdAscending() {
         val snapshot = EngineSnapshot(
             worldSize = WorldSize(64, 64),
@@ -137,6 +174,7 @@ class PlaceholderRenderSurfaceTest {
                 RenderEntity(id = 2, type = "enemy:g", position = TilePosition(6, 6), health = 5),
                 RenderEntity(id = 1, type = "tower:p", position = TilePosition(5, 5)),
             ),
+            path = listOf(TilePosition(1, 1), TilePosition(2, 1), TilePosition(2, 2)),
             coreHealth = 20,
             debug = overlay(),
         )

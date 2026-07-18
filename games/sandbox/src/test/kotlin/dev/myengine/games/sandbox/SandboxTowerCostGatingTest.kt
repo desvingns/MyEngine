@@ -2,9 +2,9 @@ package dev.myengine.games.sandbox
 
 import dev.myengine.core.CommandId
 import dev.myengine.core.Tick
+import dev.myengine.core.command.BuildTowerCommand
+import dev.myengine.core.command.TileCoordinate
 import dev.myengine.logistics.Inventory
-import dev.myengine.render.BuildTowerCommand
-import dev.myengine.world.TilePosition
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -21,7 +21,7 @@ class SandboxTowerCostGatingTest {
         val runtime = SandboxGame.createRuntime(registry)
         val startingBalance = runtime.state.inventory.amount(tower.costResource)
 
-        runtime.submit(BuildTowerCommand(CommandId(1), Tick(1), tower.id, TilePosition(2, 2)))
+        runtime.submit(BuildTowerCommand(CommandId(1), Tick(1), tower.id, TileCoordinate(2, 2)))
         runtime.step(1)
 
         assertTrue(startingBalance >= tower.costAmount, "test setup must afford the tower")
@@ -37,7 +37,7 @@ class SandboxTowerCostGatingTest {
         val unaffordableBalance = tower.costAmount - 1
         runtime.state.inventory = Inventory(mapOf(tower.costResource to unaffordableBalance))
 
-        runtime.submit(BuildTowerCommand(CommandId(1), Tick(1), tower.id, TilePosition(2, 2)))
+        runtime.submit(BuildTowerCommand(CommandId(1), Tick(1), tower.id, TileCoordinate(2, 2)))
         runtime.step(1)
 
         assertTrue(tower.costAmount > 0, "test setup requires a positive tower cost")
@@ -54,7 +54,7 @@ class SandboxTowerCostGatingTest {
         val runtime = SandboxGame.createRuntime(registry)
         val startingBalance = runtime.state.inventory.amount(tower.costResource)
 
-        runtime.submit(BuildTowerCommand(CommandId(1), Tick(1), tower.id, TilePosition(0, 0)))
+        runtime.submit(BuildTowerCommand(CommandId(1), Tick(1), tower.id, TileCoordinate(0, 0)))
         runtime.step(1)
 
         assertEquals(startingBalance, runtime.state.inventory.amount(tower.costResource))
@@ -70,7 +70,7 @@ class SandboxTowerCostGatingTest {
         fun run(): String {
             val runtime = SandboxGame.createRuntime(registry)
             runtime.state.inventory = Inventory(mapOf(tower.costResource to tower.costAmount - 1))
-            runtime.submit(BuildTowerCommand(CommandId(1), Tick(1), tower.id, TilePosition(2, 2)))
+            runtime.submit(BuildTowerCommand(CommandId(1), Tick(1), tower.id, TileCoordinate(2, 2)))
             runtime.step(3)
             return runtime.state.stableHash()
         }

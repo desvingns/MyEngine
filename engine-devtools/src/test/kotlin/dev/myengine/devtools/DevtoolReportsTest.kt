@@ -66,6 +66,7 @@ class DevtoolReportsTest {
 
         assertTrue(report.valid, report.errors.joinToString("\n"))
         assertTrue(report.ids.getValue("towers").contains("pulse"))
+        assertTrue(report.ids.getValue("maps").contains("sandbox-canonical"))
     }
 
     @Test

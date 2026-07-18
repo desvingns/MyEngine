@@ -26,6 +26,7 @@ data class RenderPrimitive(
     val tile: TilePosition,
     val screen: ScreenPoint,
     val health: Int? = null,
+    val towerTier: Int? = null,
 )
 
 /**
@@ -34,6 +35,7 @@ data class RenderPrimitive(
  */
 data class RenderFrame(
     val primitives: List<RenderPrimitive>,
+    val path: List<ScreenPoint>,
     val coreHealth: Int,
     val tick: Tick,
 )
@@ -67,11 +69,13 @@ class PlaceholderRenderSurface {
                 tile = entity.position,
                 screen = tileCenterScreen(entity.position, camera),
                 health = if (kind == RenderKind.ENEMY) entity.health else null,
+                towerTier = if (kind == RenderKind.TOWER) entity.towerTier else null,
             )
         }
 
         return RenderFrame(
             primitives = primitives,
+            path = snapshot.path.map { tileCenterScreen(it, camera) },
             coreHealth = snapshot.coreHealth,
             tick = snapshot.debug.tick,
         )

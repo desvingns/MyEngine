@@ -326,6 +326,7 @@ object DevtoolReports {
                     "recipes" to registry.recipes.keys.toList(),
                     "waves" to registry.waves.keys.toList(),
                     "incidents" to registry.incidents.keys.toList(),
+                    "maps" to registry.maps.keys.toList(),
                 )
             },
         )

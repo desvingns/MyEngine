@@ -13,7 +13,8 @@ import java.util.Properties
  * that keeps simulation Android-free. The owning lifecycle (e.g. an Activity) calls [save] on
  * pause and [restore] on recreate; it must not reach into the runtime directly.
  *
- * SAVE SOUNDNESS: [SandboxSaveCodec] (v2) persists `state` AND the runtime's pending
+ * SAVE SOUNDNESS: [SandboxSaveCodec] v5 persists `state`, terminal run status/summary, selected
+ * map id, content version, tower upgrade branch/tier markers, and the runtime's pending
  * [dev.myengine.core.CommandQueue], so [save] is sound at ANY tick — a future-tick command still
  * queued at save time round-trips through [restore] and is re-queued on the reconstructed runtime.
  * The per-tick `SeededRandom(17)` incident cursor is NOT persisted, but is confirmed to be a fresh
@@ -47,11 +48,13 @@ class SandboxSession(
         /** Default sandbox seed, matching [SandboxGame.runScriptedScenario]'s default. */
         const val DEFAULT_SEED: Long = 7L
 
-        /** Starts a fresh session on a new runtime built from [registry], carrying [seed]. */
+        /** Starts a fresh session after optionally materializing a data-defined difficulty. */
         fun start(
             registry: ContentRegistry = SandboxGame.loadRegistry(),
             seed: Long = DEFAULT_SEED,
-        ): SandboxSession = SandboxSession(SandboxGame.createRuntime(registry), seed)
+            difficultyId: String? = null,
+            mapId: String? = null,
+        ): SandboxSession = SandboxSession(SandboxGame.createRuntime(registry, difficultyId, mapId), seed)
 
         /**
          * Restores a session from a save [text] produced by [save].
@@ -70,7 +73,7 @@ class SandboxSession(
             val pendingCommands = SandboxSaveCodec.decodePendingCommands(text)
             val seed = parseSeed(text)
             val runtime = SandboxRuntime(state)
-            runtime.submitAll(pendingCommands)
+            runtime.restorePendingCommands(pendingCommands)
             return SandboxSession(runtime, seed)
         }
 

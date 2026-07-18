@@ -87,7 +87,7 @@ class DefenseRuntime(private val pathfinder: GridPathfinder = GridPathfinder()) 
     ): DefenseState {
         var nextState = state
         registry.waves.values
-            .filter { it.startTick == tick.value && it.id !in state.spawnedWaveIds }
+            .filter { it.startTick <= tick.value && it.id !in state.spawnedWaveIds }
             .sortedBy { it.id }
             .forEach { wave ->
                 wave.spawns.forEach { spawnDef ->

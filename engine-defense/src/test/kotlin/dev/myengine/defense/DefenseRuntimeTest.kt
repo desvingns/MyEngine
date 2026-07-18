@@ -1,6 +1,9 @@
 package dev.myengine.defense
 
 import dev.myengine.content.ContentPackLoader
+import dev.myengine.content.WaveContent
+import dev.myengine.content.WaveSpawn
+import dev.myengine.core.Tick
 import dev.myengine.entities.EntityStore
 import dev.myengine.world.TerrainRule
 import dev.myengine.world.TilePosition
@@ -100,6 +103,37 @@ class DefenseRuntimeTest {
         val result = runtime.updateTowers(registry, entities)
         assertEquals(0, result.metrics.enemiesKilled)
         assertTrue(result.rewards.isEmpty())
+    }
+
+    @Test
+    fun dueAndOverdueWavesSpawnInStableIdOrder() {
+        val base = testRegistry()
+        val alpha = base.enemies.getValue("scout").copy(id = "alpha")
+        val zeta = base.enemies.getValue("scout").copy(id = "zeta")
+        val registry = base.copy(
+            enemies = mapOf(alpha.id to alpha, zeta.id to zeta),
+            waves = linkedMapOf(
+                "z-overdue" to WaveContent("z-overdue", 1, listOf(WaveSpawn(zeta.id, 1))),
+                "a-due" to WaveContent("a-due", 7, listOf(WaveSpawn(alpha.id, 1))),
+            ),
+        )
+        val terrain = mapOf("floor" to TerrainRule("floor", buildable = true, blocksMovement = false))
+        val world = TileWorld.filled(WorldSize(3, 1), terrain, "floor")
+        val entities = EntityStore()
+
+        val state = DefenseRuntime().spawnDueWaves(
+            Tick(7),
+            DefenseState(coreHealth = 3),
+            registry,
+            world,
+            entities,
+            TilePosition(0, 0),
+            TilePosition(2, 0),
+        )
+
+        assertEquals(setOf("a-due", "z-overdue"), state.spawnedWaveIds)
+        assertEquals(2, state.metrics.enemiesSpawned)
+        assertEquals(listOf("enemy:alpha", "enemy:zeta"), entities.byTag("enemy").map { it.type })
     }
 
     private fun testRegistry() = Files.createTempDirectory("myengine-defense-test").let { root ->
