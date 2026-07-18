@@ -109,7 +109,7 @@ class DefenseRuntime(private val pathfinder: GridPathfinder = GridPathfinder()) 
                 type = "tower:$towerId",
                 tags = setOf("tower"),
                 position = PositionComponent(position),
-                tower = TowerComponent(towerId),
+                tower = TowerComponent(towerId, targetingMode = tower.targetingMode),
                 attack = AttackComponent(tower.range, tower.damage, tower.cooldownTicks),
             )
         }
@@ -144,7 +144,11 @@ class DefenseRuntime(private val pathfinder: GridPathfinder = GridPathfinder()) 
         return nextState
     }
 
-    fun updateTowers(registry: ContentRegistry, entities: EntityStore): TowerUpdateResult {
+    fun updateTowers(
+        registry: ContentRegistry,
+        entities: EntityStore,
+        goalField: GoalField? = null,
+    ): TowerUpdateResult {
         var metrics = DefenseMetrics()
         val rewards = mutableMapOf<String, Int>()
         val towerMetrics = mutableMapOf<Long, TowerDefenseMetrics>()
@@ -158,15 +162,19 @@ class DefenseRuntime(private val pathfinder: GridPathfinder = GridPathfinder()) 
             val towerPosition = towerEntity.position?.tile ?: return@forEach
             // Query the store for every firing tower: earlier towers may already have changed
             // health or killed a target during this same deterministic update pass.
-            val target = entities.byTag("enemy")
-                .filter { enemy ->
-                    val position = enemy.position?.tile ?: return@filter false
-                    val health = enemy.health ?: return@filter false
-                    health.isAlive() && towerPosition.manhattanDistance(position) <= attack.range
-                }
-                .sortedWith(compareBy<Entity> { towerPosition.manhattanDistance(it.position!!.tile) }.thenBy { it.id.value })
-                .firstOrNull()
-                ?: return@forEach
+            val target = if (goalField != null) {
+                TargetSelector.select(towerComponent.targetingMode, towerPosition, attack.range, entities.byTag("enemy"), goalField)
+            } else {
+                // Compatibility for direct defense-module callers predating goal-field routing.
+                entities.byTag("enemy")
+                    .filter { enemy ->
+                        val position = enemy.position?.tile ?: return@filter false
+                        val health = enemy.health ?: return@filter false
+                        health.isAlive() && towerPosition.manhattanDistance(position) <= attack.range
+                    }
+                    .sortedWith(compareBy<Entity> { towerPosition.manhattanDistance(it.position!!.tile) }.thenBy { it.id.value })
+                    .firstOrNull()
+            } ?: return@forEach
 
             val health = target.health ?: return@forEach
             val damaged = health.damage(attack.damage)

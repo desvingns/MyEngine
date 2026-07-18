@@ -44,6 +44,9 @@ Definition files use `<id>.<field>=<value>`.
 - `costAmount`: non-negative int
 - `sellRefundRatio`: required decimal in the inclusive range `0..1`; selling returns
   `floor(cumulative base and applied-tier spend per resource * sellRefundRatio)`
+- `targetingMode`: optional targeting priority: `first`, `last`, `nearest`, `strongest`, or
+  `weakest`; omitted schema-v1 content defaults deterministically to `nearest`, while an authored
+  invalid value is rejected
 - `upgrade.<branch>.<tier>.displayKey`: required localization key when the tier exists
 - `upgrade.<branch>.<tier>.range`: optional positive int
 - `upgrade.<branch>.<tier>.damage`: optional positive int

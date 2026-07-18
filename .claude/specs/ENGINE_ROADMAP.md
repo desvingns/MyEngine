@@ -28,7 +28,7 @@ Last updated: 2026-07-18
 | HUD snapshot data + UI command surface | ENG-027 | mytd, vision:td, vision:rimworld-like, vision:mindustry-like | 4 | **done** (2026-07-18; content-derived immutable HUD snapshot, Android build/select/upgrade panels through `InputAdapter`, deterministic per-tower damage/kills, save v6 metrics persistence; full gates pass, device/layout/performance checks manual-pending) |
 | Goal-field pathfinding + repath on world change (mazing) | ENG-002 | mytd, vision:td, vision:mindustry-like | 3 | **done** (2026-07-18; deterministic `GoalField`, prospective all-spawn placement rejection, same-tick reroute, v6-derived field/legacy canonicalization; replay/save/benchmark gates pass) |
 | Multiple spawn points + per-wave routing | ENG-007 | vision:td, vision:mindustry-like | 2 | backlog |
-| Targeting priority modes | ENG-008 | mytd, vision:td | 2 | backlog |
+| Targeting priority modes | ENG-008 | mytd, vision:td | 2 | **done** (2026-07-18; pure deterministic first/last/nearest/strongest/weakest selector with entity-id tiebreak, content default + queued per-tower override, HUD projection, and save v7 migration) |
 | Splash damage + shot events | ENG-009 | mytd, vision:td, vision:mindustry-like | 3 | backlog |
 | Status effects framework | ENG-010 | mytd, vision:td, vision:mindustry-like | 3 | backlog |
 | Enemy armor + damage types | ENG-011 | vision:td, vision:mindustry-like | 2 | backlog |
@@ -95,8 +95,8 @@ Last updated: 2026-07-18
 2. MTD-004 -> ENG-024 -> ENG-005 -> ENG-014 -> MTD-005 -> ENG-026 -> ENG-027 =
    **first playable Android TD milestone** (complete 2026-07-18; manual device/layout/performance
    evidence remains explicitly pending).
-3. P1 opener: ENG-002 (done) -> ENG-013 (done) -> ENG-008 -> ENG-015 -> ENG-030. The next exact
-   backlog action is `ENG-008`.
+3. P1 opener: ENG-002 (done) -> ENG-013 (done) -> ENG-008 (done) -> ENG-015 -> ENG-030. The next
+   exact backlog action is `ENG-015`.
 4. DX-008 is done: use its hybrid-format ADR for ENG-017/ENG-028 schema work. Other high-leverage
    pipeline cards remain DX-002, DX-006, and DX-005.
 

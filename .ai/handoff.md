@@ -1,6 +1,6 @@
 # MyEngine Handoff
 
-Last updated: 2026-07-18 (ENG-013 tower sell/refund accepted; next P1 item is ENG-008)
+Last updated: 2026-07-18 (ENG-008 targeting priority modes accepted; next P1 item is ENG-015)
 Owner: Codex
 
 ## DONE
@@ -471,6 +471,12 @@ Owner: Codex
   metrics, rebuilds `GoalField` before enemy movement in that tick, and deposits the refund.
   Pending sells round-trip id/tick/actor/payload through the existing queue encoding. No ADR and no
   save-version change: `SandboxSaveCodec.SAVE_VERSION` remains `6`.
+- MyEngine ENG-008 (targeting priority modes, 2026-07-18) is complete. `TargetSelector` is a pure
+  selector for `first`, `last`, `nearest`, `strongest`, and `weakest`, resolving ties by entity id.
+  Content declares a per-tower default; missing `targetingMode` in a v1 pack defaults to `NEAREST`.
+  `SetTowerTargetingModeCommand` is queued and applies the per-tower override at the command
+  boundary; immutable HUD tower data exposes the active mode. Save v7 persists tower modes and a
+  pending mode-switch command, while v1-v6 migration resolves the content default.
 
 —
 ## MyTD (2026-07-04)
@@ -485,11 +491,11 @@ Owner: Codex
 
 ## NEXT
 
-Implement MyEngine `ENG-008` (targeting priority modes):
+Implement MyEngine `ENG-015` (presentation-side game speed control):
 
 ```powershell
 Get-Content -Raw .claude\specs\ENGINE_ROADMAP.md
-Get-Content -Raw .claude\specs\backlog\ENG-008-targeting-priorities.md
+Get-Content -Raw .claude\specs\backlog\ENG-015-game-speed-control.md
 ```
 
 ## BLOCKERS
@@ -581,6 +587,11 @@ Get-Content -Raw .claude\specs\backlog\ENG-008-targeting-priorities.md
 
 ## VERIFICATION
 
+- ENG-008 (2026-07-18): full `./gradlew.bat test`, content validation (2 packs), replay,
+  save-compat, and benchmark -> pass. Replay hashes: canonical `12a65fd2b87593cf`, kill
+  `bb37eefc1903cc77`; benchmark: canonical `432 ms`, kill `79 ms`, 64x64 goal-field rebuild
+  `5.3678 ms`. Selector-mode, v1-default, queued-switch/replay, HUD, v1-v6 -> v7 migration, and
+  pending-command save coverage pass. Required reviewers and final `me-verifier` -> pass.
 - ENG-013 (2026-07-18): final full `./gradlew.bat test` -> pass; content validation -> pass
   (`validated 2 pack(s)`); replay -> pass with canonical `463d87684ca6cbee` and kill
   `40c7bda7e3bc1316`; save-compat -> pass; benchmark -> pass (`canonical=335 ms`, `kill=70 ms`,

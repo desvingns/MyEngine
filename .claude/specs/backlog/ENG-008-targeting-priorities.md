@@ -1,6 +1,6 @@
 id: ENG-008
 title: Targeting priority modes
-status: backlog
+status: done
 phase: engine
 source: engine gap sweep 2026-07-06 (project review)
 

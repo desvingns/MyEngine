@@ -19,7 +19,9 @@ import dev.myengine.core.TerminalReason
 import dev.myengine.core.Tick
 import dev.myengine.core.command.BuildTowerCommand
 import dev.myengine.core.command.SellTowerCommand
+import dev.myengine.core.command.SetTowerTargetingModeCommand
 import dev.myengine.core.command.TileCoordinate
+import dev.myengine.core.command.TargetingMode
 import dev.myengine.core.command.UpgradeTowerCommand
 import dev.myengine.defense.DefenseRuntime
 import dev.myengine.defense.DefenseState
@@ -176,7 +178,7 @@ class SandboxRuntime(
                 core,
                 goalField,
             )
-            val towerResult = defenseRuntime.updateTowers(state.registry, state.entities)
+            val towerResult = defenseRuntime.updateTowers(state.registry, state.entities, goalField)
             state.defense = state.defense.record(towerResult.metrics).recordTowerMetrics(towerResult.towerMetrics)
             val deposit = depositRewards(state.inventory, towerResult.rewards)
             state.inventory = deposit.inventory
@@ -274,6 +276,7 @@ class SandboxRuntime(
                 damage = entity.attack?.damage ?: tower.damage,
                 actualDamage = metrics?.actualDamage ?: 0,
                 kills = metrics?.kills ?: 0,
+                targetingMode = component.targetingMode,
                 availableUpgrades = upgrades,
             )
         }
@@ -308,6 +311,7 @@ class SandboxRuntime(
             is BuildTowerCommand -> buildTower(command)
             is UpgradeTowerCommand -> upgradeTower(command)
             is SellTowerCommand -> sellTower(command)
+            is SetTowerTargetingModeCommand -> setTowerTargetingMode(command)
             else -> state.lastCommandOrError = "ignored:${command.type}"
         }
     }
@@ -429,6 +433,20 @@ class SandboxRuntime(
         state.lastCommandOrError = "sold:${command.towerEntityId}"
     }
 
+    private fun setTowerTargetingMode(command: SetTowerTargetingModeCommand) {
+        val entityId = EntityId(command.towerEntityId)
+        val entity = state.entities.get(entityId)
+        val towerComponent = entity?.tower
+        if (entity == null || towerComponent == null) {
+            state.lastCommandOrError = "unknown_tower_entity:${command.towerEntityId}"
+            return
+        }
+        state.entities.update(entityId) {
+            it.copy(tower = towerComponent.copy(targetingMode = command.targetingMode))
+        }
+        state.lastCommandOrError = "targeting_mode:${command.towerEntityId}:${command.targetingMode.id}"
+    }
+
     /**
      * Reconstructs only the content costs that were actually applied to this tower. Upgrade
      * transitions are sequential within a branch, so the component's current tier identifies
@@ -527,7 +545,7 @@ class SandboxRuntime(
 }
 
 object SandboxSaveCodec {
-    const val SAVE_VERSION: Int = 6
+    const val SAVE_VERSION: Int = 7
 
     fun encode(state: SandboxState, seed: Long, pendingCommands: List<EngineCommand> = emptyList()): String {
         val props = Properties()
@@ -581,6 +599,7 @@ object SandboxSaveCodec {
                 entity.movement?.pathIndex ?: "",
                 entity.tower?.upgradeBranch ?: "",
                 entity.tower?.upgradeTier?.takeIf { entity.tower?.upgradeBranch != null } ?: "",
+                entity.tower?.targetingMode?.id ?: "",
             ).joinToString("|")
         }
         props["pendingCommands"] = pendingCommands.joinToString(";") { cmd ->
@@ -622,7 +641,7 @@ object SandboxSaveCodec {
                 Producer(parts[0], parts[1], parts[2].toInt())
             }
         state.run = if (version >= 5) parseRunState(props) else RunState()
-        val entities = parseEntities(props.getProperty("entities", ""))
+        val entities = parseEntities(props.getProperty("entities", ""), registry, version)
         state.world.positions().forEach { state.world.clearOccupancy(it) }
         val loadedStore = EntityStore(props.getProperty("nextEntityId").toLong(), entities)
         entities.filter { it.tower != null }.forEach { entity ->
@@ -698,6 +717,12 @@ object SandboxSaveCodec {
                 UpgradeTowerCommand(id, scheduledTick, payloadParts[0].toLong(), payloadParts[1], payloadParts[2].toInt(), actorId)
             } else if (type == "sell_tower") {
                 SellTowerCommand(id, scheduledTick, payload.toLong(), actorId)
+            } else if (type == "set_tower_targeting_mode") {
+                val payloadParts = payload.split(':')
+                require(payloadParts.size == 2) { "Invalid targeting mode command payload '$payload'." }
+                val mode = TargetingMode.fromId(payloadParts[1])
+                    ?: error("Unknown targeting mode '${payloadParts[1]}'.")
+                SetTowerTargetingModeCommand(id, scheduledTick, payloadParts[0].toLong(), mode, actorId)
             } else {
                 dev.myengine.core.TextCommand(id, scheduledTick, type, payload, actorId)
             }
@@ -720,7 +745,7 @@ object SandboxSaveCodec {
             entityId to dev.myengine.defense.TowerDefenseMetrics(actualDamage, kills)
         }.toSortedMap()
 
-    private fun parseEntities(text: String): List<Entity> =
+    private fun parseEntities(text: String, registry: ContentRegistry, version: Int): List<Entity> =
         text.split(';').filter { it.isNotBlank() }.map { encoded ->
             val parts = encoded.split('|')
             val id = EntityId(parts[0].toLong())
@@ -741,6 +766,14 @@ object SandboxSaveCodec {
             val pathIndex = parts[12].toIntOrNull()
             val upgradeBranch = parts.getOrNull(13)?.takeIf { it.isNotBlank() }
             val upgradeTier = parts.getOrNull(14)?.toIntOrNull() ?: 0
+            val targetingMode = if (towerId == null) {
+                TargetingMode.NEAREST
+            } else if (version >= 7) {
+                TargetingMode.fromId(parts.getOrNull(15).orEmpty())
+                    ?: error("Save version 7 has an invalid targeting mode for tower '$towerId'.")
+            } else {
+                registry.requireTower(towerId).targetingMode
+            }
             Entity(
                 id = id,
                 type = type,
@@ -751,7 +784,7 @@ object SandboxSaveCodec {
                 },
                 position = if (x != null && y != null) PositionComponent(TilePosition(x, y)) else null,
                 health = if (health != null && maxHealth != null) HealthComponent(health, maxHealth) else null,
-                tower = if (towerId != null && cooldown != null) TowerComponent(towerId, cooldown, upgradeBranch, upgradeTier) else null,
+                tower = if (towerId != null && cooldown != null) TowerComponent(towerId, cooldown, upgradeBranch, upgradeTier, targetingMode) else null,
                 attack = if (range != null && damage != null && cooldownTicks != null) AttackComponent(range, damage, cooldownTicks) else null,
                 // Wave routing is a derived GoalField cache.  Older v6 saves can still carry a
                 // serialized per-enemy path; discard it and rebuild from restored world occupancy.

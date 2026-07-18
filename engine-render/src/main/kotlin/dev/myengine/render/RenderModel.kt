@@ -4,6 +4,7 @@ import dev.myengine.core.RunStatus
 import dev.myengine.core.RunSummary
 import dev.myengine.core.TerminalReason
 import dev.myengine.core.Tick
+import dev.myengine.core.command.TargetingMode
 import dev.myengine.world.TilePosition
 import dev.myengine.world.WorldSize
 
@@ -71,6 +72,7 @@ data class HudTowerInfo(
     val damage: Int,
     val actualDamage: Long,
     val kills: Int,
+    val targetingMode: TargetingMode,
     val availableUpgrades: List<HudTowerTier>,
 )
 

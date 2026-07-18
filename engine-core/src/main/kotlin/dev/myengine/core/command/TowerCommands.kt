@@ -56,3 +56,18 @@ data class SellTowerCommand(
     override val type: String = "sell_tower"
     override fun stablePayload(): String = towerEntityId.toString()
 }
+
+data class SetTowerTargetingModeCommand(
+    override val id: CommandId,
+    override val scheduledTick: Tick,
+    val towerEntityId: Long,
+    val targetingMode: TargetingMode,
+    override val actorId: Long? = null,
+) : EngineCommand {
+    init {
+        require(towerEntityId > 0) { "Tower entity id must be positive." }
+    }
+
+    override val type: String = "set_tower_targeting_mode"
+    override fun stablePayload(): String = "$towerEntityId:${targetingMode.id}"
+}

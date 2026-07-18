@@ -39,7 +39,7 @@
 1. Оригинальный план Phase 00-14 закрыт.
 2. Первый playable Android TD milestone закрыт через `ENG-027`; ручные device/layout/performance
    проверки остаются явно отложенными.
-3. Следующий backlog item: `ENG-008` (targeting priority modes).
+3. Следующий backlog item: `ENG-015` (presentation-side game speed control).
 4. Hardening gaps из `docs/HARDENING_AUDIT.md` закрывать по одному, с тестами и обновлением handoff.
 
 Новые крупные фазы добавлять только после того, как backlog specs перестанут быть достаточно
@@ -956,3 +956,23 @@
     the final successful rerun; telemetry reports `retro_due=false`.
 - Next:
   - Implement `.claude/specs/backlog/ENG-008-targeting-priorities.md`.
+
+### 2026-07-18 - MyEngine ENG-008 (targeting priority modes)
+
+- Status: Done
+- Owner: Codex
+- Implementation:
+  - Pure `TargetSelector` chooses `first`, `last`, `nearest`, `strongest`, or `weakest` among
+    in-range enemies, with entity id as the deterministic final tiebreak.
+  - Tower content declares the default; legacy v1 content without `targetingMode` uses `NEAREST`.
+    The queued `SetTowerTargetingModeCommand` applies a per-tower override, and the immutable HUD
+    exposes the selected mode.
+  - Save v7 persists both the tower mode and a pending mode-switch command; v1-v6 saves migrate by
+    resolving the content default.
+- Verification:
+  - Full Gradle tests, content validation (2 packs), replay, save-compat, and benchmark -> pass.
+  - Replay hashes: canonical `12a65fd2b87593cf`, kill `bb37eefc1903cc77`; benchmark output:
+    canonical `432 ms`, kill `79 ms`, 64x64 goal-field rebuild `5.3678 ms`.
+  - Required domain reviewers and final verifier -> pass.
+- Next:
+  - Implement `.claude/specs/backlog/ENG-015-game-speed-control.md`.

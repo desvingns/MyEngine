@@ -1,6 +1,7 @@
 package dev.myengine.content
 
 import java.math.BigDecimal
+import dev.myengine.core.command.TargetingMode
 
 data class ContentPackManifest(
     val id: String,
@@ -36,6 +37,7 @@ data class TowerContent(
     val costResource: String,
     val costAmount: Int,
     val sellRefundRatio: BigDecimal,
+    val targetingMode: TargetingMode,
     val upgradeTiers: Map<String, TowerUpgradeTier> = emptyMap(),
     val displayKey: String = "tower.$id",
 ) : ContentDefinition

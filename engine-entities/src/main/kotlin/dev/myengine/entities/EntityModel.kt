@@ -1,6 +1,7 @@
 package dev.myengine.entities
 
 import dev.myengine.core.StableHash
+import dev.myengine.core.command.TargetingMode
 import dev.myengine.world.TilePosition
 
 @JvmInline
@@ -82,6 +83,7 @@ data class TowerComponent(
     val cooldownRemaining: Int = 0,
     val upgradeBranch: String? = null,
     val upgradeTier: Int = 0,
+    val targetingMode: TargetingMode = TargetingMode.NEAREST,
 ) {
     init {
         require(upgradeBranch == null || upgradeBranch.isNotBlank()) { "Upgrade branch cannot be blank." }
@@ -94,6 +96,7 @@ data class TowerComponent(
         if (upgradeBranch != null) {
             hash.add("upgrade").add(upgradeBranch).add(upgradeTier)
         }
+        hash.add("targeting").add(targetingMode.id)
     }
 }
 

@@ -9,6 +9,7 @@ import kotlinx.serialization.json.intOrNull
 import java.nio.file.Files
 import java.nio.file.Path
 import java.math.BigDecimal
+import dev.myengine.core.command.TargetingMode
 import java.util.ArrayDeque
 import java.util.Properties
 
@@ -166,6 +167,7 @@ object ContentPackLoader {
             sellRefundRatio = fields.requiredDecimalInRange(file, id, "sellRefundRatio", BigDecimal.ZERO, BigDecimal.ONE, errors)
                 ?: return null,
             upgradeTiers = parseTowerUpgradeTiers(id, fields, errors, file),
+            targetingMode = fields.targetingModeOrDefault(file, id, errors) ?: return null,
         )
 
     private fun parseTowerUpgradeTiers(
@@ -732,6 +734,21 @@ object ContentPackLoader {
     private fun Map<String, String>.requiredNonNegativeLong(file: String, id: String, field: String, errors: MutableList<ContentValidationError>): Long? {
         val value = required(file, id, field, errors)?.toLongOrNull() ?: return errors.addAndNull(file, id, field, "Expected integer.")
         return if (value >= 0) value else errors.addAndNull(file, id, field, "Expected non-negative integer.")
+    }
+
+    /** Optional in schema v1 packs; absence preserves legacy deterministic nearest targeting. */
+    private fun Map<String, String>.targetingModeOrDefault(
+        file: String,
+        id: String,
+        errors: MutableList<ContentValidationError>,
+    ): TargetingMode? {
+        val value = this["targetingMode"] ?: return TargetingMode.NEAREST
+        return TargetingMode.fromId(value) ?: errors.addAndNull(
+            file,
+            id,
+            "targetingMode",
+            "Expected one of ${TargetingMode.entries.joinToString { it.id }}.",
+        )
     }
 
     private fun Map<String, String>.requiredPositiveDecimal(file: String, id: String, field: String, errors: MutableList<ContentValidationError>): BigDecimal? {

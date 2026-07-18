@@ -296,6 +296,7 @@ class DefenseRuntimeTest {
             basic.costResource=bolt
             basic.costAmount=1
             basic.sellRefundRatio=0.5
+            basic.targetingMode=nearest
             """.trimIndent(),
         )
         root.resolve("enemies.properties").writeText(

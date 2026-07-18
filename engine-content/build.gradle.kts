@@ -15,7 +15,7 @@ java {
 }
 
 dependencies {
-    implementation(project(":engine-core"))
+    api(project(":engine-core"))
     implementation(libs.kotlinx.serialization.json)
     testImplementation(libs.kotlin.test.junit5)
     testImplementation(libs.junit.jupiter)

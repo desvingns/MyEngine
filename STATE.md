@@ -1,8 +1,8 @@
 # MyEngine State
 
 Last updated: 2026-07-18
-Active phase: Phase 00-14 complete; Signal Garden SG-001..005 complete; MyTD MTD-001..005 complete; DX-008, ENG-002, ENG-005, ENG-013, ENG-014, ENG-026, and ENG-027 complete; pipeline at v0.2.0; next engine backlog is `ENG-008` targeting priority modes
-Owner of last update: Codex (2026-07-18: ENG-013 accepted; next P1 item is ENG-008)
+Active phase: Phase 00-14 complete; Signal Garden SG-001..005 complete; MyTD MTD-001..005 complete; DX-008, ENG-002, ENG-005, ENG-008, ENG-013, ENG-014, ENG-026, and ENG-027 complete; pipeline at v0.2.0; next engine backlog is `ENG-015` game speed control
+Owner of last update: Codex (2026-07-18: ENG-008 accepted; next P1 item is ENG-015)
 
 ## Current Status
 
@@ -199,19 +199,26 @@ Owner of last update: Codex (2026-07-18: ENG-013 accepted; next P1 item is ENG-0
   sale clears occupancy, removes the entity and its metrics, then rebuilds the ENG-002 goal field
   before same-tick enemy movement. Pending sell commands round-trip with id, tick, actor, and
   payload; `SandboxSaveCodec.SAVE_VERSION` remains `6`.
+- MyEngine ENG-008 (targeting priority modes, 2026-07-18) is accepted. `TargetSelector` is a pure,
+  deterministic in-range selector for `FIRST`, `LAST`, `NEAREST`, `STRONGEST`, and `WEAKEST`, with
+  entity id as the final tiebreak. Tower content supplies a default (`targetingMode` omitted by a v1
+  pack deterministically defaults to `NEAREST`); the queued `SetTowerTargetingModeCommand` applies a
+  per-tower override at the runtime command boundary. Immutable HUD tower data exposes the active
+  mode. `SandboxSaveCodec` v7 persists tower modes and pending mode-switch commands, and migrates
+  v1-v6 saves by resolving the current content default.
 
 ## Next Exact Action
 
-Implement engine backlog item `ENG-008` (targeting priority modes):
+Implement engine backlog item `ENG-015` (presentation-side game speed control):
 
 ```powershell
 Get-Content -Raw .claude\specs\ENGINE_ROADMAP.md
-Get-Content -Raw .claude\specs\backlog\ENG-008-targeting-priorities.md
+Get-Content -Raw .claude\specs\backlog\ENG-015-game-speed-control.md
 ```
 
 Expected next output:
 
-- Deterministic content-defined targeting modes with focused unit and replay coverage
+- Presentation-side game speed policy that does not alter authoritative fixed-tick simulation
 
 ## Known Blockers
 
@@ -317,6 +324,12 @@ Expected next output:
 
 ## Verification
 
+- ENG-008 (2026-07-18): full `./gradlew.bat test` -> pass; content validation -> pass
+  (`validated 2 pack(s)`); replay -> pass with canonical `12a65fd2b87593cf` and kill
+  `bb37eefc1903cc77`; save-compat -> pass; benchmark -> pass (`canonical=432 ms`, `kill=79 ms`,
+  64x64 goal-field rebuild `5.3678 ms`). Required domain reviewers and final `me-verifier` -> pass.
+  Coverage includes every selector mode, v1 content fallback to `NEAREST`, queued mid-run switching,
+  HUD projection, v1-v6 -> v7 save migration, and pending-command round-trip.
 - ENG-013 (2026-07-18): full `./gradlew.bat test` -> pass; content validation -> pass
   (`validated 2 pack(s)`); replay -> pass with canonical `463d87684ca6cbee` and kill
   `40c7bda7e3bc1316`; save-compat -> pass; benchmark -> pass (`canonical=335 ms`, `kill=70 ms`,

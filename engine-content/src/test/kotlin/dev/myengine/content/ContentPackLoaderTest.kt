@@ -1,6 +1,7 @@
 package dev.myengine.content
 
 import java.math.BigDecimal
+import dev.myengine.core.command.TargetingMode
 import java.nio.file.Files
 import kotlin.io.path.writeText
 import kotlin.test.Test
@@ -20,6 +21,36 @@ class ContentPackLoaderTest {
         assertEquals("bolt", result.registry?.towers?.get("basic")?.costResource)
         assertEquals(BigDecimal("0.5"), result.registry?.towers?.get("basic")?.sellRefundRatio)
         assertEquals(4, result.registry?.towers?.get("basic")?.upgradeTiers?.get(TowerUpgradeTier.key("main", 1))?.damage)
+    }
+
+    @Test
+    fun targetingModeDefaultsToNearestWhenAbsentButRejectsInvalidValues() {
+        val legacy = createPack()
+        legacy.resolve("towers.properties").writeText(
+            legacy.resolve("towers.properties").toFile().readText()
+                .lines().filterNot { it.startsWith("basic.targetingMode=") }.joinToString("\n"),
+        )
+
+        val legacyResult = ContentPackLoader.load(legacy)
+
+        assertTrue(legacyResult.isValid, legacyResult.errors.joinToString("\n"))
+        assertEquals(TargetingMode.NEAREST, legacyResult.registry!!.requireTower("basic").targetingMode)
+
+        listOf("invalid", "").forEach { invalid ->
+            val root = createPack()
+            root.resolve("towers.properties").writeText(
+                root.resolve("towers.properties").toFile().readText()
+                    .replace("basic.targetingMode=nearest", "basic.targetingMode=$invalid"),
+            )
+
+            val result = ContentPackLoader.load(root)
+
+            assertFalse(result.isValid, "$invalid must be rejected")
+            assertTrue(
+                result.errors.any { it.file == "towers.properties" && it.id == "basic" && it.field == "targetingMode" },
+                result.errors.joinToString("\n"),
+            )
+        }
     }
 
     @Test
@@ -159,6 +190,7 @@ class ContentPackLoaderTest {
             basic.costResource=missing
             basic.costAmount=2
             basic.sellRefundRatio=0.5
+            basic.targetingMode=nearest
             """.trimIndent(),
         )
 
@@ -180,6 +212,7 @@ class ContentPackLoaderTest {
             basic.costResource=bolt
             basic.costAmount=2
             basic.sellRefundRatio=0.5
+            basic.targetingMode=nearest
             basic.upgrade.main.1.displayKey=tower.basic.upgrade.main.1
             basic.upgrade.main.1.range=4
             basic.upgrade.main.1.damage=4
@@ -444,6 +477,7 @@ class ContentPackLoaderTest {
             basic.costResource=bolt
             basic.costAmount=2
             basic.sellRefundRatio=0.5
+            basic.targetingMode=nearest
             basic.upgrade.main.1.displayKey=tower.basic.upgrade.main.1
             basic.upgrade.main.1.range=4
             basic.upgrade.main.1.damage=4
