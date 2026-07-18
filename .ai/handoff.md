@@ -1,6 +1,6 @@
 # MyEngine Handoff
 
-Last updated: 2026-07-18 (ENG-002 goal-field/repath accepted; next P1 item is ENG-013)
+Last updated: 2026-07-18 (ENG-013 tower sell/refund accepted; next P1 item is ENG-008)
 Owner: Codex
 
 ## DONE
@@ -462,6 +462,15 @@ Owner: Codex
   tick, producing immediate mid-run reroutes. Save v6 derives the field after restore and
   canonicalizes legacy path state instead of serializing cache data. The maze golden hash is
   `ed0354584405ec49`; canonical and kill hashes are `463d87684ca6cbee` and `40c7bda7e3bc1316`.
+- MyEngine ENG-013 (tower sell/refund, 2026-07-18) is complete. `SellTowerCommand` has a stable
+  positive tower-id payload and deterministic queue ordering. `sellRefundRatio` is a required
+  `0..1` inclusive decimal on every tower definition, including sandbox and Signal Garden packs.
+  Sale reconstructs only base plus actually applied sequential upgrade-tier spend, aggregates by
+  resource, and refunds `floor(spend * ratio)` independently per resource. It rejects insufficient
+  refund capacity without mutation; on success it clears occupancy, removes the tower and its
+  metrics, rebuilds `GoalField` before enemy movement in that tick, and deposits the refund.
+  Pending sells round-trip id/tick/actor/payload through the existing queue encoding. No ADR and no
+  save-version change: `SandboxSaveCodec.SAVE_VERSION` remains `6`.
 
 —
 ## MyTD (2026-07-04)
@@ -476,11 +485,11 @@ Owner: Codex
 
 ## NEXT
 
-Implement MyEngine `ENG-013` (tower sell/refund):
+Implement MyEngine `ENG-008` (targeting priority modes):
 
 ```powershell
 Get-Content -Raw .claude\specs\ENGINE_ROADMAP.md
-Get-Content -Raw .claude\specs\backlog\ENG-013-tower-sell-refund.md
+Get-Content -Raw .claude\specs\backlog\ENG-008-targeting-priorities.md
 ```
 
 ## BLOCKERS
@@ -572,6 +581,14 @@ Get-Content -Raw .claude\specs\backlog\ENG-013-tower-sell-refund.md
 
 ## VERIFICATION
 
+- ENG-013 (2026-07-18): final full `./gradlew.bat test` -> pass; content validation -> pass
+  (`validated 2 pack(s)`); replay -> pass with canonical `463d87684ca6cbee` and kill
+  `40c7bda7e3bc1316`; save-compat -> pass; benchmark -> pass (`canonical=335 ms`, `kill=70 ms`,
+  `goal_field_rebuild_ns=6505600`). Required domain reviewers and final `me-verifier` -> pass. The initial
+  test/content failures were missing new required `sellRefundRatio` fields in a test fixture and
+  the Signal Garden pack; the fields were added and all gates rerun successfully. Telemetry event
+  records `retro_due=false`. No ADR: additive data/content behavior, no dependency edge or save
+  schema change; `SAVE_VERSION` stays `6`.
 - ENG-002 (2026-07-18): full `./gradlew.bat test` -> pass; replay -> pass with canonical
   `463d87684ca6cbee`, kill `40c7bda7e3bc1316`, and maze golden `ed0354584405ec49`; save-compat ->
   pass; benchmark -> pass, including final 64x64 goal-field rebuild metric `4.1904 ms`. Final

@@ -18,6 +18,7 @@ import dev.myengine.core.StableHash
 import dev.myengine.core.TerminalReason
 import dev.myengine.core.Tick
 import dev.myengine.core.command.BuildTowerCommand
+import dev.myengine.core.command.SellTowerCommand
 import dev.myengine.core.command.TileCoordinate
 import dev.myengine.core.command.UpgradeTowerCommand
 import dev.myengine.defense.DefenseRuntime
@@ -53,6 +54,8 @@ import dev.myengine.world.WorldSize
 import dev.myengine.world.WorldTile
 import java.io.StringReader
 import java.io.StringWriter
+import java.math.BigDecimal
+import java.math.RoundingMode
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
@@ -304,6 +307,7 @@ class SandboxRuntime(
         when (command) {
             is BuildTowerCommand -> buildTower(command)
             is UpgradeTowerCommand -> upgradeTower(command)
+            is SellTowerCommand -> sellTower(command)
             else -> state.lastCommandOrError = "ignored:${command.type}"
         }
     }
@@ -382,6 +386,88 @@ class SandboxRuntime(
         }
         state.inventory = state.inventory.remove(tier.costResource, tier.costAmount)
         state.lastCommandOrError = "upgraded:${command.towerEntityId}:${tier.branch}:${tier.tier}"
+    }
+
+    private fun sellTower(command: SellTowerCommand) {
+        val entityId = EntityId(command.towerEntityId)
+        val entity = state.entities.get(entityId)
+        val towerComponent = entity?.tower
+        if (entity == null || towerComponent == null) {
+            state.lastCommandOrError = "unknown_tower_entity:${command.towerEntityId}"
+            return
+        }
+        val position = entity.position?.tile
+        if (position == null) {
+            state.lastCommandOrError = "tower_missing_position:${command.towerEntityId}"
+            return
+        }
+        val tower = state.registry.towers[towerComponent.towerId]
+        if (tower == null) {
+            state.lastCommandOrError = "unknown_tower:${towerComponent.towerId}"
+            return
+        }
+        val refund = calculateSellRefund(tower, towerComponent)
+        if (refund == null) {
+            state.lastCommandOrError = "invalid_tower_upgrade_state:${command.towerEntityId}"
+            return
+        }
+
+        var refundedInventory = state.inventory
+        for ((resourceId, amount) in refund) {
+            if (!refundedInventory.canAdd(resourceId, amount)) {
+                state.lastCommandOrError = "refund_capacity:$resourceId"
+                return
+            }
+            refundedInventory = refundedInventory.add(resourceId, amount)
+        }
+
+        state.world.clearOccupancy(position, entityId.value)
+        state.entities.remove(entityId)
+        state.defense = state.defense.copy(towerMetrics = state.defense.towerMetrics - entityId.value)
+        goalField = rebuildAfterWalkabilityChange()
+        state.inventory = refundedInventory
+        state.lastCommandOrError = "sold:${command.towerEntityId}"
+    }
+
+    /**
+     * Reconstructs only the content costs that were actually applied to this tower. Upgrade
+     * transitions are sequential within a branch, so the component's current tier identifies
+     * exactly the native tier costs included in the cumulative sell refund.
+     */
+    private fun calculateSellRefund(tower: dev.myengine.content.TowerContent, component: TowerComponent): Map<String, Int>? {
+        val spent = linkedMapOf<String, Long>()
+
+        fun addSpend(resourceId: String, amount: Int): Boolean {
+            return try {
+                spent[resourceId] = Math.addExact(spent[resourceId] ?: 0L, amount.toLong())
+                true
+            } catch (_: ArithmeticException) {
+                false
+            }
+        }
+
+        if (!addSpend(tower.costResource, tower.costAmount)) return null
+        val upgradeBranch = component.upgradeBranch
+        if (upgradeBranch != null) {
+            for (tierNumber in 1..component.upgradeTier) {
+                val tier = tower.upgradeTiers[TowerUpgradeTier.key(upgradeBranch, tierNumber)] ?: return null
+                if (!addSpend(tier.costResource, tier.costAmount)) return null
+            }
+        }
+
+        val refunds = linkedMapOf<String, Int>()
+        for ((resourceId, amount) in spent.toSortedMap()) {
+            val refund = try {
+                BigDecimal.valueOf(amount)
+                    .multiply(tower.sellRefundRatio)
+                    .setScale(0, RoundingMode.DOWN)
+                    .intValueExact()
+            } catch (_: ArithmeticException) {
+                return null
+            }
+            if (refund > 0) refunds[resourceId] = refund
+        }
+        return refunds
     }
 
     private fun canApplyUpgrade(current: TowerComponent, command: UpgradeTowerCommand): Boolean {
@@ -610,6 +696,8 @@ object SandboxSaveCodec {
             } else if (type == "upgrade_tower") {
                 val payloadParts = payload.split(':')
                 UpgradeTowerCommand(id, scheduledTick, payloadParts[0].toLong(), payloadParts[1], payloadParts[2].toInt(), actorId)
+            } else if (type == "sell_tower") {
+                SellTowerCommand(id, scheduledTick, payload.toLong(), actorId)
             } else {
                 dev.myengine.core.TextCommand(id, scheduledTick, type, payload, actorId)
             }

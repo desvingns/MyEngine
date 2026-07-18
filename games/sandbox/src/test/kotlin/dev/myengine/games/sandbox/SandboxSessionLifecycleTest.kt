@@ -5,6 +5,7 @@ import dev.myengine.core.EngineCommand
 import dev.myengine.core.RunStatus
 import dev.myengine.core.Tick
 import dev.myengine.core.command.BuildTowerCommand
+import dev.myengine.core.command.SellTowerCommand
 import dev.myengine.core.command.TileCoordinate
 import dev.myengine.core.command.UpgradeTowerCommand
 import dev.myengine.world.TilePosition
@@ -230,6 +231,12 @@ class SandboxSessionLifecycleTest {
                 tier = 2,
                 actorId = 202L,
             ),
+            SellTowerCommand(
+                id = CommandId(14),
+                scheduledTick = Tick(32),
+                towerEntityId = 123L,
+                actorId = 303L,
+            ),
         )
 
         val save = SandboxSaveCodec.encode(
@@ -252,6 +259,11 @@ class SandboxSessionLifecycleTest {
         val restoredUpgrade = assertIs<UpgradeTowerCommand>(restored[1])
         assertEquals(202L, restoredUpgrade.actorId)
         assertEquals("123:main:2", restoredUpgrade.stablePayload())
+        val restoredSell = assertIs<SellTowerCommand>(restored[2])
+        assertEquals(CommandId(14), restoredSell.id)
+        assertEquals(Tick(32), restoredSell.scheduledTick)
+        assertEquals(303L, restoredSell.actorId)
+        assertEquals("123", restoredSell.stablePayload())
     }
 
     @Test

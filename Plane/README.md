@@ -39,7 +39,7 @@
 1. Оригинальный план Phase 00-14 закрыт.
 2. Первый playable Android TD milestone закрыт через `ENG-027`; ручные device/layout/performance
    проверки остаются явно отложенными.
-3. Следующий backlog item: `ENG-013` (tower sell/refund).
+3. Следующий backlog item: `ENG-008` (targeting priority modes).
 4. Hardening gaps из `docs/HARDENING_AUDIT.md` закрывать по одному, с тестами и обновлением handoff.
 
 Новые крупные фазы добавлять только после того, как backlog specs перестанут быть достаточно
@@ -932,3 +932,27 @@
   - The only warning is the pre-existing Gradle 10 deprecation warning from AGP internals.
 - Next:
   - Implement `.claude/specs/backlog/ENG-013-tower-sell-refund.md`.
+
+### 2026-07-18 - MyEngine ENG-013 (tower sell/refund)
+
+- Status: Done
+- Owner: Codex
+- Implementation:
+  - `SellTowerCommand` sells a valid tower deterministically. Its refund is content-defined by the
+    required inclusive-`0..1` decimal `sellRefundRatio`: base and actually applied sequential tier
+    costs are aggregated per resource, then each refund is rounded down independently.
+  - Capacity is verified before any mutation. A successful sale frees occupancy, removes the entity
+    and its defense metrics, then rebuilds the ENG-002 goal field before enemy movement in the same
+    tick. `SandboxTowerSellTest` covers repeated mid-run sell hashing and pending sells retain id,
+    tick, actor, and payload through save/restore.
+  - `SandboxSaveCodec.SAVE_VERSION` remains `6`; no ADR is required for this additive
+    content/sandbox capability.
+- Verification:
+  - Full Gradle tests, content validation (`2` packs), replay, save-compat, and benchmark -> pass.
+  - Replay hashes: canonical `463d87684ca6cbee`, kill `40c7bda7e3bc1316`; benchmark output:
+    canonical `458 ms`, kill `88 ms`, 64x64 goal-field rebuild `6.618100 ms`.
+  - Required domain reviewers and final verifier -> pass. Initial test/content gate failures from a
+    missing test-fixture field and the missing Signal Garden `sellRefundRatio` were repaired before
+    the final successful rerun; telemetry reports `retro_due=false`.
+- Next:
+  - Implement `.claude/specs/backlog/ENG-008-targeting-priorities.md`.

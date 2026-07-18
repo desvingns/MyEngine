@@ -163,6 +163,8 @@ object ContentPackLoader {
             cooldownTicks = fields.requiredPositiveInt(file, id, "cooldownTicks", errors) ?: return null,
             costResource = fields.required(file, id, "costResource", errors) ?: return null,
             costAmount = fields.requiredNonNegativeInt(file, id, "costAmount", errors) ?: return null,
+            sellRefundRatio = fields.requiredDecimalInRange(file, id, "sellRefundRatio", BigDecimal.ZERO, BigDecimal.ONE, errors)
+                ?: return null,
             upgradeTiers = parseTowerUpgradeTiers(id, fields, errors, file),
         )
 
@@ -740,5 +742,24 @@ object ContentPackLoader {
             return errors.addAndNull(file, id, field, "Expected decimal multiplier.")
         }
         return if (value.signum() > 0) value else errors.addAndNull(file, id, field, "Expected positive decimal multiplier.")
+    }
+
+    private fun Map<String, String>.requiredDecimalInRange(
+        file: String,
+        id: String,
+        field: String,
+        minimum: BigDecimal,
+        maximum: BigDecimal,
+        errors: MutableList<ContentValidationError>,
+    ): BigDecimal? {
+        val raw = required(file, id, field, errors) ?: return null
+        val value = try {
+            BigDecimal(raw.trim())
+        } catch (_: NumberFormatException) {
+            return errors.addAndNull(file, id, field, "Expected decimal between $minimum and $maximum.")
+        }
+        return if (value >= minimum && value <= maximum) value else {
+            errors.addAndNull(file, id, field, "Expected decimal between $minimum and $maximum inclusive.")
+        }
     }
 }

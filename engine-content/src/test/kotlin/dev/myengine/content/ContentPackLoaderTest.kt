@@ -18,7 +18,42 @@ class ContentPackLoaderTest {
         assertTrue(result.isValid, result.errors.joinToString("\n"))
         assertEquals("test-pack", result.registry?.manifest?.id)
         assertEquals("bolt", result.registry?.towers?.get("basic")?.costResource)
+        assertEquals(BigDecimal("0.5"), result.registry?.towers?.get("basic")?.sellRefundRatio)
         assertEquals(4, result.registry?.towers?.get("basic")?.upgradeTiers?.get(TowerUpgradeTier.key("main", 1))?.damage)
+    }
+
+    @Test
+    fun sellRefundRatioIsRequiredAndLimitedToInclusiveUnitInterval() {
+        listOf("0", "1").forEach { ratio ->
+            val root = createPack()
+            root.resolve("towers.properties").writeText(
+                root.resolve("towers.properties").toFile().readText().replace("basic.sellRefundRatio=0.5", "basic.sellRefundRatio=$ratio"),
+            )
+
+            val result = ContentPackLoader.load(root)
+
+            assertTrue(result.isValid, "$ratio: ${result.errors.joinToString("\\n")}")
+            assertEquals(BigDecimal(ratio), result.registry!!.requireTower("basic").sellRefundRatio)
+        }
+
+        listOf(null, "not-a-decimal", "-0.01", "1.01").forEach { ratio ->
+            val root = createPack()
+            val towerFile = root.resolve("towers.properties")
+            towerFile.writeText(
+                towerFile.toFile().readText().let { text ->
+                    if (ratio == null) text.lines().filterNot { it.startsWith("basic.sellRefundRatio=") }.joinToString("\n")
+                    else text.replace("basic.sellRefundRatio=0.5", "basic.sellRefundRatio=$ratio")
+                },
+            )
+
+            val result = ContentPackLoader.load(root)
+
+            assertFalse(result.isValid, "$ratio must be rejected")
+            assertTrue(
+                result.errors.any { it.file == "towers.properties" && it.id == "basic" && it.field == "sellRefundRatio" },
+                result.errors.joinToString("\\n"),
+            )
+        }
     }
 
     @Test
@@ -123,6 +158,7 @@ class ContentPackLoaderTest {
             basic.cooldownTicks=2
             basic.costResource=missing
             basic.costAmount=2
+            basic.sellRefundRatio=0.5
             """.trimIndent(),
         )
 
@@ -143,6 +179,7 @@ class ContentPackLoaderTest {
             basic.cooldownTicks=2
             basic.costResource=bolt
             basic.costAmount=2
+            basic.sellRefundRatio=0.5
             basic.upgrade.main.1.displayKey=tower.basic.upgrade.main.1
             basic.upgrade.main.1.range=4
             basic.upgrade.main.1.damage=4
@@ -169,6 +206,7 @@ class ContentPackLoaderTest {
             basic.cooldownTicks=2
             basic.costResource=bolt
             basic.costAmount=2
+            basic.sellRefundRatio=0.5
             basic.upgrade.bad|branch.1.displayKey=tower.basic.upgrade.bad
             basic.upgrade.bad|branch.1.range=4
             basic.upgrade.bad|branch.1.damage=4
@@ -405,6 +443,7 @@ class ContentPackLoaderTest {
             basic.cooldownTicks=2
             basic.costResource=bolt
             basic.costAmount=2
+            basic.sellRefundRatio=0.5
             basic.upgrade.main.1.displayKey=tower.basic.upgrade.main.1
             basic.upgrade.main.1.range=4
             basic.upgrade.main.1.damage=4

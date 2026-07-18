@@ -42,6 +42,8 @@ Definition files use `<id>.<field>=<value>`.
 - `cooldownTicks`: positive int
 - `costResource`: resource id
 - `costAmount`: non-negative int
+- `sellRefundRatio`: required decimal in the inclusive range `0..1`; selling returns
+  `floor(cumulative base and applied-tier spend per resource * sellRefundRatio)`
 - `upgrade.<branch>.<tier>.displayKey`: required localization key when the tier exists
 - `upgrade.<branch>.<tier>.range`: optional positive int
 - `upgrade.<branch>.<tier>.damage`: optional positive int

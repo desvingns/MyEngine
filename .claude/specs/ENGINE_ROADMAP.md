@@ -34,7 +34,7 @@ Last updated: 2026-07-18
 | Enemy armor + damage types | ENG-011 | vision:td, vision:mindustry-like | 2 | backlog |
 | Flying enemies | ENG-025 | vision:td | 1 | backlog |
 | Boss/elite enemies + wave modifiers | ENG-012 | mytd, vision:td | 2 | backlog |
-| Tower sell/refund | ENG-013 | mytd, vision:td | 2 | backlog |
+| Tower sell/refund | ENG-013 | mytd, vision:td | 2 | **done** (2026-07-18; required validated `sellRefundRatio`, deterministic cumulative per-resource floor refund, atomic capacity rejection, occupancy/metrics cleanup, same-tick goal-field rebuild, and pending-sell save coverage; `SAVE_VERSION` remains 6) |
 | Game speed control (presentation-side) | ENG-015 | mytd, vision:td, vision:rimworld-like | 3 | backlog |
 | Endless wave generation | ENG-018 | vision:td, vision:mindustry-like | 2 | backlog |
 | Walls + player-placed blockers | ENG-019 | vision:td, vision:mindustry-like | 2 | backlog |
@@ -95,8 +95,8 @@ Last updated: 2026-07-18
 2. MTD-004 -> ENG-024 -> ENG-005 -> ENG-014 -> MTD-005 -> ENG-026 -> ENG-027 =
    **first playable Android TD milestone** (complete 2026-07-18; manual device/layout/performance
    evidence remains explicitly pending).
-3. P1 opener: ENG-002 (done) -> ENG-013 -> ENG-008 -> ENG-015 -> ENG-030. The next exact backlog
-   action is `ENG-013`.
+3. P1 opener: ENG-002 (done) -> ENG-013 (done) -> ENG-008 -> ENG-015 -> ENG-030. The next exact
+   backlog action is `ENG-008`.
 4. DX-008 is done: use its hybrid-format ADR for ENG-017/ENG-028 schema work. Other high-leverage
    pipeline cards remain DX-002, DX-006, and DX-005.
 

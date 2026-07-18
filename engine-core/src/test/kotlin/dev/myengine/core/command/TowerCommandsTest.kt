@@ -61,14 +61,34 @@ class TowerCommandsTest {
     }
 
     @Test
+    fun sellTowerCommandExposesStableIdentityAndRejectsInvalidTarget() {
+        val command = SellTowerCommand(
+            id = CommandId(11),
+            scheduledTick = Tick(22),
+            towerEntityId = 456L,
+            actorId = 88L,
+        )
+
+        assertEquals(CommandId(11), command.id)
+        assertEquals(Tick(22), command.scheduledTick)
+        assertEquals(88L, command.actorId)
+        assertEquals("sell_tower", command.type)
+        assertEquals("456", command.stablePayload())
+        assertFailsWith<IllegalArgumentException> {
+            SellTowerCommand(CommandId(1), Tick(1), towerEntityId = 0)
+        }
+    }
+
+    @Test
     fun towerCommandsRetainDeterministicQueueOrdering() {
         val queue = dev.myengine.core.CommandQueue()
         queue.submit(BuildTowerCommand(CommandId(9), Tick(2), "pulse", TileCoordinate(4, 5)))
         queue.submit(UpgradeTowerCommand(CommandId(3), Tick(2), 123L, "main", 1))
+        queue.submit(SellTowerCommand(CommandId(7), Tick(2), 123L))
         queue.submit(BuildTowerCommand(CommandId(1), Tick(1), "pulse", TileCoordinate(4, 5)))
 
         assertEquals(
-            listOf(CommandId(1), CommandId(3), CommandId(9)),
+            listOf(CommandId(1), CommandId(3), CommandId(7), CommandId(9)),
             queue.drainFor(Tick(2)).map { it.id },
         )
     }

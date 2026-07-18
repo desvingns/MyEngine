@@ -41,6 +41,12 @@ class EntityStore(
         pendingRemovals += id
     }
 
+    /** Removes an entity immediately at a command boundary before later systems observe the store. */
+    fun remove(id: EntityId): Entity? {
+        pendingRemovals -= id
+        return entities.remove(id)
+    }
+
     fun flushRemovals() {
         pendingRemovals.forEach(entities::remove)
         pendingRemovals.clear()

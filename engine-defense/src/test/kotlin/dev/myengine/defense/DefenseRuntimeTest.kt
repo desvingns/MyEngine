@@ -295,6 +295,7 @@ class DefenseRuntimeTest {
             basic.cooldownTicks=1
             basic.costResource=bolt
             basic.costAmount=1
+            basic.sellRefundRatio=0.5
             """.trimIndent(),
         )
         root.resolve("enemies.properties").writeText(

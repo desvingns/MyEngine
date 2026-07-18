@@ -1,8 +1,8 @@
 # MyEngine State
 
 Last updated: 2026-07-18
-Active phase: Phase 00-14 complete; Signal Garden SG-001..005 complete; MyTD MTD-001..005 complete; DX-008, ENG-002, ENG-005, ENG-014, ENG-026, and ENG-027 complete; pipeline at v0.2.0; next engine backlog is `ENG-013` tower sell/refund
-Owner of last update: Codex (2026-07-18: ENG-002 accepted; next P1 item is ENG-013)
+Active phase: Phase 00-14 complete; Signal Garden SG-001..005 complete; MyTD MTD-001..005 complete; DX-008, ENG-002, ENG-005, ENG-013, ENG-014, ENG-026, and ENG-027 complete; pipeline at v0.2.0; next engine backlog is `ENG-008` targeting priority modes
+Owner of last update: Codex (2026-07-18: ENG-013 accepted; next P1 item is ENG-008)
 
 ## Current Status
 
@@ -190,19 +190,28 @@ Owner of last update: Codex (2026-07-18: ENG-002 accepted; next P1 item is ENG-0
   than serializing a cache: the field is derived after restore and legacy path state is canonicalized.
   The maze replay golden is `ed0354584405ec49`; canonical and kill hashes are now
   `463d87684ca6cbee` and `40c7bda7e3bc1316`.
+- MyEngine ENG-013 (tower sell/refund, 2026-07-18) is accepted. `SellTowerCommand` is a stable
+  core command that sells a placed tower at a command boundary. Every tower content definition now
+  requires `sellRefundRatio` as a decimal in the inclusive `0..1` range. The runtime reconstructs
+  the base and actually applied sequential tier spend, aggregates it by resource, refunds
+  `floor(resourceSpend * ratio)` per resource, and first verifies capacity for every refund; a
+  capacity rejection leaves inventory, tower, occupancy, and tower metrics unchanged. A successful
+  sale clears occupancy, removes the entity and its metrics, then rebuilds the ENG-002 goal field
+  before same-tick enemy movement. Pending sell commands round-trip with id, tick, actor, and
+  payload; `SandboxSaveCodec.SAVE_VERSION` remains `6`.
 
 ## Next Exact Action
 
-Implement engine backlog item `ENG-013` (tower sell/refund):
+Implement engine backlog item `ENG-008` (targeting priority modes):
 
 ```powershell
 Get-Content -Raw .claude\specs\ENGINE_ROADMAP.md
-Get-Content -Raw .claude\specs\backlog\ENG-013-tower-sell-refund.md
+Get-Content -Raw .claude\specs\backlog\ENG-008-targeting-priorities.md
 ```
 
 Expected next output:
 
-- Deterministic, content-defined tower sell/refund with ENG-002 field invalidation coverage
+- Deterministic content-defined targeting modes with focused unit and replay coverage
 
 ## Known Blockers
 
@@ -308,6 +317,14 @@ Expected next output:
 
 ## Verification
 
+- ENG-013 (2026-07-18): full `./gradlew.bat test` -> pass; content validation -> pass
+  (`validated 2 pack(s)`); replay -> pass with canonical `463d87684ca6cbee` and kill
+  `40c7bda7e3bc1316`; save-compat -> pass; benchmark -> pass (`canonical=335 ms`, `kill=70 ms`,
+  64x64 goal-field rebuild `6.505600 ms`). Required domain reviewers and `me-verifier` -> pass.
+  Initial test/content gate failures exposed missing required `sellRefundRatio` fields in a test
+  fixture and the Signal Garden pack; both were repaired before the final full gate rerun. No ADR:
+  this is an additive content/sandbox command capability with no new dependency edge or save-format
+  version change (`SAVE_VERSION` remains `6`).
 - ENG-027 (2026-07-18): full `gradlew test` -> pass; content validation -> pass for 2 packs;
   replay -> pass with canonical `9c495d8ff30fd83d` and kill `83a65da1a7881b2c`; save-compat ->
   pass; benchmark -> pass (`canonical=295 ms`, `kill=45 ms`); `android:assembleDebug` -> pass.

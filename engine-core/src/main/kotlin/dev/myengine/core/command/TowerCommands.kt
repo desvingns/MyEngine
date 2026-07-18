@@ -42,3 +42,17 @@ data class UpgradeTowerCommand(
         val BRANCH_ID_REGEX: Regex = Regex("[A-Za-z0-9_-]+")
     }
 }
+
+data class SellTowerCommand(
+    override val id: CommandId,
+    override val scheduledTick: Tick,
+    val towerEntityId: Long,
+    override val actorId: Long? = null,
+) : EngineCommand {
+    init {
+        require(towerEntityId > 0) { "Tower entity id must be positive." }
+    }
+
+    override val type: String = "sell_tower"
+    override fun stablePayload(): String = towerEntityId.toString()
+}

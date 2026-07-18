@@ -35,6 +35,7 @@ data class TowerContent(
     val cooldownTicks: Int,
     val costResource: String,
     val costAmount: Int,
+    val sellRefundRatio: BigDecimal,
     val upgradeTiers: Map<String, TowerUpgradeTier> = emptyMap(),
     val displayKey: String = "tower.$id",
 ) : ContentDefinition
