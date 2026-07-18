@@ -2,47 +2,107 @@ package dev.myengine.android
 
 import android.app.Activity
 import android.os.Bundle
+import android.view.Choreographer
 import android.widget.TextView
+import dev.myengine.core.CommandId
+import dev.myengine.core.EngineCommand
 import dev.myengine.games.sandbox.SandboxGame
 import dev.myengine.games.sandbox.SandboxSession
+import dev.myengine.render.EngineSnapshot
 
 class MyEngineActivity : Activity() {
     private var session: SandboxSession? = null
+    private var renderView: SandboxRenderView? = null
+    private var latestSnapshot: EngineSnapshot? = null
+    private var pausedSave: String? = null
+    private var nextCommandId: Long = FIRST_COMMAND_ID
+    private val fixedTickLoop = FixedTickFrameLoop()
+    private var loopRunning = false
+    private val frameCallback = Choreographer.FrameCallback(::onFrame)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        nextCommandId = savedInstanceState?.getLong(NEXT_COMMAND_ID_KEY, FIRST_COMMAND_ID) ?: FIRST_COMMAND_ID
         val started = runCatching {
-            val saved = savedInstanceState?.takeIf { DEBUG_SAVE }?.getString(SAVE_KEY)
+            val saved = savedInstanceState?.getString(SAVE_KEY)
             if (saved != null) SandboxSession.restore(saved) else SandboxSession.start()
         }
-        started.onSuccess { session = it }
-        setContentView(
-            TextView(this).apply {
-                text = started.fold(
-                    onSuccess = {
-                        val snapshot = it.runtime.snapshot()
-                        "${SandboxGame.banner()}\nTick ${snapshot.debug.tick.value}\nHash ${it.stableHash()}"
-                    },
-                    onFailure = { "${SandboxGame.banner()}\nStartup error: ${it.message}" },
-                )
-                textSize = 18f
-            },
-        )
+        started.onSuccess {
+            session = it
+            latestSnapshot = it.runtime.snapshot()
+            val view = SandboxRenderView(
+                context = this,
+                latestSnapshot = { latestSnapshot },
+                commandIdProvider = ::issueCommandId,
+                onCommand = ::submitFromInput,
+            )
+            renderView = view
+            setContentView(view)
+        }.onFailure {
+            setContentView(
+                TextView(this).apply {
+                    text = "${SandboxGame.banner()}\nStartup error: ${it.message}"
+                    textSize = 18f
+                },
+            )
+        }
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
-        if (DEBUG_SAVE) {
-            // Debug lifecycle save trigger. Sound at any tick — pending commands round-trip
-            // through the save; see SandboxSession's KDoc.
-            session?.let { outState.putString(SAVE_KEY, it.save()) }
-        }
+        outState.putLong(NEXT_COMMAND_ID_KEY, nextCommandId)
+        (pausedSave ?: session?.save())?.let { outState.putString(SAVE_KEY, it) }
     }
 
+    override fun onResume() {
+        super.onResume()
+        startLoop()
+    }
+
+    override fun onPause() {
+        stopLoop()
+        // Save after all frame callbacks are removed: the state and pending command queue now
+        // describe exactly the next frame that a recreated activity restores.
+        pausedSave = session?.save()
+        super.onPause()
+    }
+
+    /** Input may enqueue commands only; the frame loop drains them on the next fixed tick. */
+    private fun submitFromInput(command: EngineCommand) {
+        session?.submit(command)
+    }
+
+    private fun startLoop() {
+        if (loopRunning || session == null) return
+        loopRunning = true
+        fixedTickLoop.start()
+        Choreographer.getInstance().postFrameCallback(frameCallback)
+    }
+
+    private fun stopLoop() {
+        loopRunning = false
+        fixedTickLoop.stop()
+        Choreographer.getInstance().removeFrameCallback(frameCallback)
+    }
+
+    private fun onFrame(frameTimeNanos: Long) {
+        if (!loopRunning) return
+        val activeSession = session
+        if (activeSession != null) {
+            val ticks = fixedTickLoop.advance(frameTimeNanos)
+            if (ticks > 0) activeSession.step(ticks)
+            latestSnapshot = activeSession.runtime.snapshot()
+            renderView?.renderLatestFrame()
+        }
+        if (loopRunning) Choreographer.getInstance().postFrameCallback(frameCallback)
+    }
+
+    /** Caller-owned command allocator: it stays in lifecycle UI state, outside render and simulation. */
+    private fun issueCommandId(): CommandId = CommandId(nextCommandId++)
+
     private companion object {
-        // Debug-only lifecycle save/restore, gated to debug builds so it cannot ship enabled
-        // in a release build.
-        private val DEBUG_SAVE = BuildConfig.DEBUG
         private const val SAVE_KEY = "me_sandbox_save"
+        private const val NEXT_COMMAND_ID_KEY = "me_sandbox_next_command_id"
+        private const val FIRST_COMMAND_ID = 1L
     }
 }

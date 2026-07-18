@@ -22,6 +22,15 @@ android {
     buildFeatures {
         buildConfig = true
     }
+
+    // Keep the external sandbox content pack, including maps.json, in the APK without pulling an
+    // Android API into engine-content. An Android asset adapter can load this tree when the shell
+    // moves beyond its current startup smoke surface.
+    sourceSets {
+        getByName("main") {
+            assets.srcDir("../games/sandbox/content")
+        }
+    }
 }
 
 kotlin {
@@ -33,4 +42,10 @@ kotlin {
 dependencies {
     implementation(dependencies.project(":games:sandbox"))
     implementation(libs.gdx)
+    testImplementation(libs.kotlin.test.junit5)
+    testImplementation(libs.junit.jupiter)
+}
+
+tasks.withType<Test>().configureEach {
+    useJUnitPlatform()
 }
