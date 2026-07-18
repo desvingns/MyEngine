@@ -1,8 +1,8 @@
 # MyEngine State
 
 Last updated: 2026-07-18
-Active phase: Phase 00-14 complete; Signal Garden SG-001..005 complete; MyTD MTD-001..005 complete; DX-008, ENG-002, ENG-005, ENG-008, ENG-013, ENG-014, ENG-026, and ENG-027 complete; pipeline at v0.2.0; next engine backlog is `ENG-015` game speed control
-Owner of last update: Codex (2026-07-18: ENG-008 accepted; next P1 item is ENG-015)
+Active phase: Phase 00-14 complete; Signal Garden SG-001..005 complete; MyTD MTD-001..005 complete; DX-008, ENG-002, ENG-005, ENG-008, ENG-013, ENG-014, ENG-026, ENG-027, and PROC-002 complete; pipeline at v0.2.0; next engine backlog is `ENG-015` game speed control
+Owner of last update: Codex (2026-07-18: PROC-002 / ADR-0004 accepted; ENG-036 and PROC-015 filed for MySD; next P1 item remains ENG-015)
 
 ## Current Status
 
@@ -13,6 +13,13 @@ Owner of last update: Codex (2026-07-18: ENG-008 accepted; next P1 item is ENG-0
 - Phase 12 game spec pipeline and sample Signal Garden spec are complete.
 - Phase 13 telemetry/retro self-improvement loop is complete.
 - Phase 14 hardening, release checklist, API stability, and first-game kickoff are complete.
+- PROC-002 is complete through ADR-0004: separate game repositories use a Gradle composite build
+  plus a full pinned MyEngine commit SHA; CI checks out and verifies the same revision. Stable APIs
+  may be consumed directly, Experimental APIs require a consumer adapter and pin, and Internal APIs
+  are not cross-repository dependencies.
+- MySD foundation filed ENG-036 for an Android-free reusable runtime/session extraction and
+  PROC-015 for a reference-game state-graph/mechanic-claim bridge. Probable gameplay gaps and
+  `mysd` demand remain deliberately uncarded until Luna evidence passes Gate 1.
 - Signal Garden `SG-001` (content pack) is complete: original pack + loader unit test + gates pass.
 - Signal Garden `SG-002` (reward deposit hook) is complete: `DefenseRuntime.updateTowers` returns
   `TowerUpdateResult(metrics, rewards)` accumulating content-derived kill rewards (no Inventory

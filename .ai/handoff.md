@@ -1,9 +1,16 @@
 # MyEngine Handoff
 
-Last updated: 2026-07-18 (ENG-008 targeting priority modes accepted; next P1 item is ENG-015)
+Last updated: 2026-07-18 (PROC-002 / ADR-0004 accepted; MySD ENG-036 + PROC-015 filed; next P1 item remains ENG-015)
 Owner: Codex
 
 ## DONE
+
+- PROC-002 / ADR-0004 is accepted: separate game repos use Gradle composite builds pinned to a
+  full accepted MyEngine SHA, and CI checks out/verifies that same commit. Stable,
+  Experimental-with-adapter, and Internal cross-repo rules are explicit.
+- MySD foundation backlog bridge filed ENG-036 (Android-free reusable runtime/session extraction)
+  and PROC-015 (hierarchical reference state graph + mechanic claims + clone-strict coverage and
+  gap dedup). No evidence-driven `mysd` demand was added before Gate 1.
 
 - Phase 00-03 foundation, stack scaffold, and architecture contracts.
 - Phase 04 agentic pipeline:
@@ -354,6 +361,14 @@ Owner: Codex
 
 ## DECISIONS
 
+- ADR-0004 chooses composite build plus an exact commit lock instead of early Maven publication.
+  A game updates its pin only after an engine commit is accepted and pushed; a game release tag
+  contains that exact SHA. Revisit artifact publication only through a later ADR with demonstrated
+  multi-consumer value.
+- MySD probable families (production buildings/allied units, mobile combat, in-run drafts,
+  campaign/energy/sweep, roster/profile progression) are not yet backlog cards. Gate 1 observation
+  and normal dedup must precede demand updates or `ENG-037+`.
+
 - ENG-014 is an additive, data-driven terminal-run capability with no new dependency edge, so no
   ADR is needed. Map-owned `terminalRules` select finite-wave victory or no-win/endless behavior;
   core-health loss is mandatory and a positive leak budget is optional. Terminal summaries freeze in
@@ -499,6 +514,9 @@ Get-Content -Raw .claude\specs\backlog\ENG-015-game-speed-control.md
 ```
 
 ## BLOCKERS
+
+- MySD ENG-036 is specified but intentionally not started until the MySD evidence/spec gates choose
+  the implementation order. PROC-015 is a backlog process change, not an implemented adapter.
 
 - ENG-027 is accepted with non-blocking manual limitations: run build-tower, tower-selection,
   upgrade, and pause/recreate lifecycle smoke on a device/emulator; check non-default fontScale and

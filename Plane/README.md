@@ -976,3 +976,20 @@
   - Required domain reviewers and final verifier -> pass.
 - Next:
   - Implement `.claude/specs/backlog/ENG-015-game-speed-control.md`.
+
+### 2026-07-18 — MySD repository/spec foundation
+
+- Status: Backlog bridge prepared; gameplay implementation blocked on MySD Gate 1/Gate 2
+- Owner: Codex
+- Decisions:
+  - Accepted `docs/DECISIONS/ADR-0004-composite-build-pinned-engine-revision.md`; PROC-002 is done.
+  - Filed ENG-036 for reusable Android-free runtime/session extraction.
+  - Filed PROC-015 for hierarchical reference evidence import, clone-strict coverage, traceability,
+    and engine-gap dedup.
+  - Did not add `mysd` demand to probable gameplay gaps before observed Gate 1 evidence.
+- Verification:
+  - `scripts/me-selfcheck.ps1` -> pass.
+  - Documentation/backlog diff only; no simulation/save/replay/content behavior changed.
+- Next:
+  - Keep ENG-015 as the general engine next item.
+  - After MySD Gate 2, schedule ENG-036 before the MySD headless vertical slice.

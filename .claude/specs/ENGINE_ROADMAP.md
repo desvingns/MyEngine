@@ -13,6 +13,8 @@ Last updated: 2026-07-18
 
 | Capability | Cards | Demanded by | Demand | Status |
 |---|---|---|---:|---|
+| Cross-repo composite build + pinned engine revision | PROC-002 / ADR-0004 | process, mysd | - | **done** (2026-07-18; consumer lock pins a full accepted SHA, CI checks out the same commit, Stable/Experimental/Internal usage is explicit) |
+| Reusable Android-free runtime/session API | ENG-036 | mysd | 1 | backlog (extract generic descriptor/session orchestration from games/sandbox; preserve replay hashes and v1-v7 save migrations) |
 | Defense kill-reward deposit into player resources | SG-002, MTD-001 | signal-garden, mytd | 2 | **done** (SG-002 implemented 2026-07-04; MTD-001 closed 2026-07-05 as duplicate; MyTD gold maps to content-defined `rewardResource`) |
 | Render surface + palette (snapshot -> RenderFrame) | SG-003 (+follow-up), MTD-005 | signal-garden, mytd | 2 | **done** (MTD-005 accepted 2026-07-16: Android Canvas consumes immutable RenderFrame, MotionEvent uses InputAdapter, scoped JVM/build/replay gates pass; device smoke and performance profiling remain manual-pending) |
 | Content pack authoring/validation (game pack) | SG-001 | signal-garden | 1 | done (2026-07-04) |
@@ -68,6 +70,7 @@ Last updated: 2026-07-18
 | Emulator provisioning lane (managed devices) | PROC-012 | process | - | backlog |
 | Spec board hygiene | PROC-013 | process | - | backlog |
 | Android release build lane | PROC-014 | process | - | backlog |
+| Reference-game evidence bridge for me-spec | PROC-015 | process, mysd | - | backlog (state-graph.v1 + mechanic claims, clone-strict coverage, traceability, and gap dedup) |
 
 ## Known duplicates
 
@@ -99,9 +102,15 @@ Last updated: 2026-07-18
    exact backlog action is `ENG-015`.
 4. DX-008 is done: use its hybrid-format ADR for ENG-017/ENG-028 schema work. Other high-leverage
    pipeline cards remain DX-002, DX-006, and DX-005.
+5. MySD foundation: PROC-002 / ADR-0004 is done. After MySD Gate 2, implement ENG-036 before the
+   headless game slice; bridge only Gate 1-confirmed demand through PROC-015 semantics.
 
 ## Deliberately not carded (2026-07-06, bounded scope)
 
 Power grid, fluid transport, unit production/control (Mindustry deep-end);
 temperature/roofing, animals, trading (RimWorld deep-end); achievements/quests,
 tutorials (game-side, not engine). Revisit when a game spec demands them.
+
+MySD currently has probable families around production buildings, allied mobile units, in-run
+drafts, campaign/energy/sweep, and roster/profile progression. They remain deliberately uncarded
+until Luna evidence passes Gate 1; do not increment `mysd` demand from the public listing alone.
