@@ -26,6 +26,11 @@ Every `/me` run that reaches delegation records exactly one telemetry event via
 Failures are the primary learning signal: record the `failure_cluster`, retry
 counts, and which gates failed, not just successes.
 
+For a successful `/me --feature` run, delivery is additionally incomplete until the scoped feature
+artifacts and close-out docs are committed and pushed. A dirty intake worktree is a blocker unless
+its existing changes are explicitly identified as the approved feature baseline; unrelated changes
+are never staged, amended, or pushed by the pipeline.
+
 ## Telemetry Fields
 
 Required JSONL fields:

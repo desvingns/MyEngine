@@ -311,6 +311,31 @@ rules. Project docs can change without an entry here unless they alter agent beh
   convention; the canonical process in `docs/agentic` and all adapters are unchanged.
 - Human gate: user request to run the feature pipeline for the next backlog item.
 
+## 2026-07-05 - MyTD MTD-003 (/me --feature --next run)
+
+- Owner: Codex
+- Change type: none (normal feature run; no agent/skill/adapter/pipeline contract change)
+- Changed:
+  - No agent prompts, skills, adapters, or workflow contracts changed.
+  - Feature artifacts (logged in `STATE.md`, `.ai/handoff.md`, `Plane/README.md`):
+    `engine-content/src/main/kotlin/dev/myengine/content/ContentDefinitions.kt`,
+    `engine-content/src/main/kotlin/dev/myengine/content/ContentLoader.kt`,
+    `engine-content/src/test/kotlin/dev/myengine/content/ContentPackLoaderTest.kt`,
+    `engine-entities/src/main/kotlin/dev/myengine/entities/EntityModel.kt`,
+    `engine-render/src/main/kotlin/dev/myengine/render/RenderModel.kt`,
+    `games/sandbox/content/sandbox/towers.properties`,
+    `games/sandbox/src/main/kotlin/dev/myengine/games/sandbox/SandboxGame.kt`,
+    `games/sandbox/src/test/kotlin/dev/myengine/games/sandbox/SandboxSessionLifecycleTest.kt`,
+    `games/sandbox/src/test/kotlin/dev/myengine/games/sandbox/SandboxTowerUpgradeTest.kt`,
+    `.claude/specs/backlog/MTD-003-tower-upgrade-hook.md`,
+    `.claude/specs/ENGINE_ROADMAP.md`, and `D:/Pet/MyTD/spec/*` status sync.
+- Summary: A `/me --feature --next` run implemented MTD-003 (tower upgrade hook). Roles: scouts
+  `me-scout`, architect `me-architect` (no ADR; required tier-transition validation and
+  delimiter-safe branch ids), developer/orchestrator, tester `me-tester` (pass), runner gates pass,
+  reviewers `me-simulation-reviewer`, `me-save-compat-reviewer`, `me-renderer-qa`,
+  `me-balance-simulator`, and `me-verifier` all pass. Canonical process and adapters unchanged.
+- Human gate: user request to run the feature pipeline for the next backlog item.
+
 ## 2026-07-05T10:05-brain-level-scope-and-twins
 type: add
 target: docs/agentic/AGENT_CONTRACTS.md, docs/agentic/SELF_IMPROVEMENT.md, AGENTS.md, claude-plugins/me-dev/agents/me-docs.md, claude-plugins/me-dev/agents/me-improve.md
@@ -318,3 +343,18 @@ summary: brain-level scope for me-reflect findings; me-docs flushes brain candid
 reason: second-brain repo (github.com/desvingns/brain) now carries cross-project knowledge and the mp<->me twin registry; MyEngine lessons that generalize route to the brain inbox (human-gated promotion), and proposals declare twin applicability so /brain sync-twins can stage mp-side ports
 affects: claude, codex
 by: claude
+
+## 2026-07-18 - Feature delivery commit-and-push gate
+
+- Owner: Codex
+- Change type: pipeline and adapter contract
+- Changed: `docs/agentic/PIPELINE.md`, `docs/agentic/SELF_IMPROVEMENT.md`,
+  `claude-plugins/me-dev/skills/me/SKILL.md`, `codex-plugins/me-dev/skills/me-dev/SKILL.md`,
+  `claude-plugins/me-dev/.claude-plugin/plugin.json` (0.2.0 -> 0.2.1), and
+  `codex-plugins/me-dev/.codex-plugin/plugin.json` (0.1.0 -> 0.1.1).
+- Summary: successful `/me --feature` runs now require one scoped conventional commit and a direct
+  push to `main` before they can be reported complete. Intake is blocked by a dirty
+  worktree unless the existing changes are explicitly identified as the approved baseline; unrelated
+  files must never be staged, amended, committed, or pushed. Commit/push failure leaves the feature
+  blocked and its backlog card incomplete.
+- Human gate: direct user instruction: each completed me-dev skill call must commit and push the feature.

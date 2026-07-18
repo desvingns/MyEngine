@@ -45,6 +45,12 @@ folders are thin adapters that point back to the canonical docs.
    docs. When a backlog spec is completed, its card status flips (backlog -> done) and, if the
    spec came from a game bundle, the game's `engine-gap-analysis.md` / `traceability.csv`
    status is updated too.
+   A successful `--feature` run is not complete until its feature artifacts and close-out docs are
+   committed as one intentional conventional commit and pushed directly to the configured `main`
+   branch. Intake must start from a clean worktree (or a clearly documented,
+   user-approved baseline); never stage, commit, amend, or push unrelated changes. If commit or
+   push cannot succeed, leave the backlog card incomplete and report `blocked` rather than claiming
+   feature completion.
 8. Telemetry is appended through `scripts/me-record-run.ps1` for **every** run that reached
    delegation — pass or fail (see `SELF_IMPROVEMENT.md`, Mandatory Telemetry). If the output
    reports `retro_due: true`, or the run failed, run `--reflect` before closing.

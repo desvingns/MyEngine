@@ -1,6 +1,6 @@
 {
   "name": "me-dev",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Repo-local thin Codex adapter for the MyEngine /me workflow.",
   "author": {
     "name": "MyEngine",

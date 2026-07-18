@@ -89,6 +89,9 @@ emits one compact JSON object — capture it, do not re-run noisily.
 - When a backlog spec completes: flip its card status, update
   `.claude/specs/ENGINE_ROADMAP.md`, and sync the source game bundle's
   gap-analysis/traceability status.
+- A successful `--feature` run is complete only after one scoped conventional commit and a direct
+  push to `main`. Start from a clean or explicitly user-approved baseline; never include
+  unrelated worktree changes. A failed commit/push leaves the feature `blocked`, not complete.
 - Record telemetry via `scripts\me-record-run.ps1` for **every** run that reached
   delegation — pass or fail — filling `Verdict`, `Retries`, `DurationMin`,
   `MalformedJsonCount`, `GateFailures`, `AttributedAgent`, `FailureCluster`.
