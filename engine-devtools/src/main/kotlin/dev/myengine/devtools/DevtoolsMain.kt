@@ -3,7 +3,8 @@ package dev.myengine.devtools
 fun main(args: Array<String>) {
     val command = args.firstOrNull() ?: "scenario"
     val output = when (command) {
-        "scenario", "balance" -> DevtoolReports.runScenarioSuite()
+        "scenario", "balance", "benchmark" -> DevtoolReports.runScenarioSuite()
+        "goal-field-benchmark" -> DevtoolReports.goalFieldRebuildBenchmark().toJson()
         "balance-delta", "balance-report" -> {
             val baselineRoot = args.getOrNull(1)?.let { DevtoolReports.repoRoot().resolve(it) }
                 ?: dev.myengine.games.sandbox.SandboxGame.contentRoot()

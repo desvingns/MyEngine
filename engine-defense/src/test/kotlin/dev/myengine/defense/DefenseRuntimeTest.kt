@@ -185,6 +185,94 @@ class DefenseRuntimeTest {
         assertEquals(listOf("enemy:alpha", "enemy:zeta"), entities.byTag("enemy").map { it.type })
     }
 
+    @Test
+    fun placementThatSealsNamedSpawnIsRejectedWithoutWorldOrEntityMutation() {
+        val registry = testRegistry()
+        val terrain = mapOf(
+            "floor" to TerrainRule("floor", buildable = true, blocksMovement = false),
+            "wall" to TerrainRule("wall", buildable = false, blocksMovement = true),
+            "core" to TerrainRule("core", buildable = false, blocksMovement = false, isCore = true),
+        )
+        // The only route from entry (0,0) to core (2,0) crosses (1,0). (2,1) remains a
+        // harmless buildable control tile so we can prove a rejected placement did not consume id 1.
+        val world = TileWorld(
+            WorldSize(3, 2),
+            terrain,
+            listOf(
+                WorldTile("floor"), WorldTile("floor"), WorldTile("core"),
+                WorldTile("wall"), WorldTile("wall"), WorldTile("floor"),
+            ),
+        )
+        val entities = EntityStore()
+        val runtime = DefenseRuntime()
+        val blocked = TilePosition(1, 0)
+
+        val rejected = runtime.placeTower(
+            "basic",
+            blocked,
+            registry,
+            world,
+            entities,
+            spawns = listOf(TilePosition(0, 0)),
+            core = TilePosition(2, 0),
+        )
+
+        assertEquals(TowerPlacementResult.Rejected("blocks_spawn_path"), rejected)
+        assertTrue(world.canBuild(blocked), "rejected placement must not occupy the candidate tile")
+        assertEquals(0, entities.count(), "rejected placement must not create an entity")
+
+        val placed = assertIs<TowerPlacementResult.Placed>(
+            runtime.placeTower(
+                "basic",
+                TilePosition(2, 1),
+                registry,
+                world,
+                entities,
+                spawns = listOf(TilePosition(0, 0)),
+                core = TilePosition(2, 0),
+            ),
+        )
+        assertEquals(1L, placed.entityId.value, "rejection must not consume the next entity id")
+    }
+
+    @Test
+    fun placementThatOnlyCutsSecondaryNamedSpawnIsRejectedWithoutMutation() {
+        val registry = testRegistry()
+        val terrain = mapOf(
+            "floor" to TerrainRule("floor", buildable = true, blocksMovement = false),
+            "wall" to TerrainRule("wall", buildable = false, blocksMovement = true),
+            "core" to TerrainRule("core", buildable = false, blocksMovement = false, isCore = true),
+        )
+        // Primary reaches the core along the top row. Secondary can only climb through (2,1),
+        // so a primary-only check would accept this placement while the all-spawn contract rejects it.
+        val world = TileWorld(
+            WorldSize(5, 3),
+            terrain,
+            listOf(
+                WorldTile("floor"), WorldTile("floor"), WorldTile("floor"), WorldTile("floor"), WorldTile("core"),
+                WorldTile("wall"), WorldTile("wall"), WorldTile("floor"), WorldTile("wall"), WorldTile("wall"),
+                WorldTile("floor"), WorldTile("floor"), WorldTile("floor"), WorldTile("wall"), WorldTile("wall"),
+            ),
+        )
+        val entities = EntityStore()
+        val candidate = TilePosition(2, 1)
+
+        val result = DefenseRuntime().placeTower(
+            "basic",
+            candidate,
+            registry,
+            world,
+            entities,
+            spawns = listOf(TilePosition(0, 0), TilePosition(0, 2)),
+            core = TilePosition(4, 0),
+        )
+
+        assertEquals(TowerPlacementResult.Rejected("blocks_spawn_path"), result)
+        assertTrue(world.canBuild(candidate), "secondary-spawn rejection must not occupy the candidate tile")
+        assertEquals(0, entities.count(), "secondary-spawn rejection must not create an entity")
+        assertEquals(1L, entities.nextIdSnapshot(), "secondary-spawn rejection must not consume an id")
+    }
+
     private fun testRegistry() = Files.createTempDirectory("myengine-defense-test").let { root ->
         root.resolve("manifest.properties").writeText(
             """

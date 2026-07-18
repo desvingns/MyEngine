@@ -1,8 +1,8 @@
 # MyEngine State
 
 Last updated: 2026-07-18
-Active phase: Phase 00-14 complete; Signal Garden SG-001..005 complete; MyTD MTD-001..005 complete; DX-008, ENG-005, ENG-014, ENG-026, and ENG-027 complete; pipeline at v0.2.0; next engine backlog is `ENG-002` goal-field pathfinding + repath on world change
-Owner of last update: Codex (2026-07-18: ENG-027 accepted; manual device/layout/performance checks pending)
+Active phase: Phase 00-14 complete; Signal Garden SG-001..005 complete; MyTD MTD-001..005 complete; DX-008, ENG-002, ENG-005, ENG-014, ENG-026, and ENG-027 complete; pipeline at v0.2.0; next engine backlog is `ENG-013` tower sell/refund
+Owner of last update: Codex (2026-07-18: ENG-002 accepted; next P1 item is ENG-013)
 
 ## Current Status
 
@@ -182,19 +182,27 @@ Owner of last update: Codex (2026-07-18: ENG-027 accepted; manual device/layout/
   map. Content validation now requires tower/tier `displayKey` references and nine HUD string keys.
   Headless HUD, render/input/layout, defense metrics, content, and save tests pass; all runner gates
   pass with replay hashes unchanged. Device/layout/performance checks remain manual-pending.
+- MyEngine ENG-002 (goal-field pathfinding + repath on world change, 2026-07-18) is accepted.
+  `GoalField` replaces per-enemy precomputed paths with deterministic core-outward BFS routing;
+  `occupied_by_enemy` is surfaced when placement is blocked by an enemy, and all spawns are checked
+  prospectively before a world mutation. Tower/wall walkability changes rebuild the field within the
+  same tick, so enemies reroute immediately. Save v6 retains canonical authoritative state rather
+  than serializing a cache: the field is derived after restore and legacy path state is canonicalized.
+  The maze replay golden is `ed0354584405ec49`; canonical and kill hashes are now
+  `463d87684ca6cbee` and `40c7bda7e3bc1316`.
 
 ## Next Exact Action
 
-Implement engine backlog item `ENG-002` (goal-field pathfinding + repath on world change):
+Implement engine backlog item `ENG-013` (tower sell/refund):
 
 ```powershell
 Get-Content -Raw .claude\specs\ENGINE_ROADMAP.md
-Get-Content -Raw .claude\specs\backlog\ENG-002-flow-field-repath.md
+Get-Content -Raw .claude\specs\backlog\ENG-013-tower-sell-refund.md
 ```
 
 Expected next output:
 
-- Deterministic goal-field routing replaces per-enemy path searches and repaths after world changes
+- Deterministic, content-defined tower sell/refund with ENG-002 field invalidation coverage
 
 ## Known Blockers
 

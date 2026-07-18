@@ -1,5 +1,6 @@
 package dev.myengine.defense
 
+import dev.myengine.ai.GoalField
 import dev.myengine.ai.GridPathfinder
 import dev.myengine.ai.PathRequest
 import dev.myengine.ai.PathResult
@@ -80,9 +81,28 @@ class DefenseRuntime(private val pathfinder: GridPathfinder = GridPathfinder()) 
         registry: ContentRegistry,
         world: TileWorld,
         entities: EntityStore,
+        spawns: List<TilePosition> = emptyList(),
+        core: TilePosition? = null,
     ): TowerPlacementResult {
         val tower = registry.towers[towerId] ?: return TowerPlacementResult.Rejected("unknown_tower")
         if (!world.canBuild(position)) return TowerPlacementResult.Rejected("tile_not_buildable")
+        if (entities.byTag("enemy").any { enemy ->
+                enemy.position?.tile == position && enemy.health?.isAlive() == true
+            }
+        ) {
+            return TowerPlacementResult.Rejected("occupied_by_enemy")
+        }
+        if (core != null) {
+            val prospective = GoalField.rebuildAfterWalkabilityChange(
+                world = world,
+                goal = core,
+                spawns = spawns,
+                additionalBlocked = position,
+            )
+            if (!prospective.keepsAllSpawnsReachable) {
+                return TowerPlacementResult.Rejected("blocks_spawn_path")
+            }
+        }
         val entity = entities.create("tower:$towerId", setOf("tower")) { id ->
             Entity(
                 id = id,
@@ -105,6 +125,7 @@ class DefenseRuntime(private val pathfinder: GridPathfinder = GridPathfinder()) 
         entities: EntityStore,
         spawn: TilePosition,
         core: TilePosition,
+        goalField: GoalField? = null,
     ): DefenseState {
         var nextState = state
         registry.waves.values
@@ -114,7 +135,7 @@ class DefenseRuntime(private val pathfinder: GridPathfinder = GridPathfinder()) 
                 wave.spawns.forEach { spawnDef ->
                     val enemy = registry.requireEnemy(spawnDef.enemyId)
                     repeat(spawnDef.count) {
-                        spawnEnemy(enemy, world, entities, spawn, core)
+                        spawnEnemy(enemy, world, entities, spawn, core, goalField)
                     }
                     nextState = nextState.record(DefenseMetrics(enemiesSpawned = spawnDef.count))
                 }
@@ -173,22 +194,37 @@ class DefenseRuntime(private val pathfinder: GridPathfinder = GridPathfinder()) 
         return TowerUpdateResult(metrics, rewards, towerMetrics.toSortedMap())
     }
 
-    fun updateEnemies(registry: ContentRegistry, state: DefenseState, entities: EntityStore): DefenseState {
+    fun updateEnemies(
+        registry: ContentRegistry,
+        state: DefenseState,
+        entities: EntityStore,
+        goalField: GoalField? = null,
+    ): DefenseState {
         var nextState = state
         entities.byTag("enemy").sortedBy { it.id.value }.forEach { enemy ->
             val movement = enemy.movement ?: return@forEach
-            val nextIndex = movement.pathIndex + 1
-            if (nextIndex >= movement.path.lastIndex) {
+            val position = enemy.position?.tile ?: return@forEach
+            val nextPosition = goalField?.nextStep(position)
+            val reachesCore = if (goalField != null) goalField.isGoal(position) else {
+                val nextIndex = movement.pathIndex + 1
+                nextIndex >= movement.path.lastIndex
+            }
+            if (reachesCore) {
                 val enemyDefinition = registry.enemies[enemy.type.substringAfter("enemy:")]
                 val damage = enemyDefinition?.coreDamage ?: 1
                 entities.markRemove(enemy.id)
                 nextState = nextState.copy(coreHealth = (nextState.coreHealth - damage).coerceAtLeast(0))
                     .record(DefenseMetrics(enemiesLeaked = 1, coreDamage = damage))
-            } else {
-                val nextPosition = movement.path[nextIndex]
+            } else if (goalField != null && nextPosition != null) {
+                entities.update(enemy.id) {
+                    it.copy(position = PositionComponent(nextPosition))
+                }
+            } else if (goalField == null) {
+                val nextIndex = movement.pathIndex + 1
+                val legacyNextPosition = movement.path[nextIndex]
                 entities.update(enemy.id) {
                     it.copy(
-                        position = PositionComponent(nextPosition),
+                        position = PositionComponent(legacyNextPosition),
                         movement = movement.copy(pathIndex = nextIndex),
                     )
                 }
@@ -204,10 +240,16 @@ class DefenseRuntime(private val pathfinder: GridPathfinder = GridPathfinder()) 
         entities: EntityStore,
         spawn: TilePosition,
         core: TilePosition,
+        goalField: GoalField?,
     ) {
-        val path = when (val result = pathfinder.find(world, PathRequest(spawn, core))) {
-            is PathResult.Found -> result.tiles
-            is PathResult.NoPath -> listOf(spawn)
+        val movement = if (goalField != null) {
+            MovementComponent()
+        } else {
+            val path = when (val result = pathfinder.find(world, PathRequest(spawn, core))) {
+                is PathResult.Found -> result.tiles
+                is PathResult.NoPath -> listOf(spawn)
+            }
+            MovementComponent(path = path, pathIndex = 0)
         }
         entities.create("enemy:${enemy.id}", setOf("enemy")) { id ->
             Entity(
@@ -216,7 +258,7 @@ class DefenseRuntime(private val pathfinder: GridPathfinder = GridPathfinder()) 
                 tags = setOf("enemy"),
                 position = PositionComponent(spawn),
                 health = HealthComponent(enemy.health, enemy.health),
-                movement = MovementComponent(path = path, pathIndex = 0),
+                movement = movement,
             )
         }
     }

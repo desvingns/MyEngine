@@ -26,7 +26,7 @@ Last updated: 2026-07-18
 | Win/lose conditions + run summary | ENG-014 | mytd, vision:td, vision:rimworld-like, vision:mindustry-like | 4 | **done** (2026-07-16; map-defined terminal rules, immutable snapshot summary, save v5 terminal-state persistence, all gates pass) |
 | Android SurfaceView renderer + Choreographer fixed-tick loop | ENG-026 | mytd, vision:td, vision:rimworld-like, vision:mindustry-like | 4 | **done** (2026-07-16; 20 Hz Android-local Choreographer policy, immutable RenderFrame SurfaceView, command-queue-only input, pause/save/Bundle command-ID restoration; JVM/build/replay/save-compat gates pass, device/performance checks manual-pending) |
 | HUD snapshot data + UI command surface | ENG-027 | mytd, vision:td, vision:rimworld-like, vision:mindustry-like | 4 | **done** (2026-07-18; content-derived immutable HUD snapshot, Android build/select/upgrade panels through `InputAdapter`, deterministic per-tower damage/kills, save v6 metrics persistence; full gates pass, device/layout/performance checks manual-pending) |
-| Goal-field pathfinding + repath on world change (mazing) | ENG-002 | mytd, vision:td, vision:mindustry-like | 3 | backlog |
+| Goal-field pathfinding + repath on world change (mazing) | ENG-002 | mytd, vision:td, vision:mindustry-like | 3 | **done** (2026-07-18; deterministic `GoalField`, prospective all-spawn placement rejection, same-tick reroute, v6-derived field/legacy canonicalization; replay/save/benchmark gates pass) |
 | Multiple spawn points + per-wave routing | ENG-007 | vision:td, vision:mindustry-like | 2 | backlog |
 | Targeting priority modes | ENG-008 | mytd, vision:td | 2 | backlog |
 | Splash damage + shot events | ENG-009 | mytd, vision:td, vision:mindustry-like | 3 | backlog |
@@ -95,8 +95,8 @@ Last updated: 2026-07-18
 2. MTD-004 -> ENG-024 -> ENG-005 -> ENG-014 -> MTD-005 -> ENG-026 -> ENG-027 =
    **first playable Android TD milestone** (complete 2026-07-18; manual device/layout/performance
    evidence remains explicitly pending).
-3. P1 opener: ENG-002 -> ENG-013 -> ENG-008 -> ENG-015 -> ENG-030. The next exact backlog action
-   is `ENG-002`.
+3. P1 opener: ENG-002 (done) -> ENG-013 -> ENG-008 -> ENG-015 -> ENG-030. The next exact backlog
+   action is `ENG-013`.
 4. DX-008 is done: use its hybrid-format ADR for ENG-017/ENG-028 schema work. Other high-leverage
    pipeline cards remain DX-002, DX-006, and DX-005.
 

@@ -1,6 +1,6 @@
 id: ENG-002
 title: Goal-field pathfinding + repath on world change (mazing)
-status: backlog
+status: done
 phase: engine
 source: engine gap sweep 2026-07-06 (project review)
 

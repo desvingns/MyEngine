@@ -61,6 +61,18 @@ class DevtoolReportsTest {
     }
 
     @Test
+    fun goalFieldBenchmarkReportsCanonical64x64StableJsonShape() {
+        val json = DevtoolReports.goalFieldRebuildBenchmark().toJson()
+        val parsed = Json.parseToJsonElement(json).jsonObject
+
+        assertEquals(setOf("width", "height", "reachable_tiles", "rebuild_ns"), parsed.keys)
+        assertEquals(64, parsed.getValue("width").jsonPrimitive.content.toInt())
+        assertEquals(64, parsed.getValue("height").jsonPrimitive.content.toInt())
+        assertTrue(parsed.getValue("reachable_tiles").jsonPrimitive.content.toInt() >= 0)
+        assertTrue(parsed.getValue("rebuild_ns").jsonPrimitive.content.toLong() >= 0L)
+    }
+
+    @Test
     fun contentReportListsSandboxIds() {
         val report = DevtoolReports.contentReport()
 

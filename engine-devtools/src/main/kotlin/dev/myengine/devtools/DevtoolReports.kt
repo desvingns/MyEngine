@@ -1,8 +1,10 @@
 package dev.myengine.devtools
 
+import dev.myengine.ai.GoalField
 import dev.myengine.content.ContentPackLoader
 import dev.myengine.content.ContentRegistry
 import dev.myengine.games.sandbox.SandboxGame
+import dev.myengine.world.TilePosition
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
@@ -31,6 +33,21 @@ data class HeadlessScenarioReport(
         "core_damage" to coreDamage,
         "tower_shots" to towerShots,
         "sim_ms" to simMs,
+    )
+}
+
+/** Advisory rebuild measurement for the canonical 64x64 sandbox map. */
+data class GoalFieldRebuildReport(
+    val width: Int,
+    val height: Int,
+    val reachableTiles: Int,
+    val rebuildNanos: Long,
+) {
+    fun toJson(): String = buildJson(
+        "width" to width,
+        "height" to height,
+        "reachable_tiles" to reachableTiles,
+        "rebuild_ns" to rebuildNanos,
     )
 }
 
@@ -196,7 +213,30 @@ object DevtoolReports {
     /** Both canonical scenarios reported together so the default gate covers kills+rewards. */
     fun runScenarioSuite(): String {
         val reports = listOf(runSandboxScenario(), runSandboxKillScenario())
-        return "{\"scenarios\":[${reports.joinToString(",") { it.toJson() }}]}"
+        return "{\"scenarios\":[${reports.joinToString(",") { it.toJson() }}]," +
+            "\"goal_field_rebuild\":${goalFieldRebuildBenchmark().toJson()}}"
+    }
+
+    /**
+     * Rebuilds the sandbox's canonical 64x64 field once and emits its wall-clock cost.  This is a
+     * metric, not a pass/fail budget: it feeds the future performance-baseline work.
+     */
+    fun goalFieldRebuildBenchmark(): GoalFieldRebuildReport {
+        val state = SandboxGame.createInitialState()
+        val map = state.registry.requireMap(state.mapId)
+        val core = TilePosition(map.core.x, map.core.y)
+        check(state.world.size.width == 64 && state.world.size.height == 64) {
+            "Goal-field benchmark requires the canonical 64x64 sandbox map."
+        }
+        val started = System.nanoTime()
+        val field = GoalField.build(state.world, core)
+        val elapsedNanos = System.nanoTime() - started
+        return GoalFieldRebuildReport(
+            width = state.world.size.width,
+            height = state.world.size.height,
+            reachableTiles = field.reachableTileCount,
+            rebuildNanos = elapsedNanos,
+        )
     }
 
     fun balanceDeltaReport(

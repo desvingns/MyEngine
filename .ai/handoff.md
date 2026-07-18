@@ -1,6 +1,6 @@
 # MyEngine Handoff
 
-Last updated: 2026-07-18 (ENG-027 HUD/UI accepted; manual device/layout/performance checks pending)
+Last updated: 2026-07-18 (ENG-002 goal-field/repath accepted; next P1 item is ENG-013)
 Owner: Codex
 
 ## DONE
@@ -455,6 +455,13 @@ Owner: Codex
   unknown refs, core count, and blocked spawn paths. `SandboxSaveCodec` v4 persists map id and
   content version, validates map/pack/content identity, and migrates v1-v3 saves via the sole map.
   The canonical replay hashes remain `9c495d8ff30fd83d` and `83a65da1a7881b2c`.
+- MyEngine ENG-002 (goal-field pathfinding + repath on world change, 2026-07-18) is complete.
+  `GoalField` supplies deterministic core-outward BFS routing to all wave enemies, replacing
+  per-enemy precomputed paths. Placement validates every spawn prospectively before mutation and
+  returns `occupied_by_enemy` for occupied tiles. Walkability changes rebuild the field in the same
+  tick, producing immediate mid-run reroutes. Save v6 derives the field after restore and
+  canonicalizes legacy path state instead of serializing cache data. The maze golden hash is
+  `ed0354584405ec49`; canonical and kill hashes are `463d87684ca6cbee` and `40c7bda7e3bc1316`.
 
 —
 ## MyTD (2026-07-04)
@@ -469,11 +476,11 @@ Owner: Codex
 
 ## NEXT
 
-Implement MyEngine `ENG-002` (goal-field pathfinding + repath on world change):
+Implement MyEngine `ENG-013` (tower sell/refund):
 
 ```powershell
 Get-Content -Raw .claude\specs\ENGINE_ROADMAP.md
-Get-Content -Raw .claude\specs\backlog\ENG-002-flow-field-repath.md
+Get-Content -Raw .claude\specs\backlog\ENG-013-tower-sell-refund.md
 ```
 
 ## BLOCKERS
@@ -565,6 +572,11 @@ Get-Content -Raw .claude\specs\backlog\ENG-002-flow-field-repath.md
 
 ## VERIFICATION
 
+- ENG-002 (2026-07-18): full `./gradlew.bat test` -> pass; replay -> pass with canonical
+  `463d87684ca6cbee`, kill `40c7bda7e3bc1316`, and maze golden `ed0354584405ec49`; save-compat ->
+  pass; benchmark -> pass, including final 64x64 goal-field rebuild metric `4.1904 ms`. Final
+  verifier accepted all four acceptance criteria with no findings. The only noted warning is the
+  pre-existing Gradle 10 deprecation warning from AGP internals.
 - ENG-027 (2026-07-18): final runner -> pass. Full tests pass; content validation passes for 2 packs;
   replay hashes remain canonical `9c495d8ff30fd83d` and kill `83a65da1a7881b2c`; save-compat passes;
   benchmark passes at `canonical=295 ms`, `kill=45 ms`; `android:assembleDebug` passes. Headless HUD,

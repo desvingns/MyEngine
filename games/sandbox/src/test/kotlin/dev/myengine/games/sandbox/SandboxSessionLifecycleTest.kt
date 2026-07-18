@@ -8,6 +8,9 @@ import dev.myengine.core.command.BuildTowerCommand
 import dev.myengine.core.command.TileCoordinate
 import dev.myengine.core.command.UpgradeTowerCommand
 import dev.myengine.world.TilePosition
+import java.io.StringReader
+import java.io.StringWriter
+import java.util.Properties
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -251,6 +254,38 @@ class SandboxSessionLifecycleTest {
         assertEquals("123:main:2", restoredUpgrade.stablePayload())
     }
 
+    @Test
+    fun legacyV6EnemyRouteIsDiscardedAndGoalFieldMigrationIsReplayStable() {
+        val registry = SandboxGame.loadRegistry()
+        val original = SandboxSession.start(registry).also { it.step(10) }
+        val pathFreeSave = original.save()
+        val legacyV6Fixture = withLegacyEnemyRoute(pathFreeSave)
+        val originalEnemyPosition = original.runtime.state.entities.byTag("enemy").first().position!!.tile
+
+        // This is an actual v6-shaped fixture with the now-obsolete per-enemy route populated.
+        // Its route is presentation-era data only: migration keeps the saved position but erases
+        // path/pathIndex so the restored GoalField is the sole authoritative movement source.
+        val decoded = SandboxSaveCodec.decode(legacyV6Fixture, registry)
+        val migratedEnemy = decoded.entities.byTag("enemy").first()
+        assertEquals(originalEnemyPosition, migratedEnemy.position!!.tile)
+        assertEquals(emptyList(), migratedEnemy.movement!!.path)
+        assertEquals(0, migratedEnemy.movement!!.pathIndex)
+        assertEquals(
+            original.stableHash(),
+            decoded.stableHash(),
+            "migration canonicalizes legacy routes out of the stable-hash state",
+        )
+
+        val baseline = SandboxSession.restore(pathFreeSave, registry)
+        val migrated = SandboxSession.restore(legacyV6Fixture, registry)
+        migrated.step()
+        assertEquals(TilePosition(3, 1), migrated.runtime.state.entities.byTag("enemy").first().position!!.tile)
+
+        baseline.step(20)
+        migrated.step(19)
+        assertEquals(baseline.stableHash(), migrated.stableHash())
+    }
+
     /** C. The seed roundtrips through save/restore, and re-saving reproduces the same seed line. */
     @Test
     fun seedRoundtripsThroughSaveRestore() {
@@ -362,7 +397,21 @@ class SandboxSessionLifecycleTest {
         .joinToString("\n") { if (it.startsWith("saveVersion=")) "saveVersion=$version" else it }
 
     private fun saveProperty(text: String, key: String): String? =
-        java.util.Properties().also { it.load(java.io.StringReader(text)) }.getProperty(key)
+        Properties().also { it.load(StringReader(text)) }.getProperty(key)
+
+    private fun withLegacyEnemyRoute(save: String): String {
+        val props = Properties().also { it.load(StringReader(save)) }
+        require(props.getProperty("saveVersion") == "6") { "fixture must remain a v6 save" }
+        props["entities"] = props.getProperty("entities").split(';').joinToString(";") { encoded ->
+            val parts = encoded.split('|').toMutableList()
+            if (parts[1].startsWith("enemy:")) {
+                parts[11] = "1:1/2:1/3:1"
+                parts[12] = "2"
+            }
+            parts.joinToString("|")
+        }
+        return StringWriter().also { props.store(it, "Legacy v6 path fixture") }.toString()
+    }
 
     /** Reads the `seed` value out of a save's property text without decoding full state. */
     private fun seedProperty(text: String): String =

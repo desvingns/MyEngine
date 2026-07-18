@@ -37,6 +37,20 @@ class AiPrimitivesTest {
     }
 
     @Test
+    fun goalFieldPinsSortedNeighborTieOrder() {
+        val world = TileWorld.filled(WorldSize(3, 3), terrain, "floor")
+        val field = GoalField.build(world, TilePosition(1, 1))
+
+        // TilePosition sorting is y-then-x: the reverse BFS discovers (0,0) first through
+        // (1,0), not (0,1). Keep this literal route as the deterministic tie-break contract.
+        assertEquals(
+            listOf(TilePosition(0, 0), TilePosition(1, 0), TilePosition(1, 1)),
+            field.pathFrom(TilePosition(0, 0)),
+        )
+        assertEquals(TilePosition(1, 0), field.nextStep(TilePosition(0, 0)))
+    }
+
+    @Test
     fun jobsAssignByPriorityThenId() {
         val board = JobBoard(
             listOf(

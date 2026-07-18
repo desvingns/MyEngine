@@ -39,7 +39,7 @@
 1. Оригинальный план Phase 00-14 закрыт.
 2. Первый playable Android TD milestone закрыт через `ENG-027`; ручные device/layout/performance
    проверки остаются явно отложенными.
-3. Следующий backlog item: `ENG-002` (goal-field pathfinding + repath on world change).
+3. Следующий backlog item: `ENG-013` (tower sell/refund).
 4. Hardening gaps из `docs/HARDENING_AUDIT.md` закрывать по одному, с тестами и обновлением handoff.
 
 Новые крупные фазы добавлять только после того, как backlog specs перестанут быть достаточно
@@ -910,3 +910,25 @@
   - Harden malformed save v6 handling for a missing `towerMetrics` field and duplicate tower ids.
 - Next:
   - Implement `.claude/specs/backlog/ENG-002-flow-field-repath.md`.
+
+### 2026-07-18 - MyEngine ENG-002 (goal-field pathfinding + repath on world change)
+
+- Status: Done
+- Owner: Codex
+- Implementation:
+  - `GoalField` deterministically routes enemies from the core field instead of retaining
+    per-enemy precomputed paths; tests pin neighbor/tie order.
+  - Placement checks every spawn against the prospective world, rejects a blocked path
+    deterministically, reports `occupied_by_enemy`, and rebuilds the field in the same tick after
+    each accepted walkability change so live enemies reroute.
+  - Save v6 keeps canonical authoritative state: the field is derived after restore and legacy path
+    state is canonicalized rather than persisted as cache.
+- Verification:
+  - Full Gradle tests, replay, save-compat, and benchmark -> pass.
+  - Replay hashes: canonical `463d87684ca6cbee`, kill `40c7bda7e3bc1316`, maze golden
+    `ed0354584405ec49`; final 64x64 field rebuild metric `4.1904 ms`.
+  - Final verifier -> pass; all four acceptance criteria accepted with no findings.
+- Notes:
+  - The only warning is the pre-existing Gradle 10 deprecation warning from AGP internals.
+- Next:
+  - Implement `.claude/specs/backlog/ENG-013-tower-sell-refund.md`.

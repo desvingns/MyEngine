@@ -6,9 +6,7 @@ import dev.myengine.content.MapContent
 import dev.myengine.content.MapWinCondition
 import dev.myengine.content.TowerUpgradeTier
 import dev.myengine.content.HudStringKeys
-import dev.myengine.ai.GridPathfinder
-import dev.myengine.ai.PathRequest
-import dev.myengine.ai.PathResult
+import dev.myengine.ai.GoalField
 import dev.myengine.core.CommandQueue
 import dev.myengine.core.EngineCommand
 import dev.myengine.core.EngineInfo
@@ -129,11 +127,11 @@ class SandboxRuntime(
     private val producerSystem = ProducerSystem(state.registry.recipes)
     private val map = state.registry.requireMap(state.mapId)
     private val spawn = map.primarySpawn.position.let { TilePosition(it.x, it.y) }
+    private val spawns = map.spawns.values.map { TilePosition(it.position.x, it.position.y) }.sorted()
     private val core = map.core.let { TilePosition(it.x, it.y) }
-    private val renderPath: List<TilePosition> = when (val result = GridPathfinder().find(state.world, PathRequest(spawn, core))) {
-        is PathResult.Found -> result.tiles
-        is PathResult.NoPath -> emptyList()
-    }
+    /** Derived cache: rebuilt from authoritative world occupancy after placement and on restore. */
+    private var goalField: GoalField = rebuildAfterWalkabilityChange()
+    private val renderPath: List<TilePosition> get() = goalField.pathFrom(spawn)
 
     /** Returns false without mutating state when the run has already reached its terminal boundary. */
     fun submit(command: EngineCommand): Boolean {
@@ -165,7 +163,16 @@ class SandboxRuntime(
             val commands = commandQueue.drainFor(state.tick)
             commands.forEach(::applyCommand)
             updateProduction()
-            state.defense = defenseRuntime.spawnDueWaves(state.tick, state.defense, state.registry, state.world, state.entities, spawn, core)
+            state.defense = defenseRuntime.spawnDueWaves(
+                state.tick,
+                state.defense,
+                state.registry,
+                state.world,
+                state.entities,
+                spawn,
+                core,
+                goalField,
+            )
             val towerResult = defenseRuntime.updateTowers(state.registry, state.entities)
             state.defense = state.defense.record(towerResult.metrics).recordTowerMetrics(towerResult.towerMetrics)
             val deposit = depositRewards(state.inventory, towerResult.rewards)
@@ -176,7 +183,7 @@ class SandboxRuntime(
                 state.lastCommandOrError = deposit.dropped.entries
                     .joinToString(",", prefix = "reward_dropped:") { "${it.key}:${it.value}" }
             }
-            state.defense = defenseRuntime.updateEnemies(state.registry, state.defense, state.entities)
+            state.defense = defenseRuntime.updateEnemies(state.registry, state.defense, state.entities, goalField)
             evaluateTerminalState()
             if (state.run.isTerminal) return
             IncidentDirector(state.registry.incidents.values).select(state.defense.metrics.enemiesSpawned, dev.myengine.core.SeededRandom(17))
@@ -312,8 +319,22 @@ class SandboxRuntime(
             return
         }
         val position = TilePosition(command.position.x, command.position.y)
-        when (val result = defenseRuntime.placeTower(command.towerId, position, state.registry, state.world, state.entities)) {
+        when (
+            val result = defenseRuntime.placeTower(
+                command.towerId,
+                position,
+                state.registry,
+                state.world,
+                state.entities,
+                spawns,
+                core,
+            )
+        ) {
             is TowerPlacementResult.Placed -> {
+                // Tick order is command -> occupancy mutation -> rebuild -> spawn/movement.  Thus
+                // this same tick can never use a pre-placement route; future destroy/wall flows
+                // must use this hook after their authoritative walkability mutation too.
+                goalField = rebuildAfterWalkabilityChange()
                 state.inventory = state.inventory.remove(tower.costResource, tower.costAmount)
                 state.lastCommandOrError = "placed:${result.entityId.value}"
             }
@@ -413,6 +434,10 @@ class SandboxRuntime(
             result.producer
         }
     }
+
+    /** Single committed-world cache hook paired with GoalField's prospective placement probe. */
+    private fun rebuildAfterWalkabilityChange(): GoalField =
+        GoalField.rebuildAfterWalkabilityChange(state.world, core, spawns).field
 }
 
 object SandboxSaveCodec {
@@ -640,7 +665,15 @@ object SandboxSaveCodec {
                 health = if (health != null && maxHealth != null) HealthComponent(health, maxHealth) else null,
                 tower = if (towerId != null && cooldown != null) TowerComponent(towerId, cooldown, upgradeBranch, upgradeTier) else null,
                 attack = if (range != null && damage != null && cooldownTicks != null) AttackComponent(range, damage, cooldownTicks) else null,
-                movement = if (path.isNotEmpty() && pathIndex != null) MovementComponent(path, pathIndex) else null,
+                // Wave routing is a derived GoalField cache.  Older v6 saves can still carry a
+                // serialized per-enemy path; discard it and rebuild from restored world occupancy.
+                movement = if (type.startsWith("enemy") && x != null && y != null) {
+                    MovementComponent()
+                } else if (path.isNotEmpty() && pathIndex != null) {
+                    MovementComponent(path, pathIndex)
+                } else {
+                    null
+                },
             )
         }
 }
