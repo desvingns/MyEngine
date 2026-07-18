@@ -10,3 +10,11 @@ out/
 .DS_Store
 .ai/runs/*.jsonl
 reports/
+
+# JVM crash diagnostics generated in the current module directory.
+**/hs_err_pid*.log
+**/replay_pid*.log
+**/java_pid*.hprof
+
+# Graphify's machine-local Python runtime marker.
+graphify-out/.graphify_python
