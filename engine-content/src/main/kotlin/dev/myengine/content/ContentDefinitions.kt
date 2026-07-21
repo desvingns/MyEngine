@@ -89,10 +89,22 @@ data class WaveSpawn(
     val count: Int,
 )
 
+/** Content-defined reward granted when this wave is called before its scheduled start tick. */
+data class WaveEarlyCallBonus(
+    val resourceId: String,
+    val amount: Int,
+) {
+    init {
+        require(resourceId.isNotBlank()) { "Early-call bonus resource id cannot be blank." }
+        require(amount > 0) { "Early-call bonus amount must be positive." }
+    }
+}
+
 data class WaveContent(
     override val id: String,
     val startTick: Long,
     val spawns: List<WaveSpawn>,
+    val earlyCallBonus: WaveEarlyCallBonus? = null,
 ) : ContentDefinition
 
 data class DifficultyContent(

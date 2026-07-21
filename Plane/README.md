@@ -39,8 +39,9 @@
 1. Оригинальный план Phase 00-14 закрыт.
 2. Первый playable Android TD milestone закрыт через `ENG-027`; ручные device/layout/performance
    проверки остаются явно отложенными.
-3. `ENG-015` (presentation-side game speed control) закрыт 2026-07-21; следующий backlog item:
-   `ENG-030` (wave preview + early wave call).
+3. `ENG-015` (presentation-side game speed control) и `ENG-030` (wave preview + early wave call)
+   закрыты 2026-07-21; явная P1-последовательность завершена, следующий backlog item ещё не
+   выбран в roadmap.
 4. Hardening gaps из `docs/HARDENING_AUDIT.md` закрывать по одному, с тестами и обновлением handoff.
 
 Новые крупные фазы добавлять только после того, как backlog specs перестанут быть достаточно
@@ -992,7 +993,7 @@
   - `scripts/me-selfcheck.ps1` -> pass.
   - Documentation/backlog diff only; no simulation/save/replay/content behavior changed.
 - Next:
-  - Keep the next exact engine action at ENG-030 after ENG-015 close-out.
+  - At the time of this historical entry, keep ENG-030 after ENG-015; ENG-030 is now closed.
   - After MySD Gate 2, schedule ENG-036 before the MySD headless vertical slice.
 
 ### 2026-07-21 - MyEngine ENG-015 (presentation-side game speed control)
@@ -1020,4 +1021,36 @@
   - Extreme `200x600` selected-panel overflow is a manual layout risk; pre-existing `pausedSave`
     rollback risk is outside ENG-015; `0x` idle HUD redraw is an accepted CPU/battery trade-off.
 - Next exact action:
-  - Implement `.claude/specs/backlog/ENG-030-wave-preview-early-call.md`.
+  - Select the next backlog item after ENG-030; the current roadmap does not define a unique
+    successor.
+
+### 2026-07-21 - MyEngine ENG-030 (wave preview and early wave call)
+
+- Status: Done / accepted; docs close-out completed
+- Owner: Codex
+- Implementation:
+  - A typed `CallWaveEarlyCommand` starts the next wave before its scheduled tick, while the
+    immutable HUD projects deterministic next-wave composition and countdown from one projection.
+  - `WaveEarlyCallBonus(resourceId, amount)` is optional, content-defined, validated as paired,
+    positive, and resource-backed; existing packs remain unchanged because no balance value was
+    approved.
+  - Calls at/after the scheduled boundary or while enemies are active are rejected without
+    authoritative mutation. `SandboxSaveCodec` v8 preserves typed pending commands and migrates
+    v1-v7 saves.
+- Verification:
+  - Full Gradle tests with the JDK 17 fallback, content validation (2 packs), replay, save-compat,
+    benchmark, and `android:assembleDebug` -> pass.
+  - Replay hashes: canonical `12a65fd2b87593cf`, kill `bb37eefc1903cc77`.
+  - Benchmark: canonical `473 ms`, kill `78 ms`, goal-field rebuild `8222800 ns`.
+  - Renderer, simulation, save, Android, and final verifier reviews -> pass; exact scheduled-tick
+    boundary, active-wave rejection, replay, and mid-countdown save coverage pass.
+  - Balance review -> partial: current content packs are valid and contain no hardcoded bonus; its
+    schema-documentation gap was closed in this docs close-out, and the optional bonus remains
+    unconfigured pending an approved balance value.
+- Known risks:
+  - Low non-blocking per-snapshot HUD allocation and device profiling follow-up remains open.
+  - The existing save delimiter assumption remains documented; no code fix was made in this
+    documentation-only close-out.
+- Next:
+  - Select the next backlog item after ENG-030; the current roadmap does not define a unique
+    successor, so backlog sequencing is required before another feature.

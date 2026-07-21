@@ -71,3 +71,16 @@ data class SetTowerTargetingModeCommand(
     override val type: String = "set_tower_targeting_mode"
     override fun stablePayload(): String = "$towerEntityId:${targetingMode.id}"
 }
+
+/**
+ * Requests the next not-yet-spawned wave at a command boundary. The command carries no mutable
+ * target: the simulation resolves the next wave from content using its deterministic ordering.
+ */
+data class CallWaveEarlyCommand(
+    override val id: CommandId,
+    override val scheduledTick: Tick,
+    override val actorId: Long? = null,
+) : EngineCommand {
+    override val type: String = "call_wave_early"
+    override fun stablePayload(): String = ""
+}

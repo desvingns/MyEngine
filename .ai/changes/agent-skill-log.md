@@ -358,3 +358,19 @@ by: claude
   files must never be staged, amended, committed, or pushed. Commit/push failure leaves the feature
   blocked and its backlog card incomplete.
 - Human gate: direct user instruction: each completed me-dev skill call must commit and push the feature.
+
+## 2026-07-21 - MyEngine ENG-030 documentation close-out
+
+- Owner: Codex
+- Change type: none (documentation-only close-out; no pipeline, adapter, or plugin change)
+- Changed: ENG-030 backlog card, engine roadmap, properties schema, `STATE.md`, `.ai/handoff.md`,
+  `Plane/README.md`, `.ai/DIGEST.md`, and this log.
+- Summary: Recorded accepted wave preview/early-call behavior, typed command, content-defined
+  `resourceId + amount` bonus validation, strict scheduled-tick guard, `SAVE_VERSION=8`, v1-v7
+  migration, replay/save/gate evidence, and the remediation test coverage.
+- Balance review: partial; current content packs are valid and contain no hardcoded bonus, the
+  schema-documentation gap was closed in this docs close-out, and the optional bonus remains
+  unconfigured pending an approved balance value.
+- Risks: Existing packs intentionally omit bonus values pending balance approval; low HUD
+  per-snapshot allocation/device profiling follow-up; pre-existing save delimiter assumption.
+- No ADR was needed and the me-dev plugin version was not bumped. No commit or push was performed.

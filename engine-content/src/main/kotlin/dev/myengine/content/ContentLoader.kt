@@ -254,7 +254,34 @@ object ContentPackLoader {
             id = id,
             startTick = fields.requiredNonNegativeLong(file, id, "startTick", errors) ?: return null,
             spawns = spawns,
+            earlyCallBonus = parseWaveEarlyCallBonus(id, fields, errors, file),
         )
+    }
+
+    /**
+     * Parses the optional paired bonus fields. Keeping the pair optional preserves v1 pack
+     * compatibility while making a half-declared bonus a validation error instead of silently
+     * changing the early-call economy.
+     */
+    private fun parseWaveEarlyCallBonus(
+        id: String,
+        fields: Map<String, String>,
+        errors: MutableList<ContentValidationError>,
+        file: String,
+    ): WaveEarlyCallBonus? {
+        val resourceField = "earlyCallBonusResourceId"
+        val amountField = "earlyCallBonusAmount"
+        val hasResource = fields.containsKey(resourceField)
+        val hasAmount = fields.containsKey(amountField)
+        if (!hasResource && !hasAmount) return null
+        if (hasResource != hasAmount) {
+            if (!hasResource) errors += ContentValidationError(file, id, resourceField, "Early-call bonus fields must be declared as a pair.")
+            if (!hasAmount) errors += ContentValidationError(file, id, amountField, "Early-call bonus fields must be declared as a pair.")
+            return null
+        }
+        val resourceId = fields.required(file, id, resourceField, errors) ?: return null
+        val amount = fields.requiredPositiveInt(file, id, amountField, errors) ?: return null
+        return WaveEarlyCallBonus(resourceId, amount)
     }
 
     private fun parseIncident(id: String, fields: Map<String, String>, errors: MutableList<ContentValidationError>, file: String): IncidentContent? =
@@ -638,6 +665,16 @@ object ContentPackLoader {
             if (!resources.containsKey(it.outputResource)) errors += ContentValidationError("recipes.properties", it.id, "outputResource", "Unknown resource '${it.outputResource}'.")
         }
         waves.values.forEach { wave ->
+            wave.earlyCallBonus?.let { bonus ->
+                if (!resources.containsKey(bonus.resourceId)) {
+                    errors += ContentValidationError(
+                        "waves.properties",
+                        wave.id,
+                        "earlyCallBonusResourceId",
+                        "Unknown resource '${bonus.resourceId}'.",
+                    )
+                }
+            }
             wave.spawns.forEach { spawn ->
                 if (!enemies.containsKey(spawn.enemyId)) errors += ContentValidationError("waves.properties", wave.id, "spawns", "Unknown enemy '${spawn.enemyId}'.")
                 if (spawn.count <= 0) errors += ContentValidationError("waves.properties", wave.id, "spawns", "Spawn count must be positive.")

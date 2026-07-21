@@ -1,7 +1,7 @@
 # MyEngine Content Properties Schema
 
-Status: Phase 06 accepted; DX-008 hybrid format accepted
-Last updated: 2026-07-18
+Status: Phase 06 accepted; DX-008 hybrid format accepted; ENG-030 fields documented
+Last updated: 2026-07-21
 
 Content packs use the DX-008 hybrid format defined by
 [`ADR-0003-content-format-hybrid.md`](../DECISIONS/ADR-0003-content-format-hybrid.md): flat entity
@@ -94,6 +94,13 @@ result half-up. Multipliers are parsed as decimal values and never through binar
 
 - `startTick`: non-negative int
 - `spawns`: comma-separated `enemyId:count`
+- `earlyCallBonusResourceId`: optional resource id for the bonus granted by an accepted early
+  wave call
+- `earlyCallBonusAmount`: optional positive int paired with `earlyCallBonusResourceId`
+
+The early-call bonus fields must be either both present or both absent. When present, the resource
+id must resolve to a resource defined by the same content pack and the amount must be positive;
+partial, non-positive, or unknown-resource values are rejected during content validation.
 
 ### Incidents
 

@@ -45,7 +45,7 @@ Last updated: 2026-07-21
 | Meta-progression store | ENG-022 | mytd, vision:td | 2 | backlog |
 | Sprite/atlas references in content schema | ENG-028 | mytd, vision:td, vision:rimworld-like, vision:mindustry-like | 4 | backlog |
 | Audio event hooks (snapshot event feed) | ENG-029 | mytd, vision:td, vision:rimworld-like, vision:mindustry-like | 4 | backlog |
-| Wave preview + early wave call | ENG-030 | mytd, vision:td | 2 | backlog |
+| Wave preview + early wave call | ENG-030 | mytd, vision:td | 2 | **done** (2026-07-21; typed early-call command, deterministic HUD composition/countdown, content-defined bonus validation, SAVE_VERSION v8 migration, replay/save/gate verification pass; balance review partial: current packs valid/no hardcoded bonus, schema gap closed in docs close-out, optional bonus unconfigured pending approved balance value) |
 | A* point-to-point pathfinding for agents | ENG-001 | vision:rimworld-like, vision:mindustry-like | 2 | backlog |
 | Job execution system (JobBoard wired into tick) | ENG-003 | vision:rimworld-like, vision:mindustry-like | 2 | backlog |
 | First worker agent MVP (hauling) | ENG-004 | vision:rimworld-like, vision:mindustry-like | 2 | backlog |
@@ -98,8 +98,10 @@ Last updated: 2026-07-21
 2. MTD-004 -> ENG-024 -> ENG-005 -> ENG-014 -> MTD-005 -> ENG-026 -> ENG-027 =
    **first playable Android TD milestone** (complete 2026-07-18; manual device/layout/performance
    evidence remains explicitly pending).
-3. P1 opener: ENG-002 (done) -> ENG-013 (done) -> ENG-008 (done) -> ENG-015 (done) -> ENG-030.
-   The next exact backlog action is `ENG-030` (wave preview + early wave call).
+3. P1 opener: ENG-002 (done) -> ENG-013 (done) -> ENG-008 (done) -> ENG-015 (done) -> ENG-030
+   (done 2026-07-21). This explicit sequence is complete; the next exact implementation item is
+   not yet selected in the current roadmap. Perform backlog sequencing before starting another
+   feature.
 4. DX-008 is done: use its hybrid-format ADR for ENG-017/ENG-028 schema work. Other high-leverage
    pipeline cards remain DX-002, DX-006, and DX-005.
 5. MySD foundation: PROC-002 / ADR-0004 is done. After MySD Gate 2, implement ENG-036 before the

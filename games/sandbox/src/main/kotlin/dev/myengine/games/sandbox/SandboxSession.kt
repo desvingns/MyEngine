@@ -13,7 +13,7 @@ import java.util.Properties
  * that keeps simulation Android-free. The owning lifecycle (e.g. an Activity) calls [save] on
  * pause and [restore] on recreate; it must not reach into the runtime directly.
  *
- * SAVE SOUNDNESS: [SandboxSaveCodec] v7 persists `state`, terminal run status/summary, selected
+ * SAVE SOUNDNESS: [SandboxSaveCodec] v8 persists `state`, terminal run status/summary, selected
  * map id, content version, tower upgrade branch/tier/targeting-mode markers, and the runtime's pending
  * [dev.myengine.core.CommandQueue], so [save] is sound at ANY tick — a future-tick command still
  * queued at save time round-trips through [restore] and is re-queued on the reconstructed runtime.

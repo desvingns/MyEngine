@@ -1,6 +1,6 @@
 # MyEngine Handoff
 
-Last updated: 2026-07-21 (ENG-015 accepted after verifier pass; next exact action is ENG-030)
+Last updated: 2026-07-21 (ENG-030 accepted after verifier pass; next backlog sequence is not yet selected)
 Owner: Codex
 
 ## DONE
@@ -364,6 +364,16 @@ Owner: Codex
   `SandboxRenderView` exposes callback-only speed controls without creating engine commands.
   Per-tick trajectory parity, pause/restart timing, overflow-safe timestamps, and speed layout bounds
   pass; no simulation, render-model, or save-schema change was made.
+- ENG-030 is complete/accepted: immutable HUD preview exposes deterministic next-wave composition
+  and countdown; typed `CallWaveEarlyCommand` starts the next wave before its scheduled tick and
+  applies an optional content-defined `resourceId + amount` bonus. Calls at/after the scheduled
+  boundary or while enemies are active are deterministic rejections. `SandboxSaveCodec` v8
+  restores typed pending commands and migrates v1-v7 saves. Full tests, content validation (2
+  packs), replay, save-compat, benchmark, and `android:assembleDebug` pass. Canonical/kill replay
+  hashes are `12a65fd2b87593cf`/`bb37eefc1903cc77`; benchmark is `473 ms`/`78 ms`, goal-field
+  rebuild `8222800 ns`. The balance review returned partial: current content packs are valid and
+  contain no hardcoded bonus; its schema-documentation gap was closed in this docs close-out, and
+  the optional bonus remains unconfigured pending an approved balance value.
 
 ## DECISIONS
 
@@ -398,6 +408,10 @@ Owner: Codex
   ticks, the HUD owns only transient selection/callback state, and `Bundle` persistence is separate
   from `SandboxSession.save()`. No ADR is needed because there is no dependency-direction or save
   schema change.
+- ENG-030 uses the approved Variant A: active-wave rejection is derived from live enemies, while
+  the early-call bonus is content-defined as `resourceId + amount`. No ADR is needed because this
+  is an additive command/content/HUD/save extension with no new dependency edge. Existing packs
+  remain unchanged until an approved balance value exists.
 
 - Android remains the only shipping platform; desktop/JVM is a dev harness.
 - Simulation modules remain Android/render-free.
@@ -517,17 +531,19 @@ Owner: Codex
 
 ## NEXT
 
-Implement MyEngine `ENG-030` (wave preview + early wave call):
-
-```powershell
-Get-Content -Raw .claude\specs\ENGINE_ROADMAP.md
-Get-Content -Raw .claude\specs\backlog\ENG-030-wave-preview-early-call.md
-```
+Select the next backlog item after completed `ENG-030`. The current roadmap closes the explicit P1
+sequence at ENG-030 but does not define a unique successor, so perform backlog sequencing before
+starting another feature.
 
 ## BLOCKERS
 
 - MySD ENG-036 is specified but intentionally not started until the MySD evidence/spec gates choose
   the implementation order. PROC-015 is a backlog process change, not an implemented adapter.
+
+- ENG-030 is accepted. Existing packs intentionally do not configure an early-call bonus because no
+  balance value was approved; the data-driven path is covered by synthetic tests. Per-snapshot HUD
+  allocation and device profiling remain low, non-blocking follow-ups. The existing save delimiter
+  assumption remains documented; no code fix was made in this docs-only close-out.
 
 - ENG-015 device/instrumentation verification remains pending: exercise speed taps, lifecycle/
   recreation, Bundle restoration, and no-command behavior on a device/emulator; capture
@@ -621,6 +637,14 @@ Get-Content -Raw .claude\specs\backlog\ENG-030-wave-preview-early-call.md
 
 ## VERIFICATION
 
+- ENG-030 (2026-07-21): full `.\gradlew.bat test` with the JDK 17 fallback, content validation
+  (2 packs), replay, save-compat, benchmark, and `android:assembleDebug` -> pass. Replay hashes:
+  canonical `12a65fd2b87593cf`, kill `bb37eefc1903cc77`; benchmark: canonical `473 ms`, kill
+  `78 ms`, goal-field rebuild `8222800 ns`. Renderer, simulation, save, Android, and final
+  verifier reviews -> pass. Exact scheduled-tick rejection, active-wave rejection, pending
+  command identity, and v1-v7 migration are covered. Balance review -> partial: current content
+  packs are valid and contain no hardcoded bonus; its schema-documentation gap was closed in this
+  docs close-out, and the optional bonus remains unconfigured pending an approved balance value.
 - ENG-015 (2026-07-21): `scripts/me-selfcheck.ps1`, full `.\gradlew.bat test`,
   `:android:testDebugUnitTest`, `:android:assembleDebug`, content validation, replay, save-compat,
   and benchmark -> pass. Replay hashes: canonical `12a65fd2b87593cf`, kill `bb37eefc1903cc77`;

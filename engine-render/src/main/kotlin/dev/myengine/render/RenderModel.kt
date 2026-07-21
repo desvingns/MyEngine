@@ -48,6 +48,12 @@ data class HudResourceAmount(
     val amount: Int,
 )
 
+/** Immutable content projection of one enemy entry in the next-wave preview. */
+data class HudWaveCompositionEntry(
+    val enemyId: String,
+    val count: Int,
+)
+
 data class HudTowerTier(
     val branch: String,
     val tier: Int,
@@ -82,6 +88,7 @@ data class HudSnapshot(
     val wave: Int,
     val totalWaves: Int,
     val nextWaveInTicks: Long?,
+    val nextWaveComposition: List<HudWaveCompositionEntry>,
     val coreHealth: Int,
     val buildTowers: List<HudBuildTower>,
     val towers: List<HudTowerInfo>,
@@ -93,6 +100,7 @@ data class HudSnapshot(
             wave = 0,
             totalWaves = 0,
             nextWaveInTicks = null,
+            nextWaveComposition = emptyList(),
             coreHealth = 0,
             buildTowers = emptyList(),
             towers = emptyList(),

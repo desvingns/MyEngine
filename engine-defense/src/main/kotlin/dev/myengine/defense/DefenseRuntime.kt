@@ -7,6 +7,7 @@ import dev.myengine.ai.PathResult
 import dev.myengine.content.ContentRegistry
 import dev.myengine.content.EnemyContent
 import dev.myengine.content.TowerContent
+import dev.myengine.content.WaveContent
 import dev.myengine.core.Tick
 import dev.myengine.entities.AttackComponent
 import dev.myengine.entities.Entity
@@ -132,16 +133,36 @@ class DefenseRuntime(private val pathfinder: GridPathfinder = GridPathfinder()) 
             .filter { it.startTick <= tick.value && it.id !in state.spawnedWaveIds }
             .sortedBy { it.id }
             .forEach { wave ->
-                wave.spawns.forEach { spawnDef ->
-                    val enemy = registry.requireEnemy(spawnDef.enemyId)
-                    repeat(spawnDef.count) {
-                        spawnEnemy(enemy, world, entities, spawn, core, goalField)
-                    }
-                    nextState = nextState.record(DefenseMetrics(enemiesSpawned = spawnDef.count))
-                }
-                nextState = nextState.copy(spawnedWaveIds = nextState.spawnedWaveIds + wave.id)
+                nextState = spawnWave(wave, nextState, registry, world, entities, spawn, core, goalField)
             }
         return nextState
+    }
+
+    /**
+     * Spawns one wave exactly once and records its id after all content spawn entries have been
+     * applied. Callers use this same helper for scheduled and command-triggered waves, so both
+     * paths share entity-id, metric, and spawned-id ordering.
+     */
+    fun spawnWave(
+        wave: WaveContent,
+        state: DefenseState,
+        registry: ContentRegistry,
+        world: TileWorld,
+        entities: EntityStore,
+        spawn: TilePosition,
+        core: TilePosition,
+        goalField: GoalField? = null,
+    ): DefenseState {
+        if (wave.id in state.spawnedWaveIds) return state
+        var nextState = state
+        wave.spawns.forEach { spawnDef ->
+            val enemy = registry.requireEnemy(spawnDef.enemyId)
+            repeat(spawnDef.count) {
+                spawnEnemy(enemy, world, entities, spawn, core, goalField)
+            }
+            nextState = nextState.record(DefenseMetrics(enemiesSpawned = spawnDef.count))
+        }
+        return nextState.copy(spawnedWaveIds = nextState.spawnedWaveIds + wave.id)
     }
 
     fun updateTowers(

@@ -4,6 +4,7 @@ import dev.myengine.core.CommandId
 import dev.myengine.core.Tick
 import dev.myengine.core.command.BuildTowerCommand
 import dev.myengine.core.command.TileCoordinate
+import dev.myengine.render.HudWaveCompositionEntry
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -19,6 +20,10 @@ class SandboxHudSnapshotTest {
             assertEquals(0, initial.wave)
             assertEquals(2, initial.totalWaves)
             assertEquals(10L, initial.nextWaveInTicks)
+            assertEquals(
+                listOf(HudWaveCompositionEntry(enemyId = "drift", count = 3)),
+                initial.nextWaveComposition,
+            )
             assertEquals(20, initial.coreHealth)
             assertEquals(listOf("pulse"), initial.buildTowers.map { it.towerId })
             assertEquals("Pulse tower", initial.buildTowers.single().label)
@@ -34,6 +39,10 @@ class SandboxHudSnapshotTest {
         assertEquals(first, second)
         assertEquals(1, first.wave)
         assertEquals(12L, first.nextWaveInTicks)
+        assertEquals(
+            listOf(HudWaveCompositionEntry(enemyId = "drift", count = 5)),
+            first.nextWaveComposition,
+        )
         assertEquals(first.resources.sortedBy { it.resourceId }, first.resources)
         assertEquals(first.buildTowers.sortedBy { it.towerId }, first.buildTowers)
         assertEquals(first.towers.sortedBy { it.entityId }, first.towers)

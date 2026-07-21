@@ -69,10 +69,10 @@ class SandboxTargetingModeTest {
         )
         runtime.step()
 
-        val v7 = SandboxSaveCodec.encode(runtime.state, seed = 7)
-        assertEquals(TargetingMode.WEAKEST, SandboxSaveCodec.decode(v7, registry).entities.require(tower.id).tower?.targetingMode)
+        val v8 = SandboxSaveCodec.encode(runtime.state, seed = 7)
+        assertEquals(TargetingMode.WEAKEST, SandboxSaveCodec.decode(v8, registry).entities.require(tower.id).tower?.targetingMode)
 
-        val v6 = asV6Save(v7)
+        val v6 = asV6Save(v8)
         val migrated = SandboxSaveCodec.decode(v6, registry)
         assertEquals(TargetingMode.STRONGEST, migrated.entities.require(tower.id).tower?.targetingMode)
 

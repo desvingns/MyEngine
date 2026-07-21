@@ -1,8 +1,8 @@
 # MyEngine State
 
 Last updated: 2026-07-21
-Active phase: Phase 00-14 complete; Signal Garden SG-001..005 complete; MyTD MTD-001..005 complete; DX-008, ENG-002, ENG-005, ENG-008, ENG-013, ENG-014, ENG-015, ENG-026, ENG-027, and PROC-002 complete; pipeline at v0.2.0; next engine backlog is `ENG-030` wave preview / early wave call
-Owner of last update: Codex (2026-07-21: ENG-015 accepted after verifier pass; next exact action is ENG-030)
+Active phase: Phase 00-14 complete; Signal Garden SG-001..005 complete; MyTD MTD-001..005 complete; DX-008, ENG-002, ENG-005, ENG-008, ENG-013, ENG-014, ENG-015, ENG-026, ENG-027, ENG-030, and PROC-002 complete; pipeline at v0.2.0; next engine backlog sequence is not yet selected after ENG-030
+Owner of last update: Codex (2026-07-21: ENG-030 accepted after verifier pass; backlog sequencing is the next planning action)
 
 ## Current Status
 
@@ -219,22 +219,29 @@ Owner of last update: Codex (2026-07-21: ENG-015 accepted after verifier pass; n
   Speed is restored separately in `Bundle` and does not enter `SandboxSession.save()` or the save
   version. Per-tick trajectory parity, speed layout bounds, pause/restart timing, and overflow-safe
   timestamps are covered; no ADR was needed.
+- MyEngine ENG-030 (wave preview + early wave call, 2026-07-21) is accepted. The immutable HUD
+  exposes deterministic next-wave composition and countdown; typed `CallWaveEarlyCommand` starts
+  the next wave before its scheduled tick and applies an optional content-defined
+  `resourceId + amount` bonus. Calls at/after the scheduled boundary or while enemies are active
+  are rejected without authoritative mutation. `SandboxSaveCodec` is v8 with typed pending-command
+  decode and v1-v7 migration. Full tests, content validation (2 packs), replay, save-compat,
+  benchmark, and `android:assembleDebug` pass; canonical/kill hashes are
+  `12a65fd2b87593cf`/`bb37eefc1903cc77`; benchmark is `473 ms`/`78 ms`, goal-field rebuild
+  `8222800 ns`. No ADR was needed. The balance review returned partial: current content packs are
+  valid and contain no hardcoded bonus; its schema-documentation gap was closed in this close-out,
+  and the optional bonus remains unconfigured pending an approved balance value.
 
 ## Next Exact Action
 
-Implement engine backlog item `ENG-030` (wave preview + early wave call):
-
-```powershell
-Get-Content -Raw .claude\specs\ENGINE_ROADMAP.md
-Get-Content -Raw .claude\specs\backlog\ENG-030-wave-preview-early-call.md
-```
-
-Expected next output:
-
-- Wave preview and an early-wave-call presentation/gameplay slice, scoped by the ENG-030 backlog card
+The current roadmap does not define a unique implementation item after completed `ENG-030`.
+Perform backlog sequencing and select the next exact action before starting another feature.
 
 ## Known Blockers
 
+- ENG-030 non-blocking follow-ups: existing content packs intentionally do not configure an
+  early-call bonus because no balance value was approved; synthetic tests cover the data-driven
+  path. Per-snapshot HUD allocation and device profiling remain follow-up work. The pre-existing
+  save delimiter assumption remains documented; no code fix was made in this docs-only close-out.
 - ENG-015 is accepted with non-blocking follow-ups: device/instrumentation tap, lifecycle/recreation,
   and Bundle smoke plus FrameMetrics/JankStats/Allocation Tracker evidence remain pending. The
   extreme `200x600` portrait layout has a manual risk of selected-panel overflow. A pre-existing

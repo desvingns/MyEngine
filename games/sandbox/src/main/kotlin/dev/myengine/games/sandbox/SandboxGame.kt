@@ -5,6 +5,7 @@ import dev.myengine.content.ContentRegistry
 import dev.myengine.content.MapContent
 import dev.myengine.content.MapWinCondition
 import dev.myengine.content.TowerUpgradeTier
+import dev.myengine.content.WaveContent
 import dev.myengine.content.HudStringKeys
 import dev.myengine.ai.GoalField
 import dev.myengine.core.CommandQueue
@@ -18,6 +19,7 @@ import dev.myengine.core.StableHash
 import dev.myengine.core.TerminalReason
 import dev.myengine.core.Tick
 import dev.myengine.core.command.BuildTowerCommand
+import dev.myengine.core.command.CallWaveEarlyCommand
 import dev.myengine.core.command.SellTowerCommand
 import dev.myengine.core.command.SetTowerTargetingModeCommand
 import dev.myengine.core.command.TileCoordinate
@@ -45,6 +47,7 @@ import dev.myengine.render.HudResourceAmount
 import dev.myengine.render.HudSnapshot
 import dev.myengine.render.HudTowerInfo
 import dev.myengine.render.HudTowerTier
+import dev.myengine.render.HudWaveCompositionEntry
 import dev.myengine.render.RenderEntity
 import dev.myengine.render.RenderTile
 import dev.myengine.storyteller.IncidentDirector
@@ -280,9 +283,7 @@ class SandboxRuntime(
                 availableUpgrades = upgrades,
             )
         }
-        val nextWave = registry.waves.values
-            .filter { it.id !in state.defense.spawnedWaveIds }
-            .minWithOrNull(compareBy({ it.startTick }, { it.id }))
+        val nextWave = nextUnspawnedWave()
         return HudSnapshot(
             labels = HudLabels(
                 resources = text(HudStringKeys.RESOURCES),
@@ -300,6 +301,9 @@ class SandboxRuntime(
             wave = state.defense.spawnedWaveIds.size,
             totalWaves = registry.waves.size,
             nextWaveInTicks = nextWave?.let { (it.startTick - state.tick.value).coerceAtLeast(0) },
+            nextWaveComposition = nextWave?.spawns?.map { spawn ->
+                HudWaveCompositionEntry(enemyId = spawn.enemyId, count = spawn.count)
+            } ?: emptyList(),
             coreHealth = state.defense.coreHealth,
             buildTowers = buildTowers,
             towers = towerInfo,
@@ -312,9 +316,63 @@ class SandboxRuntime(
             is UpgradeTowerCommand -> upgradeTower(command)
             is SellTowerCommand -> sellTower(command)
             is SetTowerTargetingModeCommand -> setTowerTargetingMode(command)
+            is CallWaveEarlyCommand -> callWaveEarly(command)
             else -> state.lastCommandOrError = "ignored:${command.type}"
         }
     }
+
+    /**
+     * Resolves and starts the previewed wave before scheduled spawning. Rejection checks happen
+     * before any authoritative operation: a live enemy or an exhausted schedule leaves entities,
+     * inventory, and defense state untouched (the diagnostic string is presentation telemetry).
+     * A wave whose scheduled boundary has already arrived is also a no-op: only a genuinely early
+     * call (`state.tick < wave.startTick`) is allowed to grant its early-call bonus.
+     */
+    private fun callWaveEarly(@Suppress("UNUSED_PARAMETER") command: CallWaveEarlyCommand) {
+        val wave = nextUnspawnedWave()
+        if (wave == null) {
+            state.lastCommandOrError = "no_upcoming_wave"
+            return
+        }
+        if (state.tick.value >= wave.startTick) {
+            state.lastCommandOrError = "wave_already_due:${wave.id}"
+            return
+        }
+        if (state.entities.byTag("enemy").any { it.health?.isAlive() == true }) {
+            state.lastCommandOrError = "wave_active"
+            return
+        }
+
+        state.defense = defenseRuntime.spawnWave(
+            wave = wave,
+            state = state.defense,
+            registry = state.registry,
+            world = state.world,
+            entities = state.entities,
+            spawn = spawn,
+            core = core,
+            goalField = goalField,
+        )
+        val bonus = wave.earlyCallBonus
+        if (bonus == null) {
+            state.lastCommandOrError = "wave_called:${wave.id}"
+            return
+        }
+        val deposit = depositRewards(state.inventory, mapOf(bonus.resourceId to bonus.amount))
+        state.inventory = deposit.inventory
+        state.lastCommandOrError = if (deposit.dropped.isEmpty()) {
+            "wave_called:${wave.id}"
+        } else {
+            deposit.dropped.entries.joinToString(",", prefix = "wave_called:${wave.id},reward_dropped:") {
+                "${it.key}:${it.value}"
+            }
+        }
+    }
+
+    /** One deterministic next-wave projection shared by command behavior and HUD preview. */
+    private fun nextUnspawnedWave(): WaveContent? = state.registry.waves.values
+        .filter { it.id !in state.defense.spawnedWaveIds }
+        .minWithOrNull(compareBy({ it.startTick }, { it.id }))
 
     private fun buildTower(command: BuildTowerCommand) {
         val tower = state.registry.towers[command.towerId]
@@ -545,7 +603,7 @@ class SandboxRuntime(
 }
 
 object SandboxSaveCodec {
-    const val SAVE_VERSION: Int = 7
+    const val SAVE_VERSION: Int = 8
 
     fun encode(state: SandboxState, seed: Long, pendingCommands: List<EngineCommand> = emptyList()): String {
         val props = Properties()
@@ -723,6 +781,8 @@ object SandboxSaveCodec {
                 val mode = TargetingMode.fromId(payloadParts[1])
                     ?: error("Unknown targeting mode '${payloadParts[1]}'.")
                 SetTowerTargetingModeCommand(id, scheduledTick, payloadParts[0].toLong(), mode, actorId)
+            } else if (type == "call_wave_early") {
+                CallWaveEarlyCommand(id, scheduledTick, actorId)
             } else {
                 dev.myengine.core.TextCommand(id, scheduledTick, type, payload, actorId)
             }
@@ -770,7 +830,7 @@ object SandboxSaveCodec {
                 TargetingMode.NEAREST
             } else if (version >= 7) {
                 TargetingMode.fromId(parts.getOrNull(15).orEmpty())
-                    ?: error("Save version 7 has an invalid targeting mode for tower '$towerId'.")
+                    ?: error("Save version 7+ has an invalid targeting mode for tower '$towerId'.")
             } else {
                 registry.requireTower(towerId).targetingMode
             }

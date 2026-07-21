@@ -24,6 +24,87 @@ class ContentPackLoaderTest {
     }
 
     @Test
+    fun validWaveEarlyCallBonusLoadsAsContent() {
+        val root = createPack()
+        root.resolve("waves.properties").writeText(
+            root.resolve("waves.properties").toFile().readText() +
+                "\nwave1.earlyCallBonusResourceId=bolt\nwave1.earlyCallBonusAmount=3\n",
+        )
+
+        val result = ContentPackLoader.load(root)
+
+        assertTrue(result.isValid, result.errors.joinToString("\n"))
+        assertEquals(
+            WaveEarlyCallBonus(resourceId = "bolt", amount = 3),
+            result.registry!!.waves.getValue("wave1").earlyCallBonus,
+        )
+    }
+
+    @Test
+    fun waveEarlyCallBonusRequiresBothPairedFields() {
+        listOf(
+            "wave1.earlyCallBonusResourceId=bolt" to "earlyCallBonusAmount",
+            "wave1.earlyCallBonusAmount=3" to "earlyCallBonusResourceId",
+        ).forEach { (field, missingField) ->
+            val root = createPack()
+            root.resolve("waves.properties").writeText(
+                root.resolve("waves.properties").toFile().readText() + "\n$field\n",
+            )
+
+            val result = ContentPackLoader.load(root)
+
+            assertFalse(result.isValid, "missing $missingField must be rejected")
+            assertTrue(
+                result.errors.any {
+                    it.file == "waves.properties" && it.id == "wave1" && it.field == missingField
+                },
+                result.errors.joinToString("\n"),
+            )
+        }
+    }
+
+    @Test
+    fun waveEarlyCallBonusAmountMustBePositive() {
+        listOf("0", "-1").forEach { amount ->
+            val root = createPack()
+            root.resolve("waves.properties").writeText(
+                root.resolve("waves.properties").toFile().readText() +
+                    "\nwave1.earlyCallBonusResourceId=bolt\nwave1.earlyCallBonusAmount=$amount\n",
+            )
+
+            val result = ContentPackLoader.load(root)
+
+            assertFalse(result.isValid, "$amount must be rejected")
+            assertTrue(
+                result.errors.any {
+                    it.file == "waves.properties" && it.id == "wave1" && it.field == "earlyCallBonusAmount"
+                },
+                result.errors.joinToString("\n"),
+            )
+        }
+    }
+
+    @Test
+    fun waveEarlyCallBonusRejectsUnknownResource() {
+        val root = createPack()
+        root.resolve("waves.properties").writeText(
+            root.resolve("waves.properties").toFile().readText() +
+                "\nwave1.earlyCallBonusResourceId=unknown\nwave1.earlyCallBonusAmount=3\n",
+        )
+
+        val result = ContentPackLoader.load(root)
+
+        assertFalse(result.isValid)
+        assertTrue(
+            result.errors.any {
+                it.file == "waves.properties" && it.id == "wave1" && it.field == "earlyCallBonusResourceId" &&
+                    it.message.contains("Unknown resource")
+            },
+            result.errors.joinToString("\n"),
+        )
+    }
+
+    @Test
     fun targetingModeDefaultsToNearestWhenAbsentButRejectsInvalidValues() {
         val legacy = createPack()
         legacy.resolve("towers.properties").writeText(
