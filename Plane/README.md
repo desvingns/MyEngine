@@ -39,7 +39,8 @@
 1. Оригинальный план Phase 00-14 закрыт.
 2. Первый playable Android TD milestone закрыт через `ENG-027`; ручные device/layout/performance
    проверки остаются явно отложенными.
-3. Следующий backlog item: `ENG-015` (presentation-side game speed control).
+3. `ENG-015` (presentation-side game speed control) закрыт 2026-07-21; следующий backlog item:
+   `ENG-030` (wave preview + early wave call).
 4. Hardening gaps из `docs/HARDENING_AUDIT.md` закрывать по одному, с тестами и обновлением handoff.
 
 Новые крупные фазы добавлять только после того, как backlog specs перестанут быть достаточно
@@ -991,5 +992,32 @@
   - `scripts/me-selfcheck.ps1` -> pass.
   - Documentation/backlog diff only; no simulation/save/replay/content behavior changed.
 - Next:
-  - Keep ENG-015 as the general engine next item.
+  - Keep the next exact engine action at ENG-030 after ENG-015 close-out.
   - After MySD Gate 2, schedule ENG-036 before the MySD headless vertical slice.
+
+### 2026-07-21 - MyEngine ENG-015 (presentation-side game speed control)
+
+- Status: Done / accepted; device and performance follow-ups remain manual-pending
+- Owner: Codex
+- Implementation:
+  - Android-local `PresentationSpeed` adds `0x`, `1x`, `2x`, and `4x` modes. `FixedTickFrameLoop`
+    scales due ticks at the presentation boundary, preserving fixed-tick simulation semantics,
+    250 ms frame cap, and no background catch-up after stop/start.
+  - `MyEngineActivity` stores speed separately in `Bundle`; `SandboxRenderView` adds four disjoint,
+    callback-only speed controls. Speed selection does not create an `EngineCommand` and does not
+    enter session save or `SAVE_VERSION`.
+- Verification:
+  - Selfcheck, full tests, Android unit tests, Android assemble, content validation, replay,
+    save-compat, and benchmark -> pass.
+  - Replay hashes: canonical `12a65fd2b87593cf`, kill `bb37eefc1903cc77`; benchmark: canonical
+    `328 ms`, kill `66 ms`, rebuild `4.1305 ms`.
+  - `me-verifier` -> pass; all `boundary_checks` true. Per-tick trajectory parity, pacing modes,
+    pause/restart timing, overflow-safe timestamps, and speed layout bounds are covered.
+- Decisions:
+  - No ADR: presentation-only Android-local state, no dependency or save-schema change.
+- Known follow-ups:
+  - Device/instrumentation and FrameMetrics/JankStats evidence remain pending.
+  - Extreme `200x600` selected-panel overflow is a manual layout risk; pre-existing `pausedSave`
+    rollback risk is outside ENG-015; `0x` idle HUD redraw is an accepted CPU/battery trade-off.
+- Next exact action:
+  - Implement `.claude/specs/backlog/ENG-030-wave-preview-early-call.md`.

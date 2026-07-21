@@ -17,12 +17,18 @@ class MyEngineActivity : Activity() {
     private var pausedSave: String? = null
     private var nextCommandId: Long = FIRST_COMMAND_ID
     private val fixedTickLoop = FixedTickFrameLoop()
+    private var presentationSpeed = PresentationSpeed.ONE_X
     private var loopRunning = false
     private val frameCallback = Choreographer.FrameCallback(::onFrame)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         nextCommandId = savedInstanceState?.getLong(NEXT_COMMAND_ID_KEY, FIRST_COMMAND_ID) ?: FIRST_COMMAND_ID
+        presentationSpeed = PresentationSpeed.fromMultiplier(
+            savedInstanceState?.getInt(SPEED_KEY, PresentationSpeed.ONE_X.multiplier)
+                ?: PresentationSpeed.ONE_X.multiplier,
+        )
+        fixedTickLoop.presentationSpeed = presentationSpeed
         val started = runCatching {
             val saved = savedInstanceState?.getString(SAVE_KEY)
             if (saved != null) SandboxSession.restore(saved) else SandboxSession.start()
@@ -35,6 +41,8 @@ class MyEngineActivity : Activity() {
                 latestSnapshot = { latestSnapshot },
                 commandIdProvider = ::issueCommandId,
                 onCommand = ::submitFromInput,
+                presentationSpeed = { presentationSpeed },
+                onPresentationSpeedChange = ::setPresentationSpeed,
             )
             renderView = view
             setContentView(view)
@@ -51,6 +59,7 @@ class MyEngineActivity : Activity() {
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
         outState.putLong(NEXT_COMMAND_ID_KEY, nextCommandId)
+        outState.putInt(SPEED_KEY, presentationSpeed.multiplier)
         (pausedSave ?: session?.save())?.let { outState.putString(SAVE_KEY, it) }
     }
 
@@ -70,6 +79,12 @@ class MyEngineActivity : Activity() {
     /** Input may enqueue commands only; the frame loop drains them on the next fixed tick. */
     private fun submitFromInput(command: EngineCommand) {
         session?.submit(command)
+    }
+
+    private fun setPresentationSpeed(speed: PresentationSpeed) {
+        presentationSpeed = speed
+        fixedTickLoop.presentationSpeed = speed
+        renderView?.renderLatestFrame()
     }
 
     private fun startLoop() {
@@ -103,6 +118,7 @@ class MyEngineActivity : Activity() {
     private companion object {
         private const val SAVE_KEY = "me_sandbox_save"
         private const val NEXT_COMMAND_ID_KEY = "me_sandbox_next_command_id"
+        private const val SPEED_KEY = "me_sandbox_presentation_speed"
         private const val FIRST_COMMAND_ID = 1L
     }
 }

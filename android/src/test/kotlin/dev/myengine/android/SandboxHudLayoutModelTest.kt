@@ -2,18 +2,30 @@ package dev.myengine.android
 
 import dev.myengine.render.ScreenPoint
 import kotlin.test.Test
+import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
 class SandboxHudLayoutModelTest {
-    private data class Case(val density: Float, val widthDp: Float, val sideBySide: Boolean)
+    private data class Case(
+        val density: Float,
+        val widthDp: Float,
+        val heightDp: Float,
+        val sideBySide: Boolean,
+    )
 
     private val cases = listOf(
-        Case(density = 1f, widthDp = 360f, sideBySide = false),
-        Case(density = 1f, widthDp = 800f, sideBySide = true),
-        Case(density = 2f, widthDp = 360f, sideBySide = false),
-        Case(density = 2f, widthDp = 800f, sideBySide = true),
+        Case(density = 1f, widthDp = 360f, heightDp = 900f, sideBySide = false),
+        Case(density = 1f, widthDp = 800f, heightDp = 900f, sideBySide = true),
+        Case(density = 2f, widthDp = 360f, heightDp = 900f, sideBySide = false),
+        Case(density = 2f, widthDp = 800f, heightDp = 900f, sideBySide = true),
+    )
+
+    private val compactCases = listOf(
+        Case(density = 1f, widthDp = 200f, heightDp = 600f, sideBySide = false),
+        Case(density = 1f, widthDp = 220f, heightDp = 640f, sideBySide = false),
+        Case(density = 1f, widthDp = 320f, heightDp = 720f, sideBySide = false),
     )
 
     @Test
@@ -23,6 +35,15 @@ class SandboxHudLayoutModelTest {
             val selectedPanel = assertNotNull(layout.selectedPanel)
             val selectedHeader = assertNotNull(layout.selectedHeader)
             val minimumTouchHeight = 48f * case.density
+
+            assertEquals(PresentationSpeed.entries.size, layout.speedControls.size)
+            layout.speedControls.zipWithNext().forEach { (left, right) ->
+                assertFalse(left.overlaps(right))
+            }
+            layout.speedControls.forEach { speedBounds ->
+                assertFalse(speedBounds.overlaps(layout.buildPanel))
+                assertFalse(selectedPanel.overlaps(speedBounds))
+            }
 
             (layout.buildRows + layout.upgradeRows).forEach { row ->
                 assertTrue(row.bottom - row.top >= minimumTouchHeight)
@@ -57,9 +78,40 @@ class SandboxHudLayoutModelTest {
         }
     }
 
+    @Test
+    fun `compact widths keep speed grid positive inside viewport and clear of panels`() {
+        compactCases.forEach { case ->
+            val width = case.widthDp * case.density
+            val height = case.heightDp * case.density
+            val layout = calculate(case)
+            val viewport = HudBounds(0f, 0f, width, height)
+            val contentWidth = width - layout.padding * 2f
+            val minimumSpeedWidth = 48f * case.density
+            val speedGap = 4f * case.density
+            val gridCanFitMinimumWidth =
+                contentWidth >= minimumSpeedWidth * PresentationSpeed.entries.size + speedGap * 3f
+
+            assertEquals(PresentationSpeed.entries.size, layout.speedControls.size)
+            layout.speedControls.forEach { speedBounds ->
+                assertTrue(speedBounds.right > speedBounds.left)
+                assertTrue(speedBounds.bottom > speedBounds.top)
+                assertTrue(viewport.contains(speedBounds))
+                assertFalse(speedBounds.overlaps(layout.buildPanel))
+                assertFalse(layout.selectedPanel?.overlaps(speedBounds) == true)
+                if (gridCanFitMinimumWidth) {
+                    assertTrue(speedBounds.right - speedBounds.left >= minimumSpeedWidth)
+                }
+            }
+            layout.speedControls.zipWithNext().forEach { (left, right) ->
+                assertFalse(left.overlaps(right))
+            }
+            assertFalse(layout.buildPanel.overlaps(layout.selectedPanel!!))
+        }
+    }
+
     private fun calculate(case: Case): SandboxHudLayout = SandboxHudLayoutModel.calculate(
         viewWidth = case.widthDp * case.density,
-        viewHeight = 900f * case.density,
+        viewHeight = case.heightDp * case.density,
         density = case.density,
         buildRowCount = 3,
         upgradeRowCount = 2,

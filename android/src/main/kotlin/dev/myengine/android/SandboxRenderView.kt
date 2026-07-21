@@ -41,6 +41,7 @@ internal data class SandboxHudLayout(
     val selectedHeader: HudBounds?,
     val selectedInfoRows: List<HudBounds>,
     val upgradeRows: List<HudBounds>,
+    val speedControls: List<HudBounds>,
     val resourcesBaseline: Float,
 )
 
@@ -58,15 +59,35 @@ internal object SandboxHudLayoutModel {
         require(density > 0f)
         require(buildRowCount >= 0 && upgradeRowCount >= 0)
 
-        val padding = 8f * density
+        val minimumSpeedWidth = MIN_TOUCH_TARGET_DP * density
+        val padding = minOf(
+            8f * density,
+            ((viewWidth - minimumSpeedWidth) / 2f).coerceAtLeast(0f),
+        )
         val gap = 8f * density
         val overlayHeight = 48f * density
         val headerHeight = 32f * density
         val rowHeight = 48f * density
+        val speedTop = overlayHeight + gap
         val contentWidth = (viewWidth - padding * 2f).coerceAtLeast(0f)
+        val speedGap = 4f * density
+        val speedColumns = (1..PresentationSpeed.entries.size)
+            .lastOrNull { columns ->
+                columns * MIN_TOUCH_TARGET_DP * density + (columns - 1) * speedGap <= contentWidth
+            }
+            ?: 1
+        val speedWidth = ((contentWidth - speedGap * (speedColumns - 1)) / speedColumns).coerceAtLeast(0f)
+        val speedControls = List(PresentationSpeed.entries.size) { index ->
+            val row = index / speedColumns
+            val column = index % speedColumns
+            val left = padding + (speedWidth + speedGap) * column
+            val top = speedTop + (rowHeight + speedGap) * row
+            HudBounds(left, top, left + speedWidth, top + rowHeight)
+        }
+        val speedGridBottom = speedControls.maxOfOrNull { it.bottom } ?: speedTop
         val sideBySide = hasSelection && contentWidth >= (280f * density * 2f + gap)
         val buildWidth = if (sideBySide) (contentWidth - gap) / 2f else contentWidth
-        val buildTop = overlayHeight + gap
+        val buildTop = speedGridBottom + gap
         val buildHeader = HudBounds(padding, buildTop, padding + buildWidth, buildTop + headerHeight)
         val buildRows = rows(buildHeader.bottom, padding, buildWidth, rowHeight, buildRowCount)
         val buildBottom = buildRows.lastOrNull()?.bottom ?: buildHeader.bottom
@@ -105,6 +126,7 @@ internal object SandboxHudLayoutModel {
             selectedHeader = selectedHeader,
             selectedInfoRows = infoRows,
             upgradeRows = upgradeRows,
+            speedControls = speedControls,
             resourcesBaseline = (viewHeight - padding).coerceAtLeast(0f),
         )
     }
@@ -114,6 +136,8 @@ internal object SandboxHudLayoutModel {
             val rowTop = top + height * index
             HudBounds(left, rowTop, left + width, rowTop + height)
         }
+
+    private const val MIN_TOUCH_TARGET_DP = 48f
 }
 
 /**
@@ -127,6 +151,8 @@ class SandboxRenderView(
     private val latestSnapshot: () -> EngineSnapshot?,
     private val commandIdProvider: () -> CommandId,
     private val onCommand: (EngineCommand) -> Unit,
+    private val presentationSpeed: () -> PresentationSpeed = { PresentationSpeed.ONE_X },
+    private val onPresentationSpeedChange: (PresentationSpeed) -> Unit = {},
 ) : SurfaceView(context), SurfaceHolder.Callback {
     private val density = context.resources.displayMetrics.density
     private val scaledDensity = density * context.resources.configuration.fontScale
@@ -268,6 +294,11 @@ class SandboxRenderView(
         val frame = renderer.project(snapshot, current.camera)
         val selectedInfo = uiState.selectedTowerEntityId?.let { id -> frame.hud.towers.firstOrNull { it.entityId == id } }
         val layout = hudLayout(frame, selectedInfo?.availableUpgrades?.size ?: 0, selectedInfo != null)
+        val speedIndex = layout.speedControls.indexOfFirst { it.contains(point) }.takeIf { it >= 0 }
+        if (speedIndex != null) {
+            onPresentationSpeedChange(PresentationSpeed.entries[speedIndex])
+            return
+        }
         // Upgrade wins first by policy; calculated panels are disjoint even in narrow portrait.
         val upgradeIndex = layout.upgradeRows.indexOfFirst { it.contains(point) }.takeIf { it >= 0 }
         if (selectedInfo != null && upgradeIndex != null) {
@@ -382,6 +413,14 @@ class SandboxRenderView(
         textPaint.color = androidColor(RenderPalette.coreHealthText)
         val selected = uiState.selectedTowerEntityId?.let { id -> hud.towers.firstOrNull { it.entityId == id } }
         val layout = hudLayout(frame, selected?.availableUpgrades?.size ?: 0, selected != null)
+        val currentSpeed = presentationSpeed()
+        PresentationSpeed.entries.zip(layout.speedControls).forEach { (speed, bounds) ->
+            if (speed == currentSpeed) {
+                fillPaint.color = androidColor(RenderPalette.enemyPip)
+                canvas.drawRect(bounds.left, bounds.top, bounds.right, bounds.bottom, fillPaint)
+            }
+            drawTextIn(canvas, speed.label, bounds)
+        }
         drawTextIn(canvas, hud.labels.build, layout.buildHeader)
         hud.buildTowers.forEachIndexed { index, tower ->
             val bounds = layout.buildRows[index]

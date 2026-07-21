@@ -1,8 +1,8 @@
 # MyEngine State
 
-Last updated: 2026-07-18
-Active phase: Phase 00-14 complete; Signal Garden SG-001..005 complete; MyTD MTD-001..005 complete; DX-008, ENG-002, ENG-005, ENG-008, ENG-013, ENG-014, ENG-026, ENG-027, and PROC-002 complete; pipeline at v0.2.0; next engine backlog is `ENG-015` game speed control
-Owner of last update: Codex (2026-07-18: PROC-002 / ADR-0004 accepted; ENG-036 and PROC-015 filed for MySD; next P1 item remains ENG-015)
+Last updated: 2026-07-21
+Active phase: Phase 00-14 complete; Signal Garden SG-001..005 complete; MyTD MTD-001..005 complete; DX-008, ENG-002, ENG-005, ENG-008, ENG-013, ENG-014, ENG-015, ENG-026, ENG-027, and PROC-002 complete; pipeline at v0.2.0; next engine backlog is `ENG-030` wave preview / early wave call
+Owner of last update: Codex (2026-07-21: ENG-015 accepted after verifier pass; next exact action is ENG-030)
 
 ## Current Status
 
@@ -213,22 +213,33 @@ Owner of last update: Codex (2026-07-18: PROC-002 / ADR-0004 accepted; ENG-036 a
   per-tower override at the runtime command boundary. Immutable HUD tower data exposes the active
   mode. `SandboxSaveCodec` v7 persists tower modes and pending mode-switch commands, and migrates
   v1-v6 saves by resolving the current content default.
+- MyEngine ENG-015 (presentation-side game speed control, 2026-07-21) is accepted. Android-local
+  `PresentationSpeed` provides `0x`, `1x`, `2x`, and `4x`; `FixedTickFrameLoop` scales due ticks
+  without changing authoritative tick semantics, while the HUD exposes callback-only speed controls.
+  Speed is restored separately in `Bundle` and does not enter `SandboxSession.save()` or the save
+  version. Per-tick trajectory parity, speed layout bounds, pause/restart timing, and overflow-safe
+  timestamps are covered; no ADR was needed.
 
 ## Next Exact Action
 
-Implement engine backlog item `ENG-015` (presentation-side game speed control):
+Implement engine backlog item `ENG-030` (wave preview + early wave call):
 
 ```powershell
 Get-Content -Raw .claude\specs\ENGINE_ROADMAP.md
-Get-Content -Raw .claude\specs\backlog\ENG-015-game-speed-control.md
+Get-Content -Raw .claude\specs\backlog\ENG-030-wave-preview-early-call.md
 ```
 
 Expected next output:
 
-- Presentation-side game speed policy that does not alter authoritative fixed-tick simulation
+- Wave preview and an early-wave-call presentation/gameplay slice, scoped by the ENG-030 backlog card
 
 ## Known Blockers
 
+- ENG-015 is accepted with non-blocking follow-ups: device/instrumentation tap, lifecycle/recreation,
+  and Bundle smoke plus FrameMetrics/JankStats/Allocation Tracker evidence remain pending. The
+  extreme `200x600` portrait layout has a manual risk of selected-panel overflow. A pre-existing
+  `pausedSave` stale-state rollback risk is outside ENG-015 scope. At `0x`, the active Choreographer
+  performs idle HUD redraw, an accepted CPU/battery trade-off.
 - ENG-027 is accepted with non-blocking manual limitations: on a device/emulator, smoke build-tower,
   tower selection, upgrade, and pause/recreate lifecycle continuity; exercise non-default fontScale
   and long localized labels; capture FrameMetrics/JankStats and Allocation Tracker evidence before
@@ -331,6 +342,11 @@ Expected next output:
 
 ## Verification
 
+- ENG-015 (2026-07-21): selfcheck -> pass; full `.\gradlew.bat test`, `:android:testDebugUnitTest`,
+  and `:android:assembleDebug` -> pass; content validation, save-compat, replay, and benchmark ->
+  pass. Replay hashes: canonical `12a65fd2b87593cf`, kill `bb37eefc1903cc77`; benchmark:
+  canonical `328 ms`, kill `66 ms`, rebuild `4.1305 ms`. `me-verifier` -> pass with all
+  `boundary_checks` true. Device/instrumentation and FrameMetrics/JankStats evidence remain pending.
 - ENG-008 (2026-07-18): full `./gradlew.bat test` -> pass; content validation -> pass
   (`validated 2 pack(s)`); replay -> pass with canonical `12a65fd2b87593cf` and kill
   `bb37eefc1903cc77`; save-compat -> pass; benchmark -> pass (`canonical=432 ms`, `kill=79 ms`,

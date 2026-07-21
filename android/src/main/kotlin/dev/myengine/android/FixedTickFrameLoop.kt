@@ -13,6 +13,7 @@ import dev.myengine.core.TickScheduler
 class FixedTickFrameLoop(private val tickRate: TickRate = TickRate(TICKS_PER_SECOND)) {
     private var scheduler = TickScheduler(tickRate)
     private var lastFrameNanos: Long? = null
+    var presentationSpeed: PresentationSpeed = PresentationSpeed.ONE_X
 
     fun start() {
         scheduler = TickScheduler(tickRate)
@@ -28,7 +29,11 @@ class FixedTickFrameLoop(private val tickRate: TickRate = TickRate(TICKS_PER_SEC
         lastFrameNanos = frameTimeNanos
         if (previous == null) return 0
         val elapsedNanos = (frameTimeNanos - previous).coerceIn(0L, MAX_ELAPSED_NANOS)
-        return scheduler.advance(elapsedNanos.toDouble() / NANOS_PER_SECOND)
+        if (presentationSpeed == PresentationSpeed.PAUSED) return 0
+        val dueTicks = scheduler.advance(elapsedNanos.toDouble() / NANOS_PER_SECOND)
+        return (dueTicks.toLong() * presentationSpeed.multiplier)
+            .coerceAtMost(Int.MAX_VALUE.toLong())
+            .toInt()
     }
 
     internal companion object {

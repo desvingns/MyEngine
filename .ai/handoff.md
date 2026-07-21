@@ -1,6 +1,6 @@
 # MyEngine Handoff
 
-Last updated: 2026-07-18 (PROC-002 / ADR-0004 accepted; MySD ENG-036 + PROC-015 filed; next P1 item remains ENG-015)
+Last updated: 2026-07-21 (ENG-015 accepted after verifier pass; next exact action is ENG-030)
 Owner: Codex
 
 ## DONE
@@ -358,6 +358,12 @@ Owner: Codex
   them while v1-v5 migrate to an empty metrics map. Content validation now requires tower/tier
   `displayKey` references and all nine `hud.*` string keys. Full gates and final verification pass;
   manual device/layout/performance limitations remain documented below.
+- ENG-015 is complete/accepted: Android-local `PresentationSpeed` provides `0x`, `1x`, `2x`, and
+  `4x`; `FixedTickFrameLoop` applies presentation pacing to due ticks while preserving fixed-tick
+  simulation semantics. `MyEngineActivity` stores speed separately in `Bundle`, and
+  `SandboxRenderView` exposes callback-only speed controls without creating engine commands.
+  Per-tick trajectory parity, pause/restart timing, overflow-safe timestamps, and speed layout bounds
+  pass; no simulation, render-model, or save-schema change was made.
 
 ## DECISIONS
 
@@ -387,6 +393,11 @@ Owner: Codex
   Save v6 is required because per-tower metrics affect restored HUD continuity; older saves preserve
   compatibility by decoding with no historical per-tower metrics. No ADR is needed because this is
   an additive Experimental snapshot/content/save extension with no new dependency edge.
+
+- ENG-015 keeps speed strictly in the Android presentation boundary: the loop scales canonical due
+  ticks, the HUD owns only transient selection/callback state, and `Bundle` persistence is separate
+  from `SandboxSession.save()`. No ADR is needed because there is no dependency-direction or save
+  schema change.
 
 - Android remains the only shipping platform; desktop/JVM is a dev harness.
 - Simulation modules remain Android/render-free.
@@ -506,11 +517,11 @@ Owner: Codex
 
 ## NEXT
 
-Implement MyEngine `ENG-015` (presentation-side game speed control):
+Implement MyEngine `ENG-030` (wave preview + early wave call):
 
 ```powershell
 Get-Content -Raw .claude\specs\ENGINE_ROADMAP.md
-Get-Content -Raw .claude\specs\backlog\ENG-015-game-speed-control.md
+Get-Content -Raw .claude\specs\backlog\ENG-030-wave-preview-early-call.md
 ```
 
 ## BLOCKERS
@@ -518,6 +529,11 @@ Get-Content -Raw .claude\specs\backlog\ENG-015-game-speed-control.md
 - MySD ENG-036 is specified but intentionally not started until the MySD evidence/spec gates choose
   the implementation order. PROC-015 is a backlog process change, not an implemented adapter.
 
+- ENG-015 device/instrumentation verification remains pending: exercise speed taps, lifecycle/
+  recreation, Bundle restoration, and no-command behavior on a device/emulator; capture
+  FrameMetrics/JankStats and Allocation Tracker evidence. The extreme `200x600` portrait layout has
+  a manual selected-panel overflow risk. The pre-existing `pausedSave` rollback risk is outside
+  ENG-015 scope. At `0x`, idle HUD redraw continues as an accepted CPU/battery trade-off.
 - ENG-027 is accepted with non-blocking manual limitations: run build-tower, tower-selection,
   upgrade, and pause/recreate lifecycle smoke on a device/emulator; check non-default fontScale and
   long localized labels; capture FrameMetrics/JankStats and Allocation Tracker evidence before any
@@ -605,6 +621,12 @@ Get-Content -Raw .claude\specs\backlog\ENG-015-game-speed-control.md
 
 ## VERIFICATION
 
+- ENG-015 (2026-07-21): `scripts/me-selfcheck.ps1`, full `.\gradlew.bat test`,
+  `:android:testDebugUnitTest`, `:android:assembleDebug`, content validation, replay, save-compat,
+  and benchmark -> pass. Replay hashes: canonical `12a65fd2b87593cf`, kill `bb37eefc1903cc77`;
+  benchmark: canonical `328 ms`, kill `66 ms`, rebuild `4.1305 ms`. `me-verifier` -> pass with
+  all `boundary_checks` true. Device/instrumentation and FrameMetrics/JankStats evidence remain
+  pending.
 - ENG-008 (2026-07-18): full `./gradlew.bat test`, content validation (2 packs), replay,
   save-compat, and benchmark -> pass. Replay hashes: canonical `12a65fd2b87593cf`, kill
   `bb37eefc1903cc77`; benchmark: canonical `432 ms`, kill `79 ms`, 64x64 goal-field rebuild
