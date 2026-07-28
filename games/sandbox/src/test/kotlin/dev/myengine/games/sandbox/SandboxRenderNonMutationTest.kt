@@ -11,6 +11,7 @@ import dev.myengine.render.RenderKind
 import dev.myengine.world.WorldSize
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertTrue
 
 /**
@@ -80,5 +81,32 @@ class SandboxRenderNonMutationTest {
         val enemyEntity = snapshot.entities.first { it.type == "enemy:drift" }
         assertEquals(expectedEnemy, enemyEntity.assetRef)
         assertEquals(expectedEnemy, frame.primitives.first { it.kind == RenderKind.ENEMY }.assetRef)
+    }
+
+    @Test
+    fun latestTickCombatEventsAreImmutableAndDoNotMutateEarlierSnapshots() {
+        val registry = SandboxGame.loadRegistry()
+        val runtime = SandboxGame.createRuntime(registry)
+        runtime.submit(BuildTowerCommand(CommandId(1), Tick(1), "pulse", TileCoordinate(2, 2)))
+        runtime.step(10)
+
+        val snapshotAtShot = runtime.snapshot()
+        val towerId = snapshotAtShot.entities.single { it.type == "tower:pulse" }.id
+        val shot = snapshotAtShot.combatEvents.shots.single()
+        val hit = snapshotAtShot.combatEvents.hits.single()
+
+        assertEquals(Tick(10), shot.tick)
+        assertEquals(towerId, shot.sourceEntityId)
+        assertEquals(shot.sourceEntityId, hit.sourceEntityId)
+        assertEquals(shot.targetEntityId, hit.targetEntityId)
+        assertEquals(Tick(10), hit.tick)
+        assertFailsWith<UnsupportedOperationException> {
+            @Suppress("UNCHECKED_CAST")
+            (snapshotAtShot.combatEvents.shots as MutableList<Any?>).clear()
+        }
+
+        runtime.step(1)
+        assertTrue(runtime.snapshot().combatEvents.shots.isEmpty(), "events must be replaced for the next tick")
+        assertEquals(listOf(shot), snapshotAtShot.combatEvents.shots, "an earlier snapshot must stay unchanged")
     }
 }

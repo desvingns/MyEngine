@@ -249,6 +249,44 @@ class ContentPackLoaderTest {
     }
 
     @Test
+    fun splashFieldsMustBePairedAndWithinIntegerRanges() {
+        val valid = createPack()
+        valid.resolve("towers.properties").writeText(
+            valid.resolve("towers.properties").toFile().readText() +
+                "\nbasic.splashRadius=2\nbasic.falloff=50\n",
+        )
+
+        val validResult = ContentPackLoader.load(valid)
+
+        assertTrue(validResult.isValid, validResult.errors.joinToString("\n"))
+        assertEquals(2, validResult.registry!!.requireTower("basic").splashRadius)
+        assertEquals(50, validResult.registry.requireTower("basic").falloffPercent)
+
+        listOf(
+            "basic.splashRadius=0" to "splashRadius",
+            "basic.splashRadius=-1" to "splashRadius",
+            "basic.splashRadius=not-an-int" to "splashRadius",
+            "basic.falloff=25" to "falloff",
+            "basic.splashRadius=1\nbasic.falloff=-1" to "falloff",
+            "basic.splashRadius=1\nbasic.falloff=101" to "falloff",
+            "basic.splashRadius=1\nbasic.falloff=half" to "falloff",
+        ).forEach { (fields, field) ->
+            val root = createPack()
+            root.resolve("towers.properties").writeText(
+                root.resolve("towers.properties").toFile().readText() + "\n$fields\n",
+            )
+
+            val result = ContentPackLoader.load(root)
+
+            assertFalse(result.isValid, "$fields must be rejected")
+            assertTrue(
+                result.errors.any { it.file == "towers.properties" && it.id == "basic" && it.field == field },
+                result.errors.joinToString("\n"),
+            )
+        }
+    }
+
+    @Test
     fun sellRefundRatioIsRequiredAndLimitedToInclusiveUnitInterval() {
         listOf("0", "1").forEach { ratio ->
             val root = createPack()

@@ -180,6 +180,8 @@ object ContentPackLoader {
             costAmount = fields.requiredNonNegativeInt(file, id, "costAmount", errors) ?: return null,
             sellRefundRatio = fields.requiredDecimalInRange(file, id, "sellRefundRatio", BigDecimal.ZERO, BigDecimal.ONE, errors)
                 ?: return null,
+            splashRadius = fields.optionalPositiveInt(file, id, "splashRadius", errors),
+            falloffPercent = fields.optionalFalloffPercent(file, id, errors) ?: return null,
             upgradeTiers = parseTowerUpgradeTiers(id, fields, errors, file),
             targetingMode = fields.targetingModeOrDefault(file, id, errors) ?: return null,
             assetRef = parseVisualAssetRef(id, fields, errors, file),
@@ -913,6 +915,45 @@ object ContentPackLoader {
     private fun Map<String, String>.requiredNonNegativeLong(file: String, id: String, field: String, errors: MutableList<ContentValidationError>): Long? {
         val value = required(file, id, field, errors)?.toLongOrNull() ?: return errors.addAndNull(file, id, field, "Expected integer.")
         return if (value >= 0) value else errors.addAndNull(file, id, field, "Expected non-negative integer.")
+    }
+
+    /**
+     * Optional splash fields preserve existing content packs. A declared radius must be positive;
+     * `falloff` is a percentage of base damage removed for every Manhattan-distance ring and is
+     * meaningful only when splash is enabled.
+     */
+    private fun Map<String, String>.optionalPositiveInt(
+        file: String,
+        id: String,
+        field: String,
+        errors: MutableList<ContentValidationError>,
+    ): Int? {
+        val raw = this[field] ?: return null
+        val value = raw.toIntOrNull()
+        if (value == null || value <= 0) {
+            errors += ContentValidationError(file, id, field, "Expected positive integer.")
+            return null
+        }
+        return value
+    }
+
+    private fun Map<String, String>.optionalFalloffPercent(
+        file: String,
+        id: String,
+        errors: MutableList<ContentValidationError>,
+    ): Int? {
+        val raw = this["falloff"]
+        if (raw == null) return 0
+        if (!containsKey("splashRadius")) {
+            errors += ContentValidationError(file, id, "falloff", "falloff requires splashRadius.")
+            return null
+        }
+        val value = raw.toIntOrNull()
+        if (value == null || value !in 0..100) {
+            errors += ContentValidationError(file, id, "falloff", "Expected integer percentage from 0 to 100.")
+            return null
+        }
+        return value
     }
 
     /** Optional in schema v1 packs; absence preserves legacy deterministic nearest targeting. */

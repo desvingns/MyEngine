@@ -4,6 +4,7 @@ import dev.myengine.core.RunStatus
 import dev.myengine.core.RunSummary
 import dev.myengine.core.TerminalReason
 import dev.myengine.core.Tick
+import dev.myengine.core.CombatEvents
 import dev.myengine.core.command.TargetingMode
 import dev.myengine.world.TilePosition
 import dev.myengine.world.WorldSize
@@ -128,4 +129,6 @@ data class EngineSnapshot(
     val terminalTick: Tick? = null,
     val runSummary: RunSummary = RunSummary(),
     val hud: HudSnapshot = HudSnapshot.EMPTY,
+    /** Transient immutable combat events emitted during the latest simulation tick. */
+    val combatEvents: CombatEvents = CombatEvents.EMPTY,
 )

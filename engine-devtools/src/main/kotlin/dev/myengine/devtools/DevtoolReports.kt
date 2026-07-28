@@ -90,6 +90,14 @@ data class BalancePackSummary(
     val rewardTotal: Int,
     val resourceTypes: Int,
     val recipeOutputPerTick: Double,
+    /** Number of tower definitions declaring content-defined splash behavior. */
+    val splashTowerTypes: Int,
+    /** Sum of declared splash radii across splash tower definitions. */
+    val splashRadiusTotal: Int,
+    /** Sum of declared per-ring splash falloff percentages across splash tower definitions. */
+    val splashFalloffPercentTotal: Int,
+    /** Total non-zero-damage Manhattan tiles across splash tower definitions. */
+    val splashEffectiveAoeTiles: Int,
 ) {
     fun toJson(): String = buildJson(
         "pack_id" to packId,
@@ -100,6 +108,10 @@ data class BalancePackSummary(
         "reward_total" to rewardTotal,
         "resource_types" to resourceTypes,
         "recipe_output_per_tick" to recipeOutputPerTick,
+        "splash_tower_types" to splashTowerTypes,
+        "splash_radius_total" to splashRadiusTotal,
+        "splash_falloff_percent_total" to splashFalloffPercentTotal,
+        "splash_effective_aoe_tiles" to splashEffectiveAoeTiles,
     )
 }
 
@@ -309,6 +321,7 @@ object DevtoolReports {
         val recipeOutputPerTick = registry.recipes.values.sumOf { recipe ->
             recipe.outputAmount.toDouble() / recipe.durationTicks.toDouble()
         }
+        val splashTowers = registry.towers.values.filter { it.splashRadius != null }
         return BalancePackSummary(
             packId = registry.manifest.id,
             enemyTypes = registry.enemies.size,
@@ -318,7 +331,26 @@ object DevtoolReports {
             rewardTotal = rewardTotal,
             resourceTypes = registry.resources.size,
             recipeOutputPerTick = recipeOutputPerTick,
+            splashTowerTypes = splashTowers.size,
+            splashRadiusTotal = splashTowers.sumOf { it.splashRadius!! },
+            splashFalloffPercentTotal = splashTowers.sumOf { it.falloffPercent },
+            splashEffectiveAoeTiles = splashTowers.sumOf(::effectiveSplashAoeTiles),
         )
+    }
+
+    /**
+     * Counts Manhattan-grid tiles that can receive non-zero damage from one declared splash
+     * tower: center contributes one tile and every positive-damage ring contributes `4 * ring`.
+     * This mirrors DefenseRuntime's integer truncation, so a high falloff can shrink the
+     * effective area below its declared geometric radius.
+     */
+    private fun effectiveSplashAoeTiles(tower: dev.myengine.content.TowerContent): Int {
+        val radius = tower.splashRadius ?: return 0
+        return (0..radius).sumOf { distance ->
+            val remainingPercent = (100 - distance * tower.falloffPercent).coerceAtLeast(0)
+            val damage = (tower.damage.toLong() * remainingPercent) / 100L
+            if (damage <= 0) 0 else if (distance == 0) 1 else 4 * distance
+        }
     }
 
     private fun balanceDeltas(baseline: BalancePackSummary, changed: BalancePackSummary): List<BalanceMetricDelta> =
@@ -330,6 +362,10 @@ object DevtoolReports {
             delta("resource", "reward_total", baseline.rewardTotal.toDouble(), changed.rewardTotal.toDouble()),
             delta("resource", "resource_types", baseline.resourceTypes.toDouble(), changed.resourceTypes.toDouble()),
             delta("resource", "recipe_output_per_tick", baseline.recipeOutputPerTick, changed.recipeOutputPerTick),
+            delta("tower", "splash_tower_types", baseline.splashTowerTypes.toDouble(), changed.splashTowerTypes.toDouble()),
+            delta("tower", "splash_radius_total", baseline.splashRadiusTotal.toDouble(), changed.splashRadiusTotal.toDouble()),
+            delta("tower", "splash_falloff_percent_total", baseline.splashFalloffPercentTotal.toDouble(), changed.splashFalloffPercentTotal.toDouble()),
+            delta("tower", "splash_effective_aoe_tiles", baseline.splashEffectiveAoeTiles.toDouble(), changed.splashEffectiveAoeTiles.toDouble()),
         )
 
     private fun delta(category: String, metric: String, baseline: Double, changed: Double): BalanceMetricDelta {

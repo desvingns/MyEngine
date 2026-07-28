@@ -44,6 +44,28 @@ class SandboxTowerUpgradeTest {
     }
 
     @Test
+    fun upgradedTowerRetainsBaseTowerSplashBehavior() {
+        val base = SandboxGame.loadRegistry()
+        val pulse = base.requireTower("pulse").copy(splashRadius = 1, falloffPercent = 100)
+        val registry = base.copy(towers = base.towers + (pulse.id to pulse))
+        val tier = pulse.upgradeTiers.getValue(TowerUpgradeTier.key("main", 1))
+        val runtime = SandboxGame.createRuntime(registry)
+
+        runtime.submit(BuildTowerCommand(CommandId(1), Tick(1), pulse.id, TileCoordinate(2, 2)))
+        runtime.step(1)
+        val towerEntity = runtime.state.entities.byTag("tower").single()
+        runtime.submit(UpgradeTowerCommand(CommandId(2), Tick(2), towerEntity.id.value, tier.branch, tier.tier))
+        runtime.step(9)
+
+        val upgraded = runtime.state.entities.require(towerEntity.id)
+        val events = runtime.snapshot().combatEvents
+        assertEquals(tier.damage, upgraded.attack?.damage)
+        assertEquals(3, events.hits.size, "the tick-10 wave has three co-located enemies, all inside retained splash")
+        assertTrue(events.hits.all { it.sourceEntityId == towerEntity.id.value && it.tick == Tick(10) })
+        assertEquals(3, runtime.state.defense.metrics.enemiesKilled)
+    }
+
+    @Test
     fun unaffordableUpgradeIsRejectedWithoutChangingBalanceOrStats() {
         val registry = SandboxGame.loadRegistry()
         val tower = registry.requireTower("pulse")

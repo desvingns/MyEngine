@@ -9,6 +9,9 @@ import dev.myengine.content.EnemyContent
 import dev.myengine.content.TowerContent
 import dev.myengine.content.WaveContent
 import dev.myengine.core.Tick
+import dev.myengine.core.CombatEvents
+import dev.myengine.core.HitEvent
+import dev.myengine.core.ShotEvent
 import dev.myengine.entities.AttackComponent
 import dev.myengine.entities.Entity
 import dev.myengine.entities.EntityId
@@ -19,6 +22,7 @@ import dev.myengine.entities.PositionComponent
 import dev.myengine.entities.TowerComponent
 import dev.myengine.world.TilePosition
 import dev.myengine.world.TileWorld
+import java.util.Collections
 
 data class DefenseMetrics(
     val enemiesSpawned: Int = 0,
@@ -73,6 +77,7 @@ data class TowerUpdateResult(
     val metrics: DefenseMetrics,
     val rewards: Map<String, Int> = emptyMap(),
     val towerMetrics: Map<Long, TowerDefenseMetrics> = emptyMap(),
+    val events: CombatEvents = CombatEvents.EMPTY,
 )
 
 class DefenseRuntime(private val pathfinder: GridPathfinder = GridPathfinder()) {
@@ -169,10 +174,13 @@ class DefenseRuntime(private val pathfinder: GridPathfinder = GridPathfinder()) 
         registry: ContentRegistry,
         entities: EntityStore,
         goalField: GoalField? = null,
+        tick: Tick = Tick(0),
     ): TowerUpdateResult {
         var metrics = DefenseMetrics()
         val rewards = mutableMapOf<String, Int>()
         val towerMetrics = mutableMapOf<Long, TowerDefenseMetrics>()
+        val shots = mutableListOf<ShotEvent>()
+        val hits = mutableListOf<HitEvent>()
         entities.byTag("tower").sortedBy { it.id.value }.forEach { towerEntity ->
             val towerComponent = towerEntity.tower ?: return@forEach
             val attack = towerEntity.attack ?: return@forEach
@@ -197,30 +205,86 @@ class DefenseRuntime(private val pathfinder: GridPathfinder = GridPathfinder()) 
                     .firstOrNull()
             } ?: return@forEach
 
-            val health = target.health ?: return@forEach
-            val damaged = health.damage(attack.damage)
             metrics = metrics.plus(DefenseMetrics(towerShots = 1))
-            val towerDelta = TowerDefenseMetrics(
-                actualDamage = minOf(attack.damage, health.current).toLong(),
-                kills = if (damaged.isAlive()) 0 else 1,
+            shots += ShotEvent(towerEntity.id.value, target.id.value, tick)
+            val targetPosition = target.position?.tile ?: return@forEach
+            val towerContent = registry.requireTower(towerComponent.towerId)
+            val targets = splashTargets(
+                primaryTarget = target,
+                primaryPosition = targetPosition,
+                splashRadius = towerContent.splashRadius,
+                entities = entities,
             )
-            towerMetrics[towerEntity.id.value] = (towerMetrics[towerEntity.id.value] ?: TowerDefenseMetrics()).plus(towerDelta)
-            // Persist even terminal damage until the final flush so subsequent towers observe the
-            // dead health and cannot double-count damage, kills, or content rewards.
-            entities.update(target.id) { it.copy(health = damaged) }
-            if (!damaged.isAlive()) {
-                entities.markRemove(target.id)
-                metrics = metrics.plus(DefenseMetrics(enemiesKilled = 1))
-                val enemyId = target.type.substringAfter("enemy:")
-                val enemy = registry.enemies[enemyId]
-                if (enemy != null && enemy.rewardAmount > 0) {
-                    rewards[enemy.rewardResource] = (rewards[enemy.rewardResource] ?: 0) + enemy.rewardAmount
+            targets.forEach { damagedTarget ->
+                val health = damagedTarget.health ?: return@forEach
+                if (!health.isAlive()) return@forEach
+                val position = damagedTarget.position?.tile ?: return@forEach
+                val damage = splashDamage(
+                    baseDamage = attack.damage,
+                    distance = targetPosition.manhattanDistance(position),
+                    falloffPercent = towerContent.falloffPercent,
+                )
+                if (damage <= 0) return@forEach
+
+                val damaged = health.damage(damage)
+                val towerDelta = TowerDefenseMetrics(
+                    actualDamage = minOf(damage, health.current).toLong(),
+                    kills = if (damaged.isAlive()) 0 else 1,
+                )
+                towerMetrics[towerEntity.id.value] = (towerMetrics[towerEntity.id.value] ?: TowerDefenseMetrics()).plus(towerDelta)
+                hits += HitEvent(towerEntity.id.value, damagedTarget.id.value, tick)
+                // Persist even terminal damage until the final flush so subsequent towers observe the
+                // dead health and cannot double-count damage, kills, or content rewards.
+                entities.update(damagedTarget.id) { it.copy(health = damaged) }
+                if (!damaged.isAlive()) {
+                    entities.markRemove(damagedTarget.id)
+                    metrics = metrics.plus(DefenseMetrics(enemiesKilled = 1))
+                    val enemyId = damagedTarget.type.substringAfter("enemy:")
+                    val enemy = registry.enemies[enemyId]
+                    if (enemy != null && enemy.rewardAmount > 0) {
+                        rewards[enemy.rewardResource] = (rewards[enemy.rewardResource] ?: 0) + enemy.rewardAmount
+                    }
                 }
             }
             entities.update(towerEntity.id) { it.copy(tower = towerComponent.copy(cooldownRemaining = attack.cooldownTicks)) }
         }
         entities.flushRemovals()
-        return TowerUpdateResult(metrics, rewards, towerMetrics.toSortedMap())
+        return TowerUpdateResult(
+            metrics = metrics,
+            rewards = rewards.toSortedMap(),
+            towerMetrics = towerMetrics.toSortedMap(),
+            events = CombatEvents(
+                shots = Collections.unmodifiableList(shots.toList()),
+                hits = Collections.unmodifiableList(hits.toList()),
+            ),
+        )
+    }
+
+    private fun splashTargets(
+        primaryTarget: Entity,
+        primaryPosition: TilePosition,
+        splashRadius: Int?,
+        entities: EntityStore,
+    ): List<Entity> = when (splashRadius) {
+        null -> listOf(primaryTarget)
+        else -> entities.byTag("enemy")
+            .asSequence()
+            .filter { enemy ->
+                val position = enemy.position?.tile
+                val health = enemy.health
+                position != null && health?.isAlive() == true && primaryPosition.manhattanDistance(position) <= splashRadius
+            }
+            .sortedBy { it.id.value }
+            .toList()
+    }
+
+    /**
+     * Integer-only AoE rule: damage loses [falloffPercent] percent of base damage per Manhattan
+     * ring, then truncates toward zero. Zero-damage outer-ring candidates produce no hit event.
+     */
+    private fun splashDamage(baseDamage: Int, distance: Int, falloffPercent: Int): Int {
+        val remainingPercent = (100 - distance * falloffPercent).coerceAtLeast(0)
+        return ((baseDamage.toLong() * remainingPercent) / 100L).toInt()
     }
 
     fun updateEnemies(

@@ -40,8 +40,9 @@
 2. Первый playable Android TD milestone закрыт через `ENG-027`; ручные device/layout/performance
    проверки остаются явно отложенными.
 3. `ENG-015` (presentation-side game speed control), `ENG-030` (wave preview + early wave call),
-   и `ENG-028` (sprite/atlas references in content schema) закрыты 2026-07-28; явная
-   P1-последовательность завершена, следующий backlog item ещё не выбран в roadmap.
+   `ENG-028` (sprite/atlas references in content schema) и `ENG-009` (splash damage + shot events)
+   закрыты 2026-07-28; явная P1-последовательность завершена, следующий backlog item ещё не
+   выбран в roadmap.
 4. Hardening gaps из `docs/HARDENING_AUDIT.md` закрывать по одному, с тестами и обновлением handoff.
 
 Новые крупные фазы добавлять только после того, как backlog specs перестанут быть достаточно
@@ -1080,3 +1081,26 @@
     render kind is justified by gameplay requirements.
 - Next:
   - Select the next backlog item after ENG-028; roadmap sequencing is required before another feature.
+
+### 2026-07-28 - MyEngine ENG-009 (splash damage + shot events)
+
+- Status: Done / accepted
+- Owner: Codex
+- Implementation:
+  - Optional tower `splashRadius` and `falloff` fields provide stable entity-id-ordered Manhattan
+    AoE. Damage is resolved by the documented integer per-ring rule; default content packs keep no
+    unapproved splash balance values.
+  - Immutable `ShotEvent` and `HitEvent` source/target/tick lists expose only the latest completed
+    tick to snapshot consumers. They are transient presentation data, replaced each tick, and do
+    not participate in save encoding or stable hashing; `SandboxSaveCodec.SAVE_VERSION` stays `8`.
+  - Balance reporting now exposes splash tower count, radius/falloff totals, and effective
+    non-zero-damage Manhattan AoE tiles.
+- Verification:
+  - Full `./gradlew.bat test` and `./gradlew.bat projects`, content validation (2 packs), replay,
+    save-compat, benchmark, and `:android:assembleDebug` -> pass.
+  - Replay hashes remain canonical `12a65fd2b87593cf` and kill `bb37eefc1903cc77`; benchmark:
+    canonical `324 ms`, kill `62 ms`, goal-field rebuild `7168200 ns`.
+  - Balance review and final verifier -> pass with all boundary checks true.
+- Next:
+  - Perform backlog sequencing and select the next exact feature; the current roadmap has no
+    unique successor after ENG-009.

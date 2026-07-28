@@ -1,6 +1,6 @@
 # MyEngine Content Properties Schema
 
-Status: Phase 06 accepted; DX-008 hybrid format accepted; ENG-028 fields documented
+Status: Phase 06 accepted; DX-008 hybrid format accepted; ENG-028 and ENG-009 fields documented
 Last updated: 2026-07-28
 
 Content packs use the DX-008 hybrid format defined by
@@ -50,6 +50,10 @@ Definition files use `<id>.<field>=<value>`.
 - `targetingMode`: optional targeting priority: `first`, `last`, `nearest`, `strongest`, or
   `weakest`; omitted schema-v1 content defaults deterministically to `nearest`, while an authored
   invalid value is rejected
+- `splashRadius`: optional positive integer Manhattan radius centered on the selected primary
+  target; omitted means the tower damages only that primary target
+- `falloff`: optional integer percentage from `0` through `100` of base damage removed per
+  Manhattan-distance ring; it requires `splashRadius` and defaults to `0` when omitted
 - `upgrade.<branch>.<tier>.displayKey`: required localization key when the tier exists
 - `upgrade.<branch>.<tier>.range`: optional positive int
 - `upgrade.<branch>.<tier>.damage`: optional positive int
@@ -63,6 +67,12 @@ Upgrade tier fields are authored inside `towers.properties` under the base tower
 field for a tier is present, all six tier fields are required. Branch ids must not contain dots,
 and tiers are positive integers. Every tower and tier `displayKey` must resolve in
 `strings.properties`.
+
+For a splash tower, candidates are live enemy entities within the declared Manhattan radius and
+are resolved in ascending entity-id order. For distance `d`, integer damage is
+`floor(baseDamage * max(0, 100 - d * falloff) / 100)`; zero-damage candidates receive no damage
+and emit no hit event. This rule uses integer arithmetic only and is the authoritative balance
+semantics; no game pack is required to declare splash values.
 
 ### Difficulties
 

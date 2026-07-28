@@ -31,7 +31,7 @@ Last updated: 2026-07-28
 | Goal-field pathfinding + repath on world change (mazing) | ENG-002 | mytd, vision:td, vision:mindustry-like | 3 | **done** (2026-07-18; deterministic `GoalField`, prospective all-spawn placement rejection, same-tick reroute, v6-derived field/legacy canonicalization; replay/save/benchmark gates pass) |
 | Multiple spawn points + per-wave routing | ENG-007 | vision:td, vision:mindustry-like | 2 | backlog |
 | Targeting priority modes | ENG-008 | mytd, vision:td | 2 | **done** (2026-07-18; pure deterministic first/last/nearest/strongest/weakest selector with entity-id tiebreak, content default + queued per-tower override, HUD projection, and save v7 migration) |
-| Splash damage + shot events | ENG-009 | mytd, vision:td, vision:mindustry-like | 3 | backlog |
+| Splash damage + shot events | ENG-009 | mytd, vision:td, vision:mindustry-like | 3 | **done** (2026-07-28; stable entity-id-ordered Manhattan AoE, integer per-ring falloff, and transient immutable source/target/tick shot-hit events; save v8 and replay hashes unchanged) |
 | Status effects framework | ENG-010 | mytd, vision:td, vision:mindustry-like | 3 | backlog |
 | Enemy armor + damage types | ENG-011 | vision:td, vision:mindustry-like | 2 | backlog |
 | Flying enemies | ENG-025 | vision:td | 1 | backlog |
@@ -99,9 +99,9 @@ Last updated: 2026-07-28
    **first playable Android TD milestone** (complete 2026-07-18; manual device/layout/performance
    evidence remains explicitly pending).
 3. P1 opener: ENG-002 (done) -> ENG-013 (done) -> ENG-008 (done) -> ENG-015 (done) -> ENG-030
-   (done 2026-07-21) -> ENG-028 (done 2026-07-28). This explicit sequence is complete; the next
-   exact implementation item is not yet selected in the current roadmap. Perform backlog
-   sequencing before starting another feature.
+   (done 2026-07-21) -> ENG-028 (done 2026-07-28) -> ENG-009 (done 2026-07-28). The next exact
+   implementation item is not yet selected in the current roadmap. Perform backlog sequencing
+   before starting another feature.
 4. DX-008 is done: use its hybrid-format ADR for ENG-017/ENG-028 schema work. Other high-leverage
    pipeline cards remain DX-002, DX-006, and DX-005.
 5. MySD foundation: PROC-002 / ADR-0004 is done. After MySD Gate 2, implement ENG-036 before the

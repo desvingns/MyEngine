@@ -4,7 +4,13 @@ import dev.myengine.content.ContentPackLoader
 import dev.myengine.content.WaveContent
 import dev.myengine.content.WaveSpawn
 import dev.myengine.core.Tick
+import dev.myengine.core.HitEvent
+import dev.myengine.core.ShotEvent
+import dev.myengine.entities.Entity
+import dev.myengine.entities.EntityId
 import dev.myengine.entities.EntityStore
+import dev.myengine.entities.HealthComponent
+import dev.myengine.entities.PositionComponent
 import dev.myengine.world.TerrainRule
 import dev.myengine.world.TilePosition
 import dev.myengine.world.TileWorld
@@ -103,6 +109,63 @@ class DefenseRuntimeTest {
         assertEquals(TowerDefenseMetrics(actualDamage = 1, kills = 1), first.towerMetrics.getValue(towerIds[1]))
         assertEquals(enemy.health.toLong(), first.towerMetrics.values.sumOf { it.actualDamage })
         assertEquals(1, first.towerMetrics.values.sumOf { it.kills })
+    }
+
+    @Test
+    fun splashUsesStableIdOrderIntegerFalloffAndAttributesExactRewardsToTheFiringTower() {
+        fun runOnce(): TowerUpdateResult {
+            val base = testRegistry()
+            val registry = base.copy(
+                towers = base.towers.mapValues { (_, tower) ->
+                    tower.copy(damage = 5, splashRadius = 2, falloffPercent = 50)
+                },
+            )
+            val terrain = mapOf("floor" to TerrainRule("floor", buildable = true, blocksMovement = false))
+            val world = TileWorld.filled(WorldSize(4, 2), terrain, "floor")
+            val entities = EntityStore()
+            val runtime = DefenseRuntime()
+            val tower = assertIs<TowerPlacementResult.Placed>(
+                runtime.placeTower("basic", TilePosition(0, 0), registry, world, entities),
+            ).entityId
+
+            // Deliberately insert in non-id order: AoE application and event order must still be id-stable.
+            listOf(
+                Entity(EntityId(11), "enemy:scout", setOf("enemy"), PositionComponent(TilePosition(1, 0)), HealthComponent(5, 5)),
+                Entity(EntityId(4), "enemy:scout", setOf("enemy"), PositionComponent(TilePosition(3, 0)), HealthComponent(9, 9)),
+                Entity(EntityId(7), "enemy:scout", setOf("enemy"), PositionComponent(TilePosition(1, 1)), HealthComponent(2, 2)),
+                Entity(EntityId(5), "enemy:scout", setOf("enemy"), PositionComponent(TilePosition(2, 0)), HealthComponent(2, 2)),
+            ).forEach(entities::upsert)
+
+            val result = runtime.updateTowers(registry, entities, tick = Tick(8))
+
+            assertEquals(listOf(4L), entities.byTag("enemy").map { it.id.value })
+            assertEquals(9, entities.require(EntityId(4)).health!!.current, "distance-two damage must truncate to zero")
+            assertEquals(
+                listOf(
+                    ShotEvent(tower.value, 11, Tick(8)),
+                ),
+                result.events.shots,
+            )
+            assertEquals(
+                listOf(
+                    HitEvent(tower.value, 5, Tick(8)),
+                    HitEvent(tower.value, 7, Tick(8)),
+                    HitEvent(tower.value, 11, Tick(8)),
+                ),
+                result.events.hits,
+            )
+            return result
+        }
+
+        val first = runOnce()
+        val second = runOnce()
+        val reward = testRegistry().requireEnemy("scout")
+
+        assertEquals(first, second)
+        assertEquals(1, first.metrics.towerShots)
+        assertEquals(3, first.metrics.enemiesKilled)
+        assertEquals(mapOf(reward.rewardResource to reward.rewardAmount * 3), first.rewards)
+        assertEquals(TowerDefenseMetrics(actualDamage = 9, kills = 3), first.towerMetrics.getValue(1L))
     }
 
     @Test

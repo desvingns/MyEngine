@@ -1,6 +1,6 @@
 # MyEngine Handoff
 
-Last updated: 2026-07-28 (ENG-028 accepted after runner and local boundary review; next backlog sequence is not yet selected)
+Last updated: 2026-07-28 (ENG-009 accepted after all runner gates and final verifier; next backlog sequence is not yet selected)
 Owner: Codex
 
 ## DONE
@@ -380,6 +380,11 @@ Owner: Codex
   and retain deterministic palette fallback for omitted/missing refs. The original text atlas
   placeholder is packaged in the sandbox content tree; no production art, save schema, replay
   hash, or dependency edge changed.
+- ENG-009 is complete/accepted: optional tower `splashRadius`/`falloff` resolve deterministic
+  entity-id-ordered Manhattan AoE with integer per-ring damage. `ShotEvent` and `HitEvent` expose
+  immutable source/target/tick data from only the latest completed tick for presentation consumers;
+  they are replaced per tick and intentionally excluded from save and stable-hash state. No content
+  pack balance values changed and `SandboxSaveCodec.SAVE_VERSION` remains `8`.
 
 ## DECISIONS
 
@@ -422,6 +427,9 @@ Owner: Codex
   original text index, and engine-content validates only pack-relative path/key metadata. There is
   no dedicated `RenderKind.BUILDING` yet; minimal building entities reuse the generic placeholder
   entity kind until a gameplay/render requirement justifies a distinct kind.
+- ENG-009 uses no ADR: it is an additive content/defense/snapshot capability with no dependency
+  direction or save-schema change. Presentation event data remains explicitly transient and never
+  becomes authoritative state.
 
 - Android remains the only shipping platform; desktop/JVM is a dev harness.
 - Simulation modules remain Android/render-free.
@@ -541,8 +549,8 @@ Owner: Codex
 
 ## NEXT
 
-Select the next backlog item after completed `ENG-028`. The current roadmap closes the explicit P1
-sequence at ENG-028 but does not define a unique successor, so perform backlog sequencing before
+Select the next backlog item after completed `ENG-009`. The current roadmap closes the explicit P1
+sequence at ENG-009 but does not define a unique successor, so perform backlog sequencing before
 starting another feature.
 
 ## BLOCKERS
@@ -560,6 +568,9 @@ starting another feature.
   reviewer agents could not be spawned in this run because the agent-thread limit was reached; a
   local read-only boundary review passed, but reviewer-agent evidence should be refreshed when
   capacity is available.
+
+- ENG-009 intentionally leaves all shipped content packs without splash values. Choose a game pack
+  balance configuration only through an approved balance change; this is not an engine blocker.
 
 - ENG-015 device/instrumentation verification remains pending: exercise speed taps, lifecycle/
   recreation, Bundle restoration, and no-command behavior on a device/emulator; capture
@@ -653,6 +664,12 @@ starting another feature.
 
 ## VERIFICATION
 
+- ENG-009 (2026-07-28): full `.\gradlew.bat test` and `.\gradlew.bat projects`, content validation
+  (2 packs), replay, save-compat, benchmark, and `:android:assembleDebug` -> pass. Replay hashes
+  remain canonical `12a65fd2b87593cf` and kill `bb37eefc1903cc77`; benchmark: canonical `324 ms`,
+  kill `62 ms`, goal-field rebuild `7168200 ns`. Balance review and `me-verifier` -> pass with all
+  boundary checks true. Transient immutable events are excluded from save/stable-hash state; save
+  version remains `8`.
 - ENG-030 (2026-07-21): full `.\gradlew.bat test` with the JDK 17 fallback, content validation
   (2 packs), replay, save-compat, benchmark, and `android:assembleDebug` -> pass. Replay hashes:
   canonical `12a65fd2b87593cf`, kill `bb37eefc1903cc77`; benchmark: canonical `473 ms`, kill

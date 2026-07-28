@@ -10,6 +10,7 @@ import dev.myengine.content.WaveContent
 import dev.myengine.content.HudStringKeys
 import dev.myengine.ai.GoalField
 import dev.myengine.core.CommandQueue
+import dev.myengine.core.CombatEvents
 import dev.myengine.core.EngineCommand
 import dev.myengine.core.EngineInfo
 import dev.myengine.core.HashableState
@@ -141,6 +142,8 @@ class SandboxRuntime(
     private val core = map.core.let { TilePosition(it.x, it.y) }
     /** Derived cache: rebuilt from authoritative world occupancy after placement and on restore. */
     private var goalField: GoalField = rebuildAfterWalkabilityChange()
+    /** Latest transient combat events, replaced every completed simulation tick. */
+    private var combatEvents: CombatEvents = CombatEvents.EMPTY
     private val renderPath: List<TilePosition> get() = goalField.pathFrom(spawn)
 
     /** Returns false without mutating state when the run has already reached its terminal boundary. */
@@ -183,7 +186,8 @@ class SandboxRuntime(
                 core,
                 goalField,
             )
-            val towerResult = defenseRuntime.updateTowers(state.registry, state.entities, goalField)
+            val towerResult = defenseRuntime.updateTowers(state.registry, state.entities, goalField, state.tick)
+            combatEvents = towerResult.events
             state.defense = state.defense.record(towerResult.metrics).recordTowerMetrics(towerResult.towerMetrics)
             val deposit = depositRewards(state.inventory, towerResult.rewards)
             state.inventory = deposit.inventory
@@ -250,6 +254,7 @@ class SandboxRuntime(
             terminalTick = state.run.terminalTick,
             runSummary = state.run.summary ?: currentRunSummary(),
             hud = hudSnapshot(),
+            combatEvents = combatEvents,
         )
     }
 

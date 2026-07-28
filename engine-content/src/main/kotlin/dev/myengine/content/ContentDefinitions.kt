@@ -53,6 +53,10 @@ data class TowerContent(
     val costAmount: Int,
     val sellRefundRatio: BigDecimal,
     val targetingMode: TargetingMode,
+    /** Optional Manhattan-radius splash centered on the selected primary target. */
+    val splashRadius: Int? = null,
+    /** Percentage of base damage lost per Manhattan-distance ring inside [splashRadius]. */
+    val falloffPercent: Int = 0,
     val upgradeTiers: Map<String, TowerUpgradeTier> = emptyMap(),
     val displayKey: String = "tower.$id",
     val assetRef: VisualAssetRef? = null,

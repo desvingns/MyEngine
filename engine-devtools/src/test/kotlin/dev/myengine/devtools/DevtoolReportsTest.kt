@@ -195,6 +195,48 @@ class DevtoolReportsTest {
     }
 
     @Test
+    fun balanceDeltaReportSummarizesIntegerEffectiveSplashAoeAndExposesItsJsonDeltas() {
+        val changedRoot = Files.createTempDirectory("myengine-balance-splash")
+        copyFlatPack(SandboxGame.contentRoot(), changedRoot)
+        Files.writeString(
+            changedRoot.resolve("towers.properties"),
+            Files.readString(changedRoot.resolve("towers.properties")) +
+                "\npulse.splashRadius=2\npulse.falloff=50\n",
+        )
+
+        val report = DevtoolReports.balanceDeltaReport(
+            baselineRoot = SandboxGame.contentRoot(),
+            changedRoot = changedRoot,
+        )
+        val changed = requireNotNull(report.changed)
+        val deltas = report.deltas.associateBy { it.metric }
+        val json = Json.parseToJsonElement(report.toJson()).jsonObject
+        val changedJson = json.getValue("changed").jsonObject
+        val deltaJson = json.getValue("deltas").jsonArray.associateBy { it.jsonObject.getValue("metric").jsonPrimitive.content }
+
+        assertTrue(report.valid, report.errors.joinToString("\n"))
+        assertEquals(1, changed.splashTowerTypes)
+        assertEquals(2, changed.splashRadiusTotal)
+        assertEquals(50, changed.splashFalloffPercentTotal)
+        // damage=2, falloff=50: distance 0 -> 1 tile, distance 1 -> 4 tiles, distance 2 -> 0 damage.
+        assertEquals(5, changed.splashEffectiveAoeTiles)
+        assertEquals("1", changedJson.getValue("splash_tower_types").jsonPrimitive.content)
+        assertEquals("2", changedJson.getValue("splash_radius_total").jsonPrimitive.content)
+        assertEquals("50", changedJson.getValue("splash_falloff_percent_total").jsonPrimitive.content)
+        assertEquals("5", changedJson.getValue("splash_effective_aoe_tiles").jsonPrimitive.content)
+        assertEquals(1.0, deltas.getValue("splash_tower_types").delta)
+        assertEquals(2.0, deltas.getValue("splash_radius_total").delta)
+        assertEquals(50.0, deltas.getValue("splash_falloff_percent_total").delta)
+        assertEquals(5.0, deltas.getValue("splash_effective_aoe_tiles").delta)
+        assertTrue(!deltas.getValue("splash_tower_types").flagged)
+        assertTrue(!deltas.getValue("splash_radius_total").flagged)
+        assertTrue(deltas.getValue("splash_falloff_percent_total").flagged)
+        assertTrue(deltas.getValue("splash_effective_aoe_tiles").flagged)
+        assertTrue(deltaJson.getValue("splash_falloff_percent_total").jsonObject.getValue("flagged").jsonPrimitive.boolean)
+        assertTrue(deltaJson.getValue("splash_effective_aoe_tiles").jsonObject.getValue("flagged").jsonPrimitive.boolean)
+    }
+
+    @Test
     fun balanceDeltaReportInvalidChangedPackReturnsErrors() {
         val changedRoot = Files.createTempDirectory("myengine-balance-invalid")
         copyFlatPack(SandboxGame.contentRoot(), changedRoot)
