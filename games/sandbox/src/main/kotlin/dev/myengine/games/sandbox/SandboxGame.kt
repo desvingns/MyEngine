@@ -5,6 +5,7 @@ import dev.myengine.content.ContentRegistry
 import dev.myengine.content.MapContent
 import dev.myengine.content.MapWinCondition
 import dev.myengine.content.TowerUpgradeTier
+import dev.myengine.content.VisualAssetRef
 import dev.myengine.content.WaveContent
 import dev.myengine.content.HudStringKeys
 import dev.myengine.ai.GoalField
@@ -49,6 +50,7 @@ import dev.myengine.render.HudTowerInfo
 import dev.myengine.render.HudTowerTier
 import dev.myengine.render.HudWaveCompositionEntry
 import dev.myengine.render.RenderEntity
+import dev.myengine.render.RenderAssetRef
 import dev.myengine.render.RenderTile
 import dev.myengine.storyteller.IncidentDirector
 import dev.myengine.world.ResourceNode
@@ -201,16 +203,33 @@ class SandboxRuntime(
     fun snapshot(): EngineSnapshot {
         val renderTiles = state.world.positions().map {
             val view = state.world.tileAt(it)
-            RenderTile(it, view.tile.terrainId, state.world.canBuild(it))
+            RenderTile(
+                position = it,
+                terrainId = view.tile.terrainId,
+                buildable = state.world.canBuild(it),
+                assetRef = state.registry.tiles[view.tile.terrainId]?.assetRef?.toRenderAssetRef(),
+            )
         }
         val renderEntities = state.entities.all().mapNotNull {
             val position = it.position?.tile ?: return@mapNotNull null
+            val assetRef = it.tower?.let { towerComponent ->
+                val tower = state.registry.towers[towerComponent.towerId]
+                val tierAsset = towerComponent.upgradeBranch?.let { branch ->
+                    tower?.upgradeTiers[TowerUpgradeTier.key(branch, towerComponent.upgradeTier)]?.assetRef
+                }
+                (tierAsset ?: tower?.assetRef)?.toRenderAssetRef()
+            } ?: when {
+                it.type.startsWith("enemy:") -> state.registry.enemies[it.type.substringAfter(':')]?.assetRef?.toRenderAssetRef()
+                it.type.startsWith("building:") -> state.registry.buildings[it.type.substringAfter(':')]?.assetRef?.toRenderAssetRef()
+                else -> null
+            }
             RenderEntity(
                 id = it.id.value,
                 type = it.type,
                 position = position,
                 health = it.health?.current,
                 towerTier = it.tower?.upgradeTier,
+                assetRef = assetRef,
             )
         }
         return EngineSnapshot(
@@ -601,6 +620,8 @@ class SandboxRuntime(
     private fun rebuildAfterWalkabilityChange(): GoalField =
         GoalField.rebuildAfterWalkabilityChange(state.world, core, spawns).field
 }
+
+private fun VisualAssetRef.toRenderAssetRef(): RenderAssetRef = RenderAssetRef(path = path, atlasKey = atlasKey)
 
 object SandboxSaveCodec {
     const val SAVE_VERSION: Int = 8

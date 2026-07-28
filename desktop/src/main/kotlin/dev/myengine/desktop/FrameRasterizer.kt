@@ -21,10 +21,13 @@ import javax.imageio.ImageIO
  * [RenderPalette], and produces a `BufferedImage`. It never mutates simulation state.
  *
  * Determinism: no randomness, `TYPE_INT_RGB`, antialiasing OFF for both shapes and text, and a
- * fixed [CELL_SIZE] cell centered on each primitive's screen point. That makes the color sampled
- * at a primitive's rounded screen point exactly `RenderPalette.color(kind)`.
+ * fixed [CELL_SIZE] cell centered on each primitive's screen point. Without a resolver, the color
+ * sampled at a primitive's rounded screen point is exactly `RenderPalette.color(kind)`; a resolver
+ * adds only the small deterministic placeholder marker for an available opaque asset.
  */
-class FrameRasterizer {
+class FrameRasterizer(
+    private val assetResolver: dev.myengine.render.RenderAssetResolver? = null,
+) {
 
     /**
      * Draw [frame] into a fresh [width] x [height] `BufferedImage`.
@@ -57,6 +60,11 @@ class FrameRasterizer {
                 g.color = awt(RenderPalette.color(primitive.kind))
                 g.fillRect(left, top, CELL_SIZE, CELL_SIZE)
 
+                if (primitive.assetRef?.let { assetResolver?.isAvailable(it) } == true) {
+                    g.color = awt(RenderPalette.assetMarker)
+                    g.fillRect(cx - ASSET_MARKER_SIZE / 2, cy - ASSET_MARKER_SIZE / 2, ASSET_MARKER_SIZE, ASSET_MARKER_SIZE)
+                }
+
                 if (primitive.health != null) {
                     g.color = awt(RenderPalette.enemyPip)
                     g.fillRect(left, top, PIP_SIZE, PIP_SIZE)
@@ -85,6 +93,9 @@ class FrameRasterizer {
 
         /** Side length in pixels of the enemy health pip drawn in a cell's top-left corner. */
         const val PIP_SIZE: Int = 4
+
+        /** Side length of the deterministic cue for an asset resolved by a desktop consumer. */
+        const val ASSET_MARKER_SIZE: Int = 4
 
         /** Fixed baseline position of the `core <n>` readout string. */
         const val CORE_TEXT_X: Int = 4

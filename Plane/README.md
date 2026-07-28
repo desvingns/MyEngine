@@ -39,9 +39,9 @@
 1. Оригинальный план Phase 00-14 закрыт.
 2. Первый playable Android TD milestone закрыт через `ENG-027`; ручные device/layout/performance
    проверки остаются явно отложенными.
-3. `ENG-015` (presentation-side game speed control) и `ENG-030` (wave preview + early wave call)
-   закрыты 2026-07-21; явная P1-последовательность завершена, следующий backlog item ещё не
-   выбран в roadmap.
+3. `ENG-015` (presentation-side game speed control), `ENG-030` (wave preview + early wave call),
+   и `ENG-028` (sprite/atlas references in content schema) закрыты 2026-07-28; явная
+   P1-последовательность завершена, следующий backlog item ещё не выбран в roadmap.
 4. Hardening gaps из `docs/HARDENING_AUDIT.md` закрывать по одному, с тестами и обновлением handoff.
 
 Новые крупные фазы добавлять только после того, как backlog specs перестанут быть достаточно
@@ -1054,3 +1054,29 @@
 - Next:
   - Select the next backlog item after ENG-030; the current roadmap does not define a unique
     successor, so backlog sequencing is required before another feature.
+
+### 2026-07-28 - MyEngine ENG-028 (sprite/atlas references in content schema)
+
+- Status: Done / accepted; Android device and PROC-009 golden-image follow-ups remain manual-pending
+- Owner: Codex
+- Implementation:
+  - Added optional pack-relative sprite or minimal-atlas references for tiles, towers, tower tiers,
+    enemies, and minimal building definitions with actionable path/key validation.
+  - Opaque refs cross the immutable sandbox snapshot into `RenderFrame`; desktop and Android
+    consumers resolve available refs and retain deterministic palette fallback otherwise.
+  - Added original text atlas placeholder content, focused content/render/desktop/sandbox tests, and
+    schema/roadmap/handoff close-out documentation. No save schema or dependency edge changed.
+- Verification:
+  - Full Gradle tests, projects, focused tests, content validation (2 packs), replay, save-compat,
+    benchmark, Android unit/assemble, desktop render smoke, selfcheck, and `git diff --check` -> pass.
+  - Replay hashes remain canonical `12a65fd2b87593cf` and kill `bb37eefc1903cc77`; benchmark
+    `sim_ms=341`/`71`, goal-field rebuild `9726600 ns`.
+  - Tester initially found a missing building entity projection; local repair closed it and the
+    focused render test passed. Conditional reviewer agents were unavailable due thread limit;
+    local read-only boundary review passed.
+- Known risks:
+  - Android AssetManager runtime/device fixture and full PROC-009 screenshot/golden lane remain
+    pending. Minimal building entities reuse the generic placeholder entity kind until a distinct
+    render kind is justified by gameplay requirements.
+- Next:
+  - Select the next backlog item after ENG-028; roadmap sequencing is required before another feature.

@@ -189,6 +189,44 @@ class PlaceholderRenderSurfaceTest {
         assertEquals(before, snapshot)
     }
 
+    @Test
+    fun carriesOpaqueAssetReferencesWithoutResolvingThem() {
+        val tileRef = RenderAssetRef("visuals/placeholder.atlas", "tile.floor")
+        val enemyRef = RenderAssetRef("visuals/placeholder.atlas", "enemy.grunt")
+        val snapshot = EngineSnapshot(
+            worldSize = WorldSize(64, 64),
+            tiles = listOf(RenderTile(TilePosition(1, 1), "floor", true, tileRef)),
+            entities = listOf(
+                RenderEntity(2, "enemy:grunt", TilePosition(2, 2), health = 5, assetRef = enemyRef),
+            ),
+            coreHealth = 20,
+            debug = overlay(),
+        )
+
+        val frame = surface.project(snapshot, camera)
+
+        assertEquals(tileRef, frame.primitives[0].assetRef)
+        assertEquals(enemyRef, frame.primitives[1].assetRef)
+    }
+
+    @Test
+    fun carriesBuildingAssetReferencesIntoRenderFrame() {
+        val buildingRef = RenderAssetRef("visuals/placeholder.atlas", "building.marker")
+        val snapshot = EngineSnapshot(
+            worldSize = WorldSize(64, 64),
+            tiles = emptyList(),
+            entities = listOf(
+                RenderEntity(3, "building:marker", TilePosition(4, 4), assetRef = buildingRef),
+            ),
+            coreHealth = 20,
+            debug = overlay(),
+        )
+
+        val frame = surface.project(snapshot, camera)
+
+        assertEquals(buildingRef, frame.primitives.single { it.tile == TilePosition(4, 4) }.assetRef)
+    }
+
     private fun RenderKind.isTile(): Boolean = this in setOf(
         RenderKind.TILE_FLOOR,
         RenderKind.TILE_WALL,

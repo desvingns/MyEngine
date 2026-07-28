@@ -1,8 +1,8 @@
 # MyEngine State
 
-Last updated: 2026-07-21
-Active phase: Phase 00-14 complete; Signal Garden SG-001..005 complete; MyTD MTD-001..005 complete; DX-008, ENG-002, ENG-005, ENG-008, ENG-013, ENG-014, ENG-015, ENG-026, ENG-027, ENG-030, and PROC-002 complete; pipeline at v0.2.0; next engine backlog sequence is not yet selected after ENG-030
-Owner of last update: Codex (2026-07-21: ENG-030 accepted after verifier pass; backlog sequencing is the next planning action)
+Last updated: 2026-07-28
+Active phase: Phase 00-14 complete; Signal Garden SG-001..005 complete; MyTD MTD-001..005 complete; DX-008, ENG-002, ENG-005, ENG-008, ENG-013, ENG-014, ENG-015, ENG-026, ENG-027, ENG-028, ENG-030, and PROC-002 complete; pipeline at v0.2.0; next engine backlog sequence is not yet selected after ENG-028
+Owner of last update: Codex (2026-07-28: ENG-028 accepted after runner and local boundary review; next backlog sequencing is the next planning action)
 
 ## Current Status
 
@@ -230,10 +230,17 @@ Owner of last update: Codex (2026-07-21: ENG-030 accepted after verifier pass; b
   `8222800 ns`. No ADR was needed. The balance review returned partial: current content packs are
   valid and contain no hardcoded bonus; its schema-documentation gap was closed in this close-out,
   and the optional bonus remains unconfigured pending an approved balance value.
+- MyEngine ENG-028 (sprite/atlas references in content schema, 2026-07-28) is accepted. Optional
+  pack-relative sprite or minimal-atlas references are validated for tiles, towers, tower tiers,
+  enemies, and minimal building definitions with actionable pack/path/key diagnostics. Opaque refs
+  cross the immutable sandbox snapshot into `RenderFrame`; desktop and Android consumers mark
+  available assets while omitted/missing refs use deterministic palette fallback. Existing replay
+  hashes remain `12a65fd2b87593cf`/`bb37eefc1903cc77`, `SAVE_VERSION` remains `8`, and the full
+  tests/content/replay/save-compat/benchmark/Android/desktop gates pass.
 
 ## Next Exact Action
 
-The current roadmap does not define a unique implementation item after completed `ENG-030`.
+The current roadmap does not define a unique implementation item after completed `ENG-028`.
 Perform backlog sequencing and select the next exact action before starting another feature.
 
 ## Known Blockers
@@ -242,6 +249,11 @@ Perform backlog sequencing and select the next exact action before starting anot
   early-call bonus because no balance value was approved; synthetic tests cover the data-driven
   path. Per-snapshot HUD allocation and device profiling remain follow-up work. The pre-existing
   save delimiter assumption remains documented; no code fix was made in this docs-only close-out.
+- ENG-028 non-blocking follow-ups: Android AssetManager resolution has compile/assemble coverage but
+  no device/instrumented runtime fixture; the full PROC-009 screenshot/golden lane remains manual.
+  Conditional domain reviewer agents could not be spawned in this run because the agent-thread limit
+  was reached; a local read-only boundary review passed, but reviewer-agent evidence should be
+  refreshed when capacity is available.
 - ENG-015 is accepted with non-blocking follow-ups: device/instrumentation tap, lifecycle/recreation,
   and Bundle smoke plus FrameMetrics/JankStats/Allocation Tracker evidence remain pending. The
   extreme `200x600` portrait layout has a manual risk of selected-panel overflow. A pre-existing
@@ -349,6 +361,14 @@ Perform backlog sequencing and select the next exact action before starting anot
 
 ## Verification
 
+- ENG-028 (2026-07-28): selfcheck, full `.\gradlew.bat test`, `.\gradlew.bat projects`, focused
+  content/render/sandbox/desktop tests, content validation (2 packs), replay, save-compat, benchmark,
+  `:android:testDebugUnitTest`, `:android:assembleDebug`, `:desktop:run`, and `git diff --check` ->
+  pass. Replay hashes remain canonical `12a65fd2b87593cf`/`bb37eefc1903cc77`; benchmark is
+  `sim_ms=341`/`71`, goal-field rebuild `9726600 ns`. Tester found a building projection gap, which
+  was repaired and re-tested. Conditional reviewer agents were unavailable due the agent-thread limit;
+  local read-only simulation/render/save/Android/content boundary review passed. Android runtime/device
+  AssetManager and PROC-009 golden screenshot checks remain manual-pending.
 - ENG-015 (2026-07-21): selfcheck -> pass; full `.\gradlew.bat test`, `:android:testDebugUnitTest`,
   and `:android:assembleDebug` -> pass; content validation, save-compat, replay, and benchmark ->
   pass. Replay hashes: canonical `12a65fd2b87593cf`, kill `bb37eefc1903cc77`; benchmark:

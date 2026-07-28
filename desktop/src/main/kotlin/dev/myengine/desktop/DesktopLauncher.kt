@@ -19,7 +19,7 @@ fun main() {
     val viewportHeight = worldSize.height * VIEWPORT_TILE_PIXELS
     val camera = Camera(worldSize, viewportWidth.toFloat(), viewportHeight.toFloat())
     val frame = PlaceholderRenderSurface().project(result.snapshot, camera)
-    val rasterizer = FrameRasterizer()
+    val rasterizer = FrameRasterizer(DesktopAssetResolver(SandboxGame.contentRoot()))
     val image = rasterizer.rasterize(frame, viewportWidth, viewportHeight)
     // Resolves against the desktop module working dir under `desktop:run` -> desktop/build/render-smoke.png.
     val pngPath = Paths.get("build", "render-smoke.png").toAbsolutePath()

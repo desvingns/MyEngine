@@ -28,6 +28,7 @@ data class RenderPrimitive(
     val health: Int? = null,
     val towerTier: Int? = null,
     val entityId: Long? = null,
+    val assetRef: RenderAssetRef? = null,
 )
 
 /**
@@ -61,6 +62,7 @@ class PlaceholderRenderSurface {
                 kind = kind,
                 tile = tile.position,
                 screen = tileCenterScreen(tile.position, camera),
+                assetRef = tile.assetRef,
             )
         }
 
@@ -73,6 +75,7 @@ class PlaceholderRenderSurface {
                 health = if (kind == RenderKind.ENEMY) entity.health else null,
                 towerTier = if (kind == RenderKind.TOWER) entity.towerTier else null,
                 entityId = entity.id,
+                assetRef = entity.assetRef,
             )
         }
 
@@ -98,6 +101,10 @@ class PlaceholderRenderSurface {
 
     private fun entityKind(type: String): RenderKind? = when {
         type.startsWith("tower") -> RenderKind.TOWER
+        // Buildings are schema/render-reference data in this slice; until a dedicated
+        // RenderKind.BUILDING is needed, they use the generic entity placeholder so their
+        // opaque assetRef still reaches platform consumers.
+        type.startsWith("building") -> RenderKind.TOWER
         type.startsWith("enemy") -> RenderKind.ENEMY
         else -> null
     }

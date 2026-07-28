@@ -37,6 +37,9 @@ object RenderPalette {
     /** Marker color for an enemy health pip (drawn only when a primitive carries health). */
     val enemyPip: Rgb = Rgb(255, 96, 160)
 
+    /** Small marker used by platform consumers when an opaque placeholder asset resolves. */
+    val assetMarker: Rgb = Rgb(240, 240, 240)
+
     private val floor: Rgb = Rgb(64, 64, 64)      // dark gray
     private val wall: Rgb = Rgb(128, 128, 128)    // mid gray
     private val resource: Rgb = Rgb(240, 192, 32) // amber / yellow

@@ -17,11 +17,26 @@ interface ContentDefinition {
     val id: String
 }
 
+/**
+ * Opaque content-owned visual reference. The loader validates [path] and, when present, that
+ * [atlasKey] exists in the pack's minimal atlas index; simulation never opens this asset.
+ */
+data class VisualAssetRef(
+    val path: String,
+    val atlasKey: String? = null,
+) {
+    init {
+        require(path.isNotBlank()) { "Visual asset path cannot be blank." }
+        require(atlasKey == null || atlasKey.isNotBlank()) { "Atlas key cannot be blank." }
+    }
+}
+
 data class TileContent(
     override val id: String,
     val buildable: Boolean,
     val blocksMovement: Boolean,
     val isCore: Boolean,
+    val assetRef: VisualAssetRef? = null,
 ) : ContentDefinition
 
 data class ResourceContent(
@@ -40,6 +55,7 @@ data class TowerContent(
     val targetingMode: TargetingMode,
     val upgradeTiers: Map<String, TowerUpgradeTier> = emptyMap(),
     val displayKey: String = "tower.$id",
+    val assetRef: VisualAssetRef? = null,
 ) : ContentDefinition
 
 data class TowerUpgradeTier(
@@ -51,6 +67,7 @@ data class TowerUpgradeTier(
     val costResource: String,
     val costAmount: Int,
     val displayKey: String = "tower.upgrade.$branch.$tier",
+    val assetRef: VisualAssetRef? = null,
 ) {
     init {
         require(branch.matches(BRANCH_ID_REGEX)) { "Upgrade branch must match ${BRANCH_ID_REGEX.pattern}." }
@@ -73,6 +90,13 @@ data class EnemyContent(
     val rewardResource: String,
     val rewardAmount: Int,
     val coreDamage: Int,
+    val assetRef: VisualAssetRef? = null,
+) : ContentDefinition
+
+/** Minimal data-driven building definition; gameplay components are intentionally out of scope. */
+data class BuildingContent(
+    override val id: String,
+    val assetRef: VisualAssetRef? = null,
 ) : ContentDefinition
 
 data class RecipeContent(
@@ -194,6 +218,7 @@ data class ContentRegistry(
     val waves: Map<String, WaveContent>,
     val incidents: Map<String, IncidentContent>,
     val strings: Map<String, String>,
+    val buildings: Map<String, BuildingContent> = emptyMap(),
     val difficulties: Map<String, DifficultyContent> = emptyMap(),
     val maps: Map<String, MapContent> = emptyMap(),
     val resolvedDifficultyId: String? = null,
@@ -202,6 +227,7 @@ data class ContentRegistry(
     fun requireResource(id: String): ResourceContent = resources[id] ?: error("Unknown resource '$id'.")
     fun requireTower(id: String): TowerContent = towers[id] ?: error("Unknown tower '$id'.")
     fun requireEnemy(id: String): EnemyContent = enemies[id] ?: error("Unknown enemy '$id'.")
+    fun requireBuilding(id: String): BuildingContent = buildings[id] ?: error("Unknown building '$id'.")
     fun requireMap(id: String? = null): MapContent = when {
         id != null -> maps[id] ?: error("Unknown map '$id'.")
         maps.size == 1 -> maps.values.single()

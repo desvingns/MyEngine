@@ -8,10 +8,17 @@ import dev.myengine.core.command.TargetingMode
 import dev.myengine.world.TilePosition
 import dev.myengine.world.WorldSize
 
+/** Opaque path/key pair carried to a platform render consumer without asset decoding. */
+data class RenderAssetRef(
+    val path: String,
+    val atlasKey: String? = null,
+)
+
 data class RenderTile(
     val position: TilePosition,
     val terrainId: String,
     val buildable: Boolean,
+    val assetRef: RenderAssetRef? = null,
 )
 
 data class RenderEntity(
@@ -20,6 +27,7 @@ data class RenderEntity(
     val position: TilePosition,
     val health: Int? = null,
     val towerTier: Int? = null,
+    val assetRef: RenderAssetRef? = null,
 )
 
 data class DebugOverlay(

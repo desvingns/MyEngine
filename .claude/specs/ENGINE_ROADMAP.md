@@ -7,7 +7,7 @@ two or more games outranks single-game gaps of the same severity.
 Updated by: the `/me-spec` backlog bridge (new gaps / new demand) and `/me`
 close-out (status changes).
 
-Last updated: 2026-07-21
+Last updated: 2026-07-28
 
 ## Capabilities
 
@@ -43,7 +43,7 @@ Last updated: 2026-07-21
 | Spatial index + 1k-entity benchmark | ENG-020 | mytd, vision:td, vision:rimworld-like, vision:mindustry-like | 4 | backlog |
 | Save slots + autosave policy | ENG-021 | mytd, vision:td, vision:rimworld-like, vision:mindustry-like | 4 | backlog |
 | Meta-progression store | ENG-022 | mytd, vision:td | 2 | backlog |
-| Sprite/atlas references in content schema | ENG-028 | mytd, vision:td, vision:rimworld-like, vision:mindustry-like | 4 | backlog |
+| Sprite/atlas references in content schema | ENG-028 | mytd, vision:td, vision:rimworld-like, vision:mindustry-like | 4 | **done** (2026-07-28; validated opaque refs for tiles/towers/tower tiers/enemies/buildings, pack-relative file/atlas-key checks, deterministic palette fallback, desktop/Android consumers, and replay/save boundaries unchanged) |
 | Audio event hooks (snapshot event feed) | ENG-029 | mytd, vision:td, vision:rimworld-like, vision:mindustry-like | 4 | backlog |
 | Wave preview + early wave call | ENG-030 | mytd, vision:td | 2 | **done** (2026-07-21; typed early-call command, deterministic HUD composition/countdown, content-defined bonus validation, SAVE_VERSION v8 migration, replay/save/gate verification pass; balance review partial: current packs valid/no hardcoded bonus, schema gap closed in docs close-out, optional bonus unconfigured pending approved balance value) |
 | A* point-to-point pathfinding for agents | ENG-001 | vision:rimworld-like, vision:mindustry-like | 2 | backlog |
@@ -99,9 +99,9 @@ Last updated: 2026-07-21
    **first playable Android TD milestone** (complete 2026-07-18; manual device/layout/performance
    evidence remains explicitly pending).
 3. P1 opener: ENG-002 (done) -> ENG-013 (done) -> ENG-008 (done) -> ENG-015 (done) -> ENG-030
-   (done 2026-07-21). This explicit sequence is complete; the next exact implementation item is
-   not yet selected in the current roadmap. Perform backlog sequencing before starting another
-   feature.
+   (done 2026-07-21) -> ENG-028 (done 2026-07-28). This explicit sequence is complete; the next
+   exact implementation item is not yet selected in the current roadmap. Perform backlog
+   sequencing before starting another feature.
 4. DX-008 is done: use its hybrid-format ADR for ENG-017/ENG-028 schema work. Other high-leverage
    pipeline cards remain DX-002, DX-006, and DX-005.
 5. MySD foundation: PROC-002 / ADR-0004 is done. After MySD Gate 2, implement ENG-036 before the

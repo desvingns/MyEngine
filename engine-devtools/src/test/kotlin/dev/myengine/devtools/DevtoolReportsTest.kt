@@ -225,6 +225,18 @@ class DevtoolReportsTest {
         ).forEach { file ->
             Files.copy(source.resolve(file), target.resolve(file), REPLACE_EXISTING)
         }
+        source.resolve("buildings.properties").takeIf(Files::exists)?.let { file ->
+            Files.copy(file, target.resolve(file.fileName.toString()), REPLACE_EXISTING)
+        }
+        source.resolve("visuals").takeIf(Files::exists)?.let { visuals ->
+            Files.walk(visuals).use { files ->
+                files.filter(Files::isRegularFile).forEach { file ->
+                    val destination = target.resolve(source.relativize(file).toString())
+                    destination.parent?.let(Files::createDirectories)
+                    Files.copy(file, destination, REPLACE_EXISTING)
+                }
+            }
+        }
     }
 
     private fun captureStdout(block: () -> Unit): String {

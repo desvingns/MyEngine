@@ -21,6 +21,120 @@ class ContentPackLoaderTest {
         assertEquals("bolt", result.registry?.towers?.get("basic")?.costResource)
         assertEquals(BigDecimal("0.5"), result.registry?.towers?.get("basic")?.sellRefundRatio)
         assertEquals(4, result.registry?.towers?.get("basic")?.upgradeTiers?.get(TowerUpgradeTier.key("main", 1))?.damage)
+        assertTrue(result.registry?.buildings?.isEmpty() == true)
+    }
+
+    @Test
+    fun visualReferencesLoadForTilesTowersTiersEnemiesAndBuildings() {
+        val root = createPack()
+        Files.createDirectories(root.resolve("visuals"))
+        root.resolve("visuals/placeholder.atlas").writeText(
+            """
+            tile.floor
+            tower.basic
+            tower.basic.main.1
+            enemy.scout
+            building.marker
+            """.trimIndent(),
+        )
+        root.resolve("tiles.properties").writeText(
+            root.resolve("tiles.properties").toFile().readText() +
+                "\nfloor.atlasPath=visuals/placeholder.atlas\nfloor.atlasKey=tile.floor\n",
+        )
+        root.resolve("towers.properties").writeText(
+            root.resolve("towers.properties").toFile().readText() +
+                "\nbasic.atlasPath=visuals/placeholder.atlas\nbasic.atlasKey=tower.basic\n" +
+                "basic.upgrade.main.1.atlasPath=visuals/placeholder.atlas\n" +
+                "basic.upgrade.main.1.atlasKey=tower.basic.main.1\n",
+        )
+        root.resolve("enemies.properties").writeText(
+            root.resolve("enemies.properties").toFile().readText() +
+                "\nscout.atlasPath=visuals/placeholder.atlas\nscout.atlasKey=enemy.scout\n",
+        )
+        root.resolve("buildings.properties").writeText(
+            "marker.atlasPath=visuals/placeholder.atlas\nmarker.atlasKey=building.marker\n",
+        )
+
+        val result = ContentPackLoader.load(root)
+
+        assertTrue(result.isValid, result.errors.joinToString("\n"))
+        assertEquals(VisualAssetRef("visuals/placeholder.atlas", "tile.floor"), result.registry!!.requireTile("floor").assetRef)
+        assertEquals(VisualAssetRef("visuals/placeholder.atlas", "tower.basic"), result.registry.requireTower("basic").assetRef)
+        assertEquals(
+            VisualAssetRef("visuals/placeholder.atlas", "tower.basic.main.1"),
+            result.registry.requireTower("basic").upgradeTiers.getValue(TowerUpgradeTier.key("main", 1)).assetRef,
+        )
+        assertEquals(VisualAssetRef("visuals/placeholder.atlas", "enemy.scout"), result.registry.requireEnemy("scout").assetRef)
+        assertEquals(VisualAssetRef("visuals/placeholder.atlas", "building.marker"), result.registry.requireBuilding("marker").assetRef)
+    }
+
+    @Test
+    fun validSpritePathReferencesLoadForTilesTowersTiersEnemiesAndBuildings() {
+        val root = createPack()
+        Files.createDirectories(root.resolve("visuals"))
+        root.resolve("visuals/placeholder.sprite").writeText("original placeholder")
+        root.resolve("tiles.properties").writeText(
+            root.resolve("tiles.properties").toFile().readText() +
+                "\nfloor.spritePath=visuals/placeholder.sprite\n",
+        )
+        root.resolve("towers.properties").writeText(
+            root.resolve("towers.properties").toFile().readText() +
+                "\nbasic.spritePath=visuals/placeholder.sprite\n" +
+                "basic.upgrade.main.1.spritePath=visuals/placeholder.sprite\n",
+        )
+        root.resolve("enemies.properties").writeText(
+            root.resolve("enemies.properties").toFile().readText() +
+                "\nscout.spritePath=visuals/placeholder.sprite\n",
+        )
+        root.resolve("buildings.properties").writeText(
+            "marker.spritePath=visuals/placeholder.sprite\n",
+        )
+
+        val result = ContentPackLoader.load(root)
+
+        assertTrue(result.isValid, result.errors.joinToString("\n"))
+        val expected = VisualAssetRef("visuals/placeholder.sprite")
+        assertEquals(expected, result.registry!!.requireTile("floor").assetRef)
+        assertEquals(expected, result.registry.requireTower("basic").assetRef)
+        assertEquals(
+            expected,
+            result.registry.requireTower("basic").upgradeTiers.getValue(TowerUpgradeTier.key("main", 1)).assetRef,
+        )
+        assertEquals(expected, result.registry.requireEnemy("scout").assetRef)
+        assertEquals(expected, result.registry.requireBuilding("marker").assetRef)
+    }
+
+    @Test
+    fun visualReferenceFailuresIdentifyPackPathAndAtlasKey() {
+        val missingFile = createPack()
+        missingFile.resolve("tiles.properties").writeText(
+            missingFile.resolve("tiles.properties").toFile().readText() +
+                "\nfloor.spritePath=visuals/missing.sprite\n",
+        )
+        val missingFileResult = ContentPackLoader.load(missingFile)
+        assertTrue(
+            missingFileResult.errors.any {
+                it.file == "tiles.properties" && it.id == "floor" && it.field == "spritePath" &&
+                    it.message.contains("Pack 'test-pack'") && it.message.contains("visuals/missing.sprite")
+            },
+            missingFileResult.errors.joinToString("\n"),
+        )
+
+        val missingKey = createPack()
+        Files.createDirectories(missingKey.resolve("visuals"))
+        missingKey.resolve("visuals/placeholder.atlas").writeText("tile.floor\n")
+        missingKey.resolve("tiles.properties").writeText(
+            missingKey.resolve("tiles.properties").toFile().readText() +
+                "\nfloor.atlasPath=visuals/placeholder.atlas\nfloor.atlasKey=tile.missing\n",
+        )
+        val missingKeyResult = ContentPackLoader.load(missingKey)
+        assertTrue(
+            missingKeyResult.errors.any {
+                it.file == "tiles.properties" && it.id == "floor" && it.field == "atlasKey" &&
+                    it.message.contains("visuals/placeholder.atlas") && it.message.contains("tile.missing")
+            },
+            missingKeyResult.errors.joinToString("\n"),
+        )
     }
 
     @Test

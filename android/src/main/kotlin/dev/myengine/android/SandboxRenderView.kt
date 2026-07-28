@@ -157,6 +157,7 @@ class SandboxRenderView(
     private val density = context.resources.displayMetrics.density
     private val scaledDensity = density * context.resources.configuration.fontScale
     private val renderer = PlaceholderRenderSurface()
+    private val assetResolver = AndroidAssetResolver(context.assets, rootPrefix = "sandbox")
     private val inputAdapter = InputAdapter()
     private val fillPaint = Paint(Paint.ANTI_ALIAS_FLAG)
     private val strokePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
@@ -384,6 +385,16 @@ class SandboxRenderView(
                 primitive.screen.y + halfTile,
                 fillPaint,
             )
+            if (primitive.assetRef?.let(assetResolver::isAvailable) == true) {
+                fillPaint.color = androidColor(RenderPalette.assetMarker)
+                canvas.drawRect(
+                    primitive.screen.x - ASSET_MARKER_DP * density / 2f,
+                    primitive.screen.y - ASSET_MARKER_DP * density / 2f,
+                    primitive.screen.x + ASSET_MARKER_DP * density / 2f,
+                    primitive.screen.y + ASSET_MARKER_DP * density / 2f,
+                    fillPaint,
+                )
+            }
             if (primitive.kind == RenderKind.TOWER) {
                 textPaint.color = androidColor(RenderPalette.coreHealthText)
                 canvas.drawText(
@@ -475,5 +486,6 @@ class SandboxRenderView(
     private companion object {
         const val STROKE_WIDTH_DP = 2f
         const val TEXT_SIZE_SP = 18f
+        const val ASSET_MARKER_DP = 4f
     }
 }

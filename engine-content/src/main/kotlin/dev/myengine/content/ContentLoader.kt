@@ -41,6 +41,7 @@ object ContentPackLoader {
         val resources = parseDefinitions(root, "resources.properties", errors, ::parseResource)
         val towers = parseDefinitions(root, "towers.properties", errors, ::parseTower)
         val enemies = parseDefinitions(root, "enemies.properties", errors, ::parseEnemy)
+        val buildings = parseOptionalDefinitions(root, "buildings.properties", errors, ::parseBuilding)
         val recipes = parseDefinitions(root, "recipes.properties", errors, ::parseRecipe)
         val waves = parseDefinitions(root, "waves.properties", errors, ::parseWave)
         val incidents = parseDefinitions(root, "incidents.properties", errors, ::parseIncident)
@@ -54,7 +55,18 @@ object ContentPackLoader {
             errors += ContentValidationError("manifest.properties", manifest.id, "schemaVersion", "Unsupported schema version ${manifest.schemaVersion}.")
         }
 
-        validateReferences(towers, enemies, recipes, waves, resources, errors)
+        validateReferences(
+            root = root,
+            packId = manifest?.id ?: "unknown-pack",
+            tiles = tiles,
+            towers = towers,
+            enemies = enemies,
+            buildings = buildings,
+            recipes = recipes,
+            waves = waves,
+            resources = resources,
+            errors = errors,
+        )
         validateTerminalRules(maps, waves, errors)
         validateLocalization(resources, towers, strings, errors)
 
@@ -69,6 +81,7 @@ object ContentPackLoader {
                 resources = resources,
                 towers = towers,
                 enemies = enemies,
+                buildings = buildings,
                 recipes = recipes,
                 waves = waves,
                 incidents = incidents,
@@ -147,6 +160,7 @@ object ContentPackLoader {
             buildable = fields.requiredBool(file, id, "buildable", errors) ?: return null,
             blocksMovement = fields.requiredBool(file, id, "blocksMovement", errors) ?: return null,
             isCore = fields["isCore"]?.toBooleanStrictOrNull() ?: false,
+            assetRef = parseVisualAssetRef(id, fields, errors, file),
         )
 
     private fun parseResource(id: String, fields: Map<String, String>, errors: MutableList<ContentValidationError>, file: String): ResourceContent? =
@@ -168,6 +182,7 @@ object ContentPackLoader {
                 ?: return null,
             upgradeTiers = parseTowerUpgradeTiers(id, fields, errors, file),
             targetingMode = fields.targetingModeOrDefault(file, id, errors) ?: return null,
+            assetRef = parseVisualAssetRef(id, fields, errors, file),
         )
 
     private fun parseTowerUpgradeTiers(
@@ -212,6 +227,7 @@ object ContentPackLoader {
                     cooldownTicks = scopedFields.requiredPositiveInt(file, id, "$prefix.cooldownTicks", errors) ?: return@mapNotNull null,
                     costResource = scopedFields.required(file, id, "$prefix.costResource", errors) ?: return@mapNotNull null,
                     costAmount = scopedFields.requiredNonNegativeInt(file, id, "$prefix.costAmount", errors) ?: return@mapNotNull null,
+                    assetRef = parseVisualAssetRef(id, scopedFields, errors, file, "$prefix."),
                 )
             }
             .associateBy { it.key }
@@ -225,7 +241,53 @@ object ContentPackLoader {
             rewardResource = fields.required(file, id, "rewardResource", errors) ?: return null,
             rewardAmount = fields.requiredNonNegativeInt(file, id, "rewardAmount", errors) ?: return null,
             coreDamage = fields.requiredPositiveInt(file, id, "coreDamage", errors) ?: return null,
+            assetRef = parseVisualAssetRef(id, fields, errors, file),
         )
+
+    private fun parseBuilding(id: String, fields: Map<String, String>, errors: MutableList<ContentValidationError>, file: String): BuildingContent =
+        BuildingContent(
+            id = id,
+            assetRef = parseVisualAssetRef(id, fields, errors, file),
+        )
+
+    /** Parses one optional sprite path or an atlas path/key pair under [fieldPrefix]. */
+    private fun parseVisualAssetRef(
+        id: String,
+        fields: Map<String, String>,
+        errors: MutableList<ContentValidationError>,
+        file: String,
+        fieldPrefix: String = "",
+    ): VisualAssetRef? {
+        val spritePathField = "${fieldPrefix}spritePath"
+        val atlasPathField = "${fieldPrefix}atlasPath"
+        val atlasKeyField = "${fieldPrefix}atlasKey"
+        val hasSprite = fields.containsKey(spritePathField)
+        val hasAtlasPath = fields.containsKey(atlasPathField)
+        val hasAtlasKey = fields.containsKey(atlasKeyField)
+        if (!hasSprite && !hasAtlasPath && !hasAtlasKey) return null
+        if (hasSprite && (hasAtlasPath || hasAtlasKey)) {
+            errors += ContentValidationError(
+                file,
+                id,
+                "${fieldPrefix}visual",
+                "Declare either ${spritePathField} or the ${atlasPathField}/${atlasKeyField} pair, not both.",
+            )
+            return null
+        }
+        if (hasAtlasPath != hasAtlasKey) {
+            if (!hasAtlasPath) errors += ContentValidationError(file, id, atlasPathField, "Atlas path/key fields must be declared as a pair.")
+            if (!hasAtlasKey) errors += ContentValidationError(file, id, atlasKeyField, "Atlas path/key fields must be declared as a pair.")
+            return null
+        }
+        return if (hasSprite) {
+            VisualAssetRef(fields.required(file, id, spritePathField, errors) ?: return null)
+        } else {
+            VisualAssetRef(
+                path = fields.required(file, id, atlasPathField, errors) ?: return null,
+                atlasKey = fields.required(file, id, atlasKeyField, errors) ?: return null,
+            )
+        }
+    }
 
     private fun parseRecipe(id: String, fields: Map<String, String>, errors: MutableList<ContentValidationError>, file: String): RecipeContent? =
         RecipeContent(
@@ -646,20 +708,36 @@ object ContentPackLoader {
     }
 
     private fun validateReferences(
+        root: Path,
+        packId: String,
+        tiles: Map<String, TileContent>,
         towers: Map<String, TowerContent>,
         enemies: Map<String, EnemyContent>,
+        buildings: Map<String, BuildingContent>,
         recipes: Map<String, RecipeContent>,
         waves: Map<String, WaveContent>,
         resources: Map<String, ResourceContent>,
         errors: MutableList<ContentValidationError>,
     ) {
+        tiles.values.forEach { tile ->
+            validateVisualAsset(root, packId, "tiles.properties", tile.id, "", tile.assetRef, errors)
+        }
         towers.values.forEach { tower ->
+            validateVisualAsset(root, packId, "towers.properties", tower.id, "", tower.assetRef, errors)
             if (!resources.containsKey(tower.costResource)) errors += ContentValidationError("towers.properties", tower.id, "costResource", "Unknown resource '${tower.costResource}'.")
             tower.upgradeTiers.values.forEach { tier ->
+                val prefix = "upgrade.${tier.branch}.${tier.tier}."
+                validateVisualAsset(root, packId, "towers.properties", tower.id, prefix, tier.assetRef, errors)
                 if (!resources.containsKey(tier.costResource)) errors += ContentValidationError("towers.properties", tower.id, "upgrade.${tier.branch}.${tier.tier}.costResource", "Unknown resource '${tier.costResource}'.")
             }
         }
-        enemies.values.forEach { if (!resources.containsKey(it.rewardResource)) errors += ContentValidationError("enemies.properties", it.id, "rewardResource", "Unknown resource '${it.rewardResource}'.") }
+        enemies.values.forEach {
+            validateVisualAsset(root, packId, "enemies.properties", it.id, "", it.assetRef, errors)
+            if (!resources.containsKey(it.rewardResource)) errors += ContentValidationError("enemies.properties", it.id, "rewardResource", "Unknown resource '${it.rewardResource}'.")
+        }
+        buildings.values.forEach { building ->
+            validateVisualAsset(root, packId, "buildings.properties", building.id, "", building.assetRef, errors)
+        }
         recipes.values.forEach {
             if (it.inputResource != null && !resources.containsKey(it.inputResource)) errors += ContentValidationError("recipes.properties", it.id, "inputResource", "Unknown resource '${it.inputResource}'.")
             if (!resources.containsKey(it.outputResource)) errors += ContentValidationError("recipes.properties", it.id, "outputResource", "Unknown resource '${it.outputResource}'.")
@@ -679,6 +757,70 @@ object ContentPackLoader {
                 if (!enemies.containsKey(spawn.enemyId)) errors += ContentValidationError("waves.properties", wave.id, "spawns", "Unknown enemy '${spawn.enemyId}'.")
                 if (spawn.count <= 0) errors += ContentValidationError("waves.properties", wave.id, "spawns", "Spawn count must be positive.")
             }
+        }
+    }
+
+    /**
+     * Validates only the opaque reference metadata. The content module never decodes a sprite; a
+     * minimal atlas is an original text index with one region key per non-comment line.
+     */
+    private fun validateVisualAsset(
+        root: Path,
+        packId: String,
+        file: String,
+        id: String,
+        fieldPrefix: String,
+        reference: VisualAssetRef?,
+        errors: MutableList<ContentValidationError>,
+    ) {
+        if (reference == null) return
+        val pathField = if (reference.atlasKey == null) "${fieldPrefix}spritePath" else "${fieldPrefix}atlasPath"
+        val keyField = "${fieldPrefix}atlasKey"
+        val packRoot = root.toAbsolutePath().normalize()
+        val resolved = packRoot.resolve(reference.path).normalize()
+        if (!resolved.startsWith(packRoot)) {
+            errors += ContentValidationError(
+                file,
+                id,
+                pathField,
+                "Pack '$packId' asset path '${reference.path}' escapes the content-pack root.",
+            )
+            return
+        }
+        if (!Files.isRegularFile(resolved)) {
+            errors += ContentValidationError(
+                file,
+                id,
+                pathField,
+                "Pack '$packId' asset file '${reference.path}' does not exist.",
+            )
+            return
+        }
+        val atlasKey = reference.atlasKey ?: return
+        val keys = try {
+            Files.readAllLines(resolved)
+                .asSequence()
+                .map { it.substringBefore('#').trim() }
+                .filter { it.isNotEmpty() }
+                .map { it.substringBefore('=').trim() }
+                .filter { it.isNotEmpty() }
+                .toSet()
+        } catch (error: Exception) {
+            errors += ContentValidationError(
+                file,
+                id,
+                pathField,
+                "Pack '$packId' atlas path '${reference.path}' could not be read: ${error.message ?: "unknown error"}.",
+            )
+            return
+        }
+        if (atlasKey !in keys) {
+            errors += ContentValidationError(
+                file,
+                id,
+                keyField,
+                "Pack '$packId' atlas path '${reference.path}' does not define key '$atlasKey'.",
+            )
         }
     }
 

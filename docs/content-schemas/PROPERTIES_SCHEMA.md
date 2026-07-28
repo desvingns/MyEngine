@@ -1,7 +1,7 @@
 # MyEngine Content Properties Schema
 
-Status: Phase 06 accepted; DX-008 hybrid format accepted; ENG-030 fields documented
-Last updated: 2026-07-21
+Status: Phase 06 accepted; DX-008 hybrid format accepted; ENG-028 fields documented
+Last updated: 2026-07-28
 
 Content packs use the DX-008 hybrid format defined by
 [`ADR-0003-content-format-hybrid.md`](../DECISIONS/ADR-0003-content-format-hybrid.md): flat entity
@@ -29,6 +29,9 @@ Definition files use `<id>.<field>=<value>`.
 - `buildable`: boolean
 - `blocksMovement`: boolean
 - `isCore`: optional boolean
+- `spritePath`: optional pack-relative file path, or
+- `atlasPath` + `atlasKey`: optional pair identifying a key in the pack-relative minimal atlas
+  index; declare either the sprite field or the atlas pair, never both
 
 ### Resources
 
@@ -53,6 +56,8 @@ Definition files use `<id>.<field>=<value>`.
 - `upgrade.<branch>.<tier>.cooldownTicks`: optional positive int
 - `upgrade.<branch>.<tier>.costResource`: optional resource id
 - `upgrade.<branch>.<tier>.costAmount`: optional non-negative int
+- `upgrade.<branch>.<tier>.spritePath`: optional pack-relative file path, or
+- `upgrade.<branch>.<tier>.atlasPath` + `upgrade.<branch>.<tier>.atlasKey`: optional atlas pair
 
 Upgrade tier fields are authored inside `towers.properties` under the base tower id. If any
 field for a tier is present, all six tier fields are required. Branch ids must not contain dots,
@@ -81,6 +86,23 @@ result half-up. Multipliers are parsed as decimal values and never through binar
 - `rewardResource`: resource id
 - `rewardAmount`: non-negative int
 - `coreDamage`: positive int
+- `spritePath`: optional pack-relative file path, or `atlasPath` + `atlasKey` optional pair
+
+### Buildings
+
+`buildings.properties` is optional and intentionally contains no gameplay fields yet. It uses the
+same `<id>.<field>=<value>` format and provides a smallest data-driven home for future building
+definitions:
+
+- `spritePath`: optional pack-relative file path, or
+- `atlasPath` + `atlasKey`: optional pair
+
+All declared visual paths must stay inside the content-pack root and point to an existing file. The
+minimal atlas index is a UTF-8 text file with one region key per non-empty, non-comment line; a
+`key=value` line is also accepted. Missing files, path escapes, unreadable indexes, and missing keys
+are rejected with pack, file, definition id, field, path, and/or key context. Omitted references
+remain valid and use deterministic palette fallback in placeholder consumers. The content loader
+only validates opaque metadata; sprite decoding remains platform-owned.
 
 ### Recipes
 

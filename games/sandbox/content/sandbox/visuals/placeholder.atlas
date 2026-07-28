@@ -1,0 +1,9 @@
+# Original MyEngine placeholder atlas index; platform consumers use palette primitives.
+tile.floor
+tile.wall
+tile.core
+tile.resource
+tower.pulse
+tower.pulse.main.1
+enemy.drift
+building.marker

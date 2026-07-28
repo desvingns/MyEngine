@@ -1,6 +1,6 @@
 id: ENG-028
 title: Sprite/atlas references in content schema
-status: backlog
+status: done
 phase: engine
 source: engine gap sweep 2026-07-06 (project review)
 

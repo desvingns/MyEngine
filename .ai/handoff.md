@@ -1,6 +1,6 @@
 # MyEngine Handoff
 
-Last updated: 2026-07-21 (ENG-030 accepted after verifier pass; next backlog sequence is not yet selected)
+Last updated: 2026-07-28 (ENG-028 accepted after runner and local boundary review; next backlog sequence is not yet selected)
 Owner: Codex
 
 ## DONE
@@ -374,6 +374,12 @@ Owner: Codex
   rebuild `8222800 ns`. The balance review returned partial: current content packs are valid and
   contain no hardcoded bonus; its schema-documentation gap was closed in this docs close-out, and
   the optional bonus remains unconfigured pending an approved balance value.
+- ENG-028 is complete/accepted: optional pack-relative sprite/atlas refs are validated for tiles,
+  towers, tower tiers, enemies, and minimal building definitions; refs remain opaque through the
+  immutable sandbox snapshot and `RenderFrame`; desktop/Android consumers resolve available refs
+  and retain deterministic palette fallback for omitted/missing refs. The original text atlas
+  placeholder is packaged in the sandbox content tree; no production art, save schema, replay
+  hash, or dependency edge changed.
 
 ## DECISIONS
 
@@ -412,6 +418,10 @@ Owner: Codex
   the early-call bonus is content-defined as `resourceId + amount`. No ADR is needed because this
   is an additive command/content/HUD/save extension with no new dependency edge. Existing packs
   remain unchanged until an approved balance value exists.
+- ENG-028 follows ADR-0003: flat visual definitions stay in `.properties`, the minimal atlas is an
+  original text index, and engine-content validates only pack-relative path/key metadata. There is
+  no dedicated `RenderKind.BUILDING` yet; minimal building entities reuse the generic placeholder
+  entity kind until a gameplay/render requirement justifies a distinct kind.
 
 - Android remains the only shipping platform; desktop/JVM is a dev harness.
 - Simulation modules remain Android/render-free.
@@ -531,8 +541,8 @@ Owner: Codex
 
 ## NEXT
 
-Select the next backlog item after completed `ENG-030`. The current roadmap closes the explicit P1
-sequence at ENG-030 but does not define a unique successor, so perform backlog sequencing before
+Select the next backlog item after completed `ENG-028`. The current roadmap closes the explicit P1
+sequence at ENG-028 but does not define a unique successor, so perform backlog sequencing before
 starting another feature.
 
 ## BLOCKERS
@@ -544,6 +554,12 @@ starting another feature.
   balance value was approved; the data-driven path is covered by synthetic tests. Per-snapshot HUD
   allocation and device profiling remain low, non-blocking follow-ups. The existing save delimiter
   assumption remains documented; no code fix was made in this docs-only close-out.
+
+- ENG-028 Android AssetManager resolution has compile/assemble coverage but no device/instrumented
+  runtime fixture; the full PROC-009 screenshot/golden lane remains manual. Conditional domain
+  reviewer agents could not be spawned in this run because the agent-thread limit was reached; a
+  local read-only boundary review passed, but reviewer-agent evidence should be refreshed when
+  capacity is available.
 
 - ENG-015 device/instrumentation verification remains pending: exercise speed taps, lifecycle/
   recreation, Bundle restoration, and no-command behavior on a device/emulator; capture
@@ -645,6 +661,16 @@ starting another feature.
   command identity, and v1-v7 migration are covered. Balance review -> partial: current content
   packs are valid and contain no hardcoded bonus; its schema-documentation gap was closed in this
   docs close-out, and the optional bonus remains unconfigured pending an approved balance value.
+- ENG-028 (2026-07-28): `scripts/me-selfcheck.ps1`, full `.\gradlew.bat test`, `.\gradlew.bat projects`,
+  focused engine-content/engine-render/games:sandbox/desktop tests, `scripts/me-content-validate.ps1`
+  (2 packs), `scripts/me-sim-replay.ps1`, `scripts/me-save-compat.ps1`, `scripts/me-benchmark.ps1`,
+  `:android:testDebugUnitTest`, `:android:assembleDebug`, `:desktop:run`, and `git diff --check`
+  -> pass. Replay hashes remain canonical `12a65fd2b87593cf`/`bb37eefc1903cc77`; benchmark is
+  `sim_ms=341`/`71`, goal-field rebuild `9726600 ns`. Tester initially found and the local repair
+  closed the missing `building:marker` -> `RenderFrame` path. Domain reviewer agents were not
+  available due the agent-thread limit; local simulation/render/save/Android/content boundary review
+  passed. Device/instrumented Android AssetManager and PROC-009 golden screenshot checks remain
+  manual-pending.
 - ENG-015 (2026-07-21): `scripts/me-selfcheck.ps1`, full `.\gradlew.bat test`,
   `:android:testDebugUnitTest`, `:android:assembleDebug`, content validation, replay, save-compat,
   and benchmark -> pass. Replay hashes: canonical `12a65fd2b87593cf`, kill `bb37eefc1903cc77`;
