@@ -1,9 +1,16 @@
 # MyEngine Handoff
 
-Last updated: 2026-07-29 (PROC-013 Variant B close-out recorded; final commit/push remains blocked by unrelated dirty retro state)
-Owner: Codex
+Last updated: 2026-07-29 (PROC-003 domain systems sequencing close-out; ENG-010 adopted as successor to ENG-020)
+Owner: Claude
 
 ## DONE
+
+- PROC-003 is done: `Plane/15_domain_systems_sequencing.md` sequences the domain systems —
+  flow-field/pathfinding already done via ENG-002 (MyTD FR-003/FR-009/FR-013), colony slice
+  ordered ENG-001 -> ENG-003 -> ENG-031 -> ENG-004 -> ENG-032 (vision-only demand; re-entry via
+  MySD Gate 1 / PROC-015 or an authored colony game spec), storyteller incidents = ENG-016
+  (vision-only demand plus defect fix F4). Card moved to `.claude/specs/done/`; roadmap row,
+  recommended order, and demand tags synced.
 
 - PROC-013 Variant B is done: 23 verified-done cards moved from `backlog/` to `done/`, PROC-013
   roadmap status reconciled, and the read-only board checker wired into `scripts/me-selfcheck.ps1`.
@@ -395,6 +402,17 @@ Owner: Codex
 
 ## DECISIONS
 
+- PROC-003 sequencing adopted 2026-07-29 (human-approved): ENG-010 -> ENG-016 -> PROC-007 ->
+  ENG-021 -> ENG-029 -> ENG-012 -> ENG-007 -> ENG-018. Unique successor to ENG-020 is ENG-010
+  (status effects framework), the only remaining backlog card backed by a named game FR
+  (MyTD FR-007). PROC-007 runs before ENG-021 because ENG-010 and ENG-021 bump the save codec.
+- PROC-003 acceptance criterion (b) amended by owner decision: `vision:*` demand tags (per
+  ENGINE_ROADMAP.md notes) count as legitimate demand where no named game FR exists yet.
+- Roadmap demand tags corrected 2026-07-29: `mytd` removed from ENG-012 (2->1), ENG-021 (4->3),
+  ENG-022 (2->1), ENG-029 (4->3) as unbacked by the MyTD spec bundle
+  (`D:/Pet/MyTD/spec/requirements.md`). SG FR-002 is already satisfied by SG-001 and is not
+  demand for ENG-016.
+
 - PROC-013 uses documentation-only Variant B wiring: the checker emits one JSON result, returns
   exit 0 on pass and exit 1 on mismatch, and requires no ADR because no canonical contract or
   adapter changed.
@@ -562,15 +580,13 @@ Owner: Codex
 
 ## NEXT
 
-Final commit/push for this close-out remains blocked by the pre-existing unrelated dirty
-`.ai/retro/retro-2026-07-28.md` unless the user approves/clears it. After that, select the next
-backlog item: the current roadmap closes the explicit P1 sequence at ENG-020 without a unique
-successor.
+Run `/me --feature --next` for ENG-010 (status effects framework), the PROC-003-adopted unique
+successor to ENG-020. The earlier commit blocker is resolved: PROC-013 commit 5eaaa78 was pushed.
 
 ## BLOCKERS
 
-- Final commit/push remains blocked by the pre-existing unrelated dirty
-  `.ai/retro/retro-2026-07-28.md` unless the user approves/clears it.
+- RESOLVED (2026-07-29): the pre-existing unrelated dirty `.ai/retro/retro-2026-07-28.md` commit
+  blocker is cleared; PROC-013 commit 5eaaa78 was pushed.
 - MySD ENG-036 is specified but intentionally not started until the MySD evidence/spec gates choose
   the implementation order. PROC-015 is a backlog process change, not an implemented adapter.
 
@@ -685,6 +701,10 @@ successor.
 
 ## VERIFICATION
 
+- PROC-003 (2026-07-29): documentation-only close-out; no engine code, tests, or gates applicable.
+  New `Plane/15_domain_systems_sequencing.md`; PROC-003 card at `.claude/specs/done/` with the
+  criterion (b) amendment and close note; ENGINE_ROADMAP.md rows/notes/recommended order synced;
+  board status/location consistency covered by the PROC-013 checker.
 - PROC-013 (2026-07-29): developer, tester, runner, and verifier passes are recorded; 23 card
   migrations, board checker, selfcheck wiring, checker/selfcheck exit semantics, and no-ADR scope
   were verified. `git diff --check` is required for this docs close-out.

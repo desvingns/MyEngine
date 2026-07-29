@@ -33,6 +33,7 @@
 | [x] | 12 | [12_game_spec_pipeline.md](12_game_spec_pipeline.md) | reusable game-spec bundle workflow and first sample game spec | Phase 04, 10 | 2026-07-02 |
 | [x] | 13 | [13_self_improvement_loop.md](13_self_improvement_loop.md) | telemetry, retro, reflection, gated improvements | Phase 04, 10 | 2026-07-02 |
 | [x] | 14 | [14_hardening_release_first_game.md](14_hardening_release_first_game.md) | hardening backlog, release discipline, first game kickoff | Phase 10-13 | 2026-07-02 |
+| [x] | 15 | [15_domain_systems_sequencing.md](15_domain_systems_sequencing.md) | PROC-003 domain sequencing: flow-field done, colony slice + storyteller ordered with vision-only caveats; successor ENG-010 | Phase 07-08, backlog board | 2026-07-29 |
 
 ## Рекомендуемый порядок
 
@@ -42,8 +43,9 @@
 3. `ENG-015` (presentation-side game speed control), `ENG-030` (wave preview + early wave call),
    `ENG-028` (sprite/atlas references in content schema), `ENG-009` (splash damage + shot events),
    and `ENG-020` (spatial index + 1k-entity benchmark) are closed; `ENG-020` was accepted on
-   2026-07-29. The explicit P1 sequence now ends at ENG-020; the next backlog item is not yet
-   selected in the roadmap.
+   2026-07-29. PROC-003 sequencing adopted 2026-07-29 (see Plane/15): ENG-010 -> ENG-016 ->
+   PROC-007 -> ENG-021 -> ENG-029 -> ENG-012 -> ENG-007 -> ENG-018; next exact implementation
+   item is `ENG-010` (status effects framework, MyTD FR-007).
 4. Hardening gaps из `docs/HARDENING_AUDIT.md` закрывать по одному, с тестами и обновлением handoff.
 
 Новые крупные фазы добавлять только после того, как backlog specs перестанут быть достаточно
@@ -53,8 +55,9 @@
 
 | Status | Feature | Spec | Result | Date |
 |---|---|---|---|---|
-| [x] | ENG-020 Spatial index + 1k-entity benchmark | [ENG-020](../.claude/specs/backlog/ENG-020-spatial-index-benchmark.md) | Internal non-persisted grid index for targeting/splash queries plus deterministic machine-readable 1024-enemy benchmark | 2026-07-29 |
+| [x] | ENG-020 Spatial index + 1k-entity benchmark | [ENG-020](../.claude/specs/done/ENG-020-spatial-index-benchmark.md) | Internal non-persisted grid index for targeting/splash queries plus deterministic machine-readable 1024-enemy benchmark | 2026-07-29 |
 | [x] | PROC-013 Spec board hygiene | [PROC-013](../.claude/specs/done/PROC-013-spec-board-hygiene.md) | Variant B migrated 23 cards and wired the board checker into selfcheck | 2026-07-29 |
+| [x] | PROC-003 Domain roadmap sequencing | [PROC-003](../.claude/specs/done/PROC-003-domain-roadmap.md) | Plane/15 sequencing adopted; ENG-010 named successor to ENG-020 | 2026-07-29 |
 
 ## Глобальные инварианты
 
@@ -1165,3 +1168,27 @@
 - VERIFICATION:
   - Developer, tester, runner, and verifier passed; checker/selfcheck and `git diff --check` are
     the documentation close-out checks.
+
+### 2026-07-29 - PROC-003 (domain systems sequencing) / Phase 15
+
+- Status: Done / documentation close-out
+- Owner: Claude
+- Created/changed:
+  - `Plane/15_domain_systems_sequencing.md` (new phase plan: 15.1 flow-field done, 15.2 colony
+    slice ordered, 15.3 storyteller incidents)
+  - `.claude/specs/done/PROC-003-domain-roadmap.md` (status done, criterion (b) amendment, close
+    note; backlog card superseded)
+  - `.claude/specs/ENGINE_ROADMAP.md` (PROC-003 row done, adopted chain, demand-tag corrections
+    for ENG-012/021/022/029)
+  - `STATE.md`, `.ai/handoff.md`, `.ai/DIGEST.md`, `Plane/README.md`
+- Verification:
+  - Documentation-only change; no engine code. Board checker covers card status/location after
+    the move to `done/`.
+- Decisions:
+  - Adopted chain after ENG-020: ENG-010 -> ENG-016 -> PROC-007 -> ENG-021 -> ENG-029 -> ENG-012
+    -> ENG-007 -> ENG-018; unique successor ENG-010 (MyTD FR-007).
+  - PROC-003 criterion (b) amended by owner: `vision:*` demand tags count as demand where no
+    named game FR exists yet.
+  - Demand tags corrected: `mytd` removed from ENG-012/021/022/029 as unbacked by the MyTD bundle.
+- Next:
+  - Run `/me --feature --next` for ENG-010 (status effects framework).

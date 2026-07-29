@@ -35,16 +35,16 @@ Last updated: 2026-07-29
 | Status effects framework | ENG-010 | mytd, vision:td, vision:mindustry-like | 3 | backlog |
 | Enemy armor + damage types | ENG-011 | vision:td, vision:mindustry-like | 2 | backlog |
 | Flying enemies | ENG-025 | vision:td | 1 | backlog |
-| Boss/elite enemies + wave modifiers | ENG-012 | mytd, vision:td | 2 | backlog |
+| Boss/elite enemies + wave modifiers | ENG-012 | vision:td | 1 | backlog |
 | Tower sell/refund | ENG-013 | mytd, vision:td | 2 | **done** (2026-07-18; required validated `sellRefundRatio`, deterministic cumulative per-resource floor refund, atomic capacity rejection, occupancy/metrics cleanup, same-tick goal-field rebuild, and pending-sell save coverage; `SAVE_VERSION` remains 6) |
 | Game speed control (presentation-side) | ENG-015 | mytd, vision:td, vision:rimworld-like | 3 | **done** (2026-07-21; Android-local 0x/1x/2x/4x pacing and HUD controls preserve fixed-tick simulation, per-tick trajectory parity, save/replay boundaries, and all verifier boundary checks; device/instrumentation and FrameMetrics/JankStats remain pending) |
 | Endless wave generation | ENG-018 | vision:td, vision:mindustry-like | 2 | backlog |
 | Walls + player-placed blockers | ENG-019 | vision:td, vision:mindustry-like | 2 | backlog |
 | Spatial index + 1k-entity benchmark | ENG-020 | mytd, vision:td, vision:rimworld-like, vision:mindustry-like | 4 | **done** (2026-07-29; internal non-persisted grid index powers targeting/splash candidate queries, and the deterministic 1024-enemy benchmark reports `5.3045 ms`) |
-| Save slots + autosave policy | ENG-021 | mytd, vision:td, vision:rimworld-like, vision:mindustry-like | 4 | backlog |
-| Meta-progression store | ENG-022 | mytd, vision:td | 2 | backlog |
+| Save slots + autosave policy | ENG-021 | vision:td, vision:rimworld-like, vision:mindustry-like | 3 | backlog |
+| Meta-progression store | ENG-022 | vision:td | 1 | backlog |
 | Sprite/atlas references in content schema | ENG-028 | mytd, vision:td, vision:rimworld-like, vision:mindustry-like | 4 | **done** (2026-07-28; validated opaque refs for tiles/towers/tower tiers/enemies/buildings, pack-relative file/atlas-key checks, deterministic palette fallback, desktop/Android consumers, and replay/save boundaries unchanged) |
-| Audio event hooks (snapshot event feed) | ENG-029 | mytd, vision:td, vision:rimworld-like, vision:mindustry-like | 4 | backlog |
+| Audio event hooks (snapshot event feed) | ENG-029 | vision:td, vision:rimworld-like, vision:mindustry-like | 3 | backlog |
 | Wave preview + early wave call | ENG-030 | mytd, vision:td | 2 | **done** (2026-07-21; typed early-call command, deterministic HUD composition/countdown, content-defined bonus validation, SAVE_VERSION v8 migration, replay/save/gate verification pass; balance review partial: current packs valid/no hardcoded bonus, schema gap closed in docs close-out, optional bonus unconfigured pending approved balance value) |
 | A* point-to-point pathfinding for agents | ENG-001 | vision:rimworld-like, vision:mindustry-like | 2 | backlog |
 | Job execution system (JobBoard wired into tick) | ENG-003 | vision:rimworld-like, vision:mindustry-like | 2 | backlog |
@@ -67,7 +67,7 @@ Last updated: 2026-07-29
 | Fuzz tests for ContentLoader + SaveCodec | DX-007 | agent pipeline | - | backlog |
 | ADR: JSON vs properties content format | DX-008 | agent pipeline | - | **done** (2026-07-16; ADR-0003 accepts `.properties` for flat definitions and JSON for nested assets) |
 | Spec board backsync | PROC-001 | process | - | backlog |
-| Domain roadmap sequencing | PROC-003 | process | - | backlog |
+| Domain roadmap sequencing | PROC-003 | process | - | **done** (2026-07-29; Plane/15 sequences flow-field [done], colony slice, storyteller; vision:* accepted as demand by owner amendment; successor ENG-010 adopted) |
 | Performance budgets | PROC-004 | process | - | backlog |
 | Golden replay hashes | PROC-005 | process | - | backlog |
 | CI pre-push lane | PROC-006 | process | - | backlog |
@@ -100,6 +100,8 @@ Last updated: 2026-07-29
   `docs/reviews/2026-07-06-project-and-backlog-review.md`) materializes the sequencing
   PROC-003 asks for; PROC-003 may be closed by reference once the recommended order
   below is adopted.
+- Demand tags for ENG-012/021/022/029 corrected 2026-07-29: the `mytd` tag was unbacked
+  by the MyTD spec bundle (verified against `D:/Pet/MyTD/spec/requirements.md`).
 
 ## Recommended order (2026-07-06 review)
 
@@ -109,8 +111,10 @@ Last updated: 2026-07-29
    evidence remains explicitly pending).
 3. P1 opener: ENG-002 (done) -> ENG-013 (done) -> ENG-008 (done) -> ENG-015 (done) -> ENG-030
    (done 2026-07-21) -> ENG-028 (done 2026-07-28) -> ENG-009 (done 2026-07-28) -> ENG-020
-   (done 2026-07-29). The next exact implementation item is not yet selected in the current
-   roadmap. Perform backlog sequencing before starting another feature.
+   (done 2026-07-29). PROC-003 sequencing adopted 2026-07-29: ENG-010 -> ENG-016 -> PROC-007
+   -> ENG-021 -> ENG-029 -> ENG-012 -> ENG-007 -> ENG-018. Colony slice (ENG-001 -> ENG-003
+   -> ENG-031 -> ENG-004 -> ENG-032) deferred until a colony/MySD spec supplies named FRs
+   (see Plane/15).
 4. DX-008 is done: use its hybrid-format ADR for ENG-017/ENG-028 schema work. Other high-leverage
    pipeline cards remain DX-002, DX-006, and DX-005.
 5. MySD foundation: PROC-002 / ADR-0004 is done. After MySD Gate 2, implement ENG-036 before the

@@ -1,8 +1,8 @@
 # MyEngine State
 
 Last updated: 2026-07-29
-Active phase: Phase 00-14 complete; Signal Garden SG-001..005 complete; MyTD MTD-001..005 complete; DX-008, ENG-002, ENG-005, ENG-008, ENG-009, ENG-013, ENG-014, ENG-015, ENG-020, ENG-026, ENG-027, ENG-028, ENG-030, PROC-002, and PROC-013 complete; pipeline at v0.2.0; next engine backlog sequence is not yet selected after ENG-020
-Owner of last update: Codex (2026-07-29: PROC-013 Variant B close-out recorded after developer/tester/runner/verifier pass; final commit/push is blocked by pre-existing unrelated dirty retro state)
+Active phase: Phase 00-14 complete; Signal Garden SG-001..005 complete; MyTD MTD-001..005 complete; DX-008, ENG-002, ENG-005, ENG-008, ENG-009, ENG-013, ENG-014, ENG-015, ENG-020, ENG-026, ENG-027, ENG-028, ENG-030, PROC-002, PROC-003, and PROC-013 complete; pipeline at v0.2.0; PROC-003 sequencing adopted 2026-07-29 with ENG-010 as the unique successor to ENG-020
+Owner of last update: Claude (2026-07-29: PROC-003 domain systems sequencing close-out; adopted chain ENG-010 -> ENG-016 -> PROC-007 -> ENG-021 -> ENG-029 -> ENG-012 -> ENG-007 -> ENG-018 recorded in Plane/15)
 
 ## Current Status
 
@@ -251,18 +251,27 @@ Owner of last update: Codex (2026-07-29: PROC-013 Variant B close-out recorded a
   live `EntityStore` resolution, stable entity-id ordering, and preserved Manhattan semantics.
   Devtools exposes deterministic machine-readable metrics for 1024 concurrent enemies, 16 towers,
   and 16 queries; the accepted run measured `5.3045 ms`.
+- MyEngine PROC-003 (domain systems sequencing, 2026-07-29) is done. `Plane/15_domain_systems_sequencing.md`
+  records: 15.1 flow-field/pathfinding DONE via ENG-002 (MyTD FR-003/FR-009/FR-013); 15.2 colony
+  slice ordered ENG-001 -> ENG-003 -> ENG-031 -> ENG-004 -> ENG-032 with vision-only demand and a
+  re-entry trigger (MySD Gate 1 via PROC-015 or an authored colony game spec); 15.3 storyteller =
+  ENG-016 (vision-only demand plus defect fix F4). The adopted chain after ENG-020 is ENG-010 ->
+  ENG-016 -> PROC-007 -> ENG-021 -> ENG-029 -> ENG-012 -> ENG-007 -> ENG-018, with ENG-010 (status
+  effects framework, named MyTD FR-007) as the unique successor. Acceptance criterion (b) was
+  amended by owner decision: `vision:*` demand tags count as demand where no named game FR exists
+  yet. Roadmap demand tags were corrected: `mytd` removed from ENG-012 (2->1), ENG-021 (4->3),
+  ENG-022 (2->1), and ENG-029 (4->3) as unbacked by the MyTD spec bundle.
 
 ## Next Exact Action
 
-The current roadmap does not define a unique implementation item after completed `ENG-020`.
-Final commit/push for this close-out remains blocked by the pre-existing unrelated dirty
-`.ai/retro/retro-2026-07-28.md` unless the user approves/clears it; then perform backlog sequencing
-and select the next exact action.
+Run `/me --feature --next` for ENG-010 (status effects framework), the PROC-003-adopted unique
+successor to ENG-020 (backed by named MyTD FR-007). The PROC-013 commit 5eaaa78 was pushed, so
+the earlier retro-file commit blocker is resolved.
 
 ## Known Blockers
 
-- Final commit/push remains blocked by the pre-existing unrelated dirty
-  `.ai/retro/retro-2026-07-28.md` unless the user approves/clears it.
+- RESOLVED (2026-07-29): the pre-existing unrelated dirty `.ai/retro/retro-2026-07-28.md` commit
+  blocker is cleared; PROC-013 commit 5eaaa78 was pushed.
 - ENG-030 non-blocking follow-ups: existing content packs intentionally do not configure an
   early-call bonus because no balance value was approved; synthetic tests cover the data-driven
   path. Per-snapshot HUD allocation and device profiling remain follow-up work. The pre-existing
@@ -673,3 +682,29 @@ Environment used:
 - BLOCKERS: Only the unrelated dirty retro file blocks final commit/push for this close-out.
 - VERIFICATION: Developer, tester, runner, and verifier passed; board checker, selfcheck, and
   `git diff --check` verification are recorded for the close-out.
+
+## PROC-003 Close-out (2026-07-29)
+
+- DONE:
+  - Domain systems sequencing adopted with human approval and recorded in
+    `Plane/15_domain_systems_sequencing.md`: flow-field/pathfinding already done via ENG-002;
+    colony slice ordered ENG-001 -> ENG-003 -> ENG-031 -> ENG-004 -> ENG-032; storyteller
+    incidents = ENG-016. PROC-003 card moved to `.claude/specs/done/`; roadmap row, recommended
+    order, and notes updated.
+- DECISIONS:
+  - Adopted chain after ENG-020: ENG-010 -> ENG-016 -> PROC-007 -> ENG-021 -> ENG-029 -> ENG-012
+    -> ENG-007 -> ENG-018. Unique successor: ENG-010 (status effects framework), the only
+    remaining backlog card backed by a named game FR (MyTD FR-007).
+  - PROC-003 acceptance criterion (b) amended by owner: `vision:*` demand tags count as demand
+    where no named game FR exists yet.
+  - PROC-007 scheduled before ENG-021 because ENG-010 and ENG-021 bump the save codec.
+  - Demand tags corrected: `mytd` removed from ENG-012/021/022/029 as unbacked by the MyTD spec
+    bundle (verified against `D:/Pet/MyTD/spec/requirements.md`).
+- NEXT:
+  - Run `/me --feature --next` for ENG-010 (status effects framework).
+- BLOCKERS:
+  - None new. Colony slice and storyteller work stay vision-only: re-entry trigger is MySD Gate 1
+    evidence via PROC-015 or an authored colony game spec.
+- VERIFICATION:
+  - Documentation-only close-out; no engine code changed. Card status/location consistency is
+    covered by the PROC-013 board checker.
