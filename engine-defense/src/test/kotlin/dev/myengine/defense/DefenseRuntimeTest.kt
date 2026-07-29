@@ -1,5 +1,6 @@
 package dev.myengine.defense
 
+import dev.myengine.ai.GoalField
 import dev.myengine.content.ContentPackLoader
 import dev.myengine.content.WaveContent
 import dev.myengine.content.WaveSpawn
@@ -89,7 +90,11 @@ class DefenseRuntimeTest {
                 TilePosition(1, 4),
             )
 
-            val result = runtime.updateTowers(registry, entities)
+            val result = runtime.updateTowers(
+                registry = registry,
+                entities = entities,
+                goalField = GoalField.build(world, TilePosition(1, 4)),
+            )
 
             assertTrue(entities.byTag("enemy").isEmpty())
             return result to listOf(firstTower, secondTower)
@@ -109,6 +114,56 @@ class DefenseRuntimeTest {
         assertEquals(TowerDefenseMetrics(actualDamage = 1, kills = 1), first.towerMetrics.getValue(towerIds[1]))
         assertEquals(enemy.health.toLong(), first.towerMetrics.values.sumOf { it.actualDamage })
         assertEquals(1, first.towerMetrics.values.sumOf { it.kills })
+    }
+
+    @Test
+    fun indexedTargetingSkipsDeadAndRemovedEnemies() {
+        val registry = testRegistry()
+        val terrain = mapOf("floor" to TerrainRule("floor", buildable = true, blocksMovement = false))
+        val world = TileWorld.filled(WorldSize(5, 5), terrain, "floor")
+        val entities = EntityStore()
+        val runtime = DefenseRuntime()
+        val tower = assertIs<TowerPlacementResult.Placed>(
+            runtime.placeTower("basic", TilePosition(1, 1), registry, world, entities),
+        ).entityId.value
+        val dead = Entity(
+            id = EntityId(20),
+            type = "enemy:scout",
+            tags = setOf("enemy"),
+            position = PositionComponent(TilePosition(2, 1)),
+            health = HealthComponent(0, 2),
+        )
+        val alive = Entity(
+            id = EntityId(30),
+            type = "enemy:scout",
+            tags = setOf("enemy"),
+            position = PositionComponent(TilePosition(1, 2)),
+            health = HealthComponent(5, 5),
+        )
+        val removed = Entity(
+            id = EntityId(40),
+            type = "enemy:scout",
+            tags = setOf("enemy"),
+            position = PositionComponent(TilePosition(0, 1)),
+            health = HealthComponent(5, 5),
+        )
+        entities.upsert(dead)
+        entities.upsert(alive)
+        entities.upsert(removed)
+        entities.remove(removed.id)
+
+        val result = runtime.updateTowers(
+            registry = registry,
+            entities = entities,
+            goalField = GoalField.build(world, TilePosition(4, 4)),
+            tick = Tick(3),
+        )
+
+        assertEquals(listOf(ShotEvent(tower, alive.id.value, Tick(3))), result.events.shots)
+        assertEquals(listOf(HitEvent(tower, alive.id.value, Tick(3))), result.events.hits)
+        assertEquals(3, entities.require(alive.id).health?.current)
+        assertEquals(0, result.metrics.enemiesKilled)
+        assertEquals(null, entities.get(removed.id))
     }
 
     @Test

@@ -1,8 +1,8 @@
 # MyEngine State
 
-Last updated: 2026-07-28
-Active phase: Phase 00-14 complete; Signal Garden SG-001..005 complete; MyTD MTD-001..005 complete; DX-008, ENG-002, ENG-005, ENG-008, ENG-009, ENG-013, ENG-014, ENG-015, ENG-026, ENG-027, ENG-028, ENG-030, and PROC-002 complete; pipeline at v0.2.0; next engine backlog sequence is not yet selected after ENG-009
-Owner of last update: Codex (2026-07-28: ENG-009 accepted after all runner gates and final verifier; next backlog sequencing is the next planning action)
+Last updated: 2026-07-29
+Active phase: Phase 00-14 complete; Signal Garden SG-001..005 complete; MyTD MTD-001..005 complete; DX-008, ENG-002, ENG-005, ENG-008, ENG-009, ENG-013, ENG-014, ENG-015, ENG-020, ENG-026, ENG-027, ENG-028, ENG-030, and PROC-002 complete; pipeline at v0.2.0; next engine backlog sequence is not yet selected after ENG-020
+Owner of last update: Codex (2026-07-29: ENG-020 accepted after all runner gates and final verifier; next backlog sequencing is the next planning action)
 
 ## Current Status
 
@@ -242,10 +242,15 @@ Owner of last update: Codex (2026-07-28: ENG-009 accepted after all runner gates
   integer-only per-ring damage rule. Immutable `ShotEvent`/`HitEvent` source-target-tick data is
   transient presentation state: it is replaced each completed tick and excluded from saves and the
   stable hash. `SAVE_VERSION` remains `8`; no content-pack balance value was shipped.
+- MyEngine ENG-020 (spatial index + 1k-entity benchmark, 2026-07-29) is accepted. An internal,
+  non-persisted `GridSpatialIndex` supplies targeting and splash candidates with exact post-filters,
+  live `EntityStore` resolution, stable entity-id ordering, and preserved Manhattan semantics.
+  Devtools exposes deterministic machine-readable metrics for 1024 concurrent enemies, 16 towers,
+  and 16 queries; the accepted run measured `5.3045 ms`.
 
 ## Next Exact Action
 
-The current roadmap does not define a unique implementation item after completed `ENG-009`.
+The current roadmap does not define a unique implementation item after completed `ENG-020`.
 Perform backlog sequencing and select the next exact action before starting another feature.
 
 ## Known Blockers
@@ -261,6 +266,10 @@ Perform backlog sequencing and select the next exact action before starting anot
   refreshed when capacity is available.
 - ENG-009 intentionally ships no splash balance values. Future game packs must choose them through
   an approved balance change; there is no engine blocker from this feature.
+- ENG-020 has one low, non-blocking test-coverage follow-up: seeded differential tests do not yet
+  provide end-to-end `updateTowers` parity across every targeting-mode and splash combination.
+  This is attributed to `me-tester`; no production fix is requested in this close-out. The
+  benchmark is measurement-only and does not define PROC-004 budget thresholds.
 - ENG-015 is accepted with non-blocking follow-ups: device/instrumentation tap, lifecycle/recreation,
   and Bundle smoke plus FrameMetrics/JankStats/Allocation Tracker evidence remain pending. The
   extreme `200x600` portrait layout has a manual risk of selected-panel overflow. A pre-existing
@@ -368,12 +377,20 @@ Perform backlog sequencing and select the next exact action before starting anot
 
 ## Verification
 
+- ENG-020 (2026-07-29): focused engine-defense tests (14), focused engine-devtools tests (16),
+  full `.\gradlew.bat test`, `.\gradlew.bat projects` with explicit Android Studio `JAVA_HOME`,
+  content validation (2 packs), replay, save-compat, benchmark, and `git diff --check` -> pass.
+  Replay hashes remain canonical `12a65fd2b87593cf` and kill `bb37eefc1903cc77`; the
+  `spatial-index-1k` benchmark reports 1024 concurrent enemies, 16 towers, 16 queries, and
+  `5.3045 ms`. `me-simulation-reviewer` and `me-verifier` -> pass; all boundary checks are true.
+  The low `me-tester` end-to-end parity follow-up is recorded above.
 - ENG-009 (2026-07-28): full `.\gradlew.bat test` and `.\gradlew.bat projects`, content validation
   (2 packs), replay, save-compat, benchmark, and `:android:assembleDebug` -> pass. Replay hashes
   remain canonical `12a65fd2b87593cf` and kill `bb37eefc1903cc77`; benchmark is canonical `324 ms`,
   kill `62 ms`, goal-field rebuild `7168200 ns`. Balance review and final verifier -> pass, with all
   boundary checks true. Events are immutable/transient and excluded from save/stable-hash state;
   `SAVE_VERSION` remains `8`.
+
 - ENG-028 (2026-07-28): selfcheck, full `.\gradlew.bat test`, `.\gradlew.bat projects`, focused
   content/render/sandbox/desktop tests, content validation (2 packs), replay, save-compat, benchmark,
   `:android:testDebugUnitTest`, `:android:assembleDebug`, `:desktop:run`, and `git diff --check` ->
@@ -595,6 +612,27 @@ Environment used:
 
 - `JAVA_HOME=C:\Program Files\Android\Android Studio\jbr`
 - `ANDROID_HOME=%LOCALAPPDATA%\Android\Sdk`
+
+## ENG-020 Close-out (2026-07-29)
+
+- DONE:
+  - Accepted the internal non-persisted `GridSpatialIndex` and deterministic spatial-index-1k
+    benchmark; no source, test, save schema, content schema, Android/render, or public API change
+    was made by this documentation close-out.
+- DECISIONS:
+  - Keep the index as an engine-defense implementation detail with live entity resolution and no
+    persistence. No ADR is required.
+- NEXT:
+  - Perform backlog sequencing; the roadmap does not define a unique successor after ENG-020.
+- BLOCKERS:
+  - Low non-blocking `me-tester` follow-up: add seeded end-to-end `updateTowers` parity coverage
+    across all targeting modes and splash combinations when that test expansion is intentionally
+    scheduled. The accepted benchmark remains a measurement input for future PROC-004 budgets.
+- VERIFICATION:
+  - All required gates passed: focused tests 14 + 16, full tests, projects with explicit
+    `JAVA_HOME`, content validation, replay, save-compat, benchmark, and `git diff --check`.
+  - Replay hashes are unchanged (`canonical=12a65fd2b87593cf`, `kill=bb37eefc1903cc77`);
+    benchmark metrics are `1024 enemies / 16 towers / 16 queries / 5.3045 ms`.
 
 ## MyTD Spec Bundle (2026-07-04)
 

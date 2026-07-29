@@ -5,6 +5,7 @@ fun main(args: Array<String>) {
     val output = when (command) {
         "scenario", "balance", "benchmark" -> DevtoolReports.runScenarioSuite()
         "goal-field-benchmark" -> DevtoolReports.goalFieldRebuildBenchmark().toJson()
+        "spatial-index-benchmark" -> DevtoolReports.spatialIndexBenchmark().toJson()
         "balance-delta", "balance-report" -> {
             val baselineRoot = args.getOrNull(1)?.let { DevtoolReports.repoRoot().resolve(it) }
                 ?: dev.myengine.games.sandbox.SandboxGame.contentRoot()

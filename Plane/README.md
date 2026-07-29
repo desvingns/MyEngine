@@ -40,13 +40,20 @@
 2. Первый playable Android TD milestone закрыт через `ENG-027`; ручные device/layout/performance
    проверки остаются явно отложенными.
 3. `ENG-015` (presentation-side game speed control), `ENG-030` (wave preview + early wave call),
-   `ENG-028` (sprite/atlas references in content schema) и `ENG-009` (splash damage + shot events)
-   закрыты 2026-07-28; явная P1-последовательность завершена, следующий backlog item ещё не
-   выбран в roadmap.
+   `ENG-028` (sprite/atlas references in content schema), `ENG-009` (splash damage + shot events),
+   and `ENG-020` (spatial index + 1k-entity benchmark) are closed; `ENG-020` was accepted on
+   2026-07-29. The explicit P1 sequence now ends at ENG-020; the next backlog item is not yet
+   selected in the roadmap.
 4. Hardening gaps из `docs/HARDENING_AUDIT.md` закрывать по одному, с тестами и обновлением handoff.
 
 Новые крупные фазы добавлять только после того, как backlog specs перестанут быть достаточно
 точным механизмом управления работой.
+
+### Post-Phase-14 feature status
+
+| Status | Feature | Spec | Result | Date |
+|---|---|---|---|---|
+| [x] | ENG-020 Spatial index + 1k-entity benchmark | [ENG-020](../.claude/specs/backlog/ENG-020-spatial-index-benchmark.md) | Internal non-persisted grid index for targeting/splash queries plus deterministic machine-readable 1024-enemy benchmark | 2026-07-29 |
 
 ## Глобальные инварианты
 
@@ -1104,3 +1111,35 @@
 - Next:
   - Perform backlog sequencing and select the next exact feature; the current roadmap has no
     unique successor after ENG-009.
+
+### 2026-07-29 - ENG-020 (spatial index + 1k-entity benchmark)
+
+- Status: Done / accepted
+- Owner: Codex
+- Created/changed:
+  - `engine-defense/src/main/kotlin/dev/myengine/defense/GridSpatialIndex.kt`
+  - `engine-defense/src/main/kotlin/dev/myengine/defense/DefenseRuntime.kt`
+  - `engine-devtools/src/main/kotlin/dev/myengine/devtools/DevtoolReports.kt`
+  - `engine-devtools/src/main/kotlin/dev/myengine/devtools/DevtoolsMain.kt`
+  - `engine-defense/src/test/kotlin/dev/myengine/defense/DefenseRuntimeTest.kt`
+  - `engine-defense/src/test/kotlin/dev/myengine/defense/GridSpatialIndexTest.kt`
+  - `engine-devtools/src/test/kotlin/dev/myengine/devtools/DevtoolReportsTest.kt`
+- Result:
+  - Targeting and splash candidate queries use an internal, non-persisted grid index with exact
+    post-filters, live entity resolution, stable entity-id ordering, and preserved Manhattan
+    semantics.
+  - Devtools exposes deterministic machine-readable metrics for 1024 concurrent enemies, 16 towers,
+    and 16 queries.
+- Verification:
+  - Focused tests (14 engine-defense, 16 engine-devtools), full Gradle tests, projects, content
+    validation (2 packs), replay, save-compat, benchmark, and `git diff --check` -> pass.
+  - Replay hashes remain canonical `12a65fd2b87593cf` and kill `bb37eefc1903cc77`; benchmark
+    `spatial-index-1k` reports `5.3045 ms`.
+- Decisions:
+  - The index remains an engine-defense implementation detail; no save/content schema, Android,
+    render, public API, dependency, or ADR change was introduced.
+- Known follow-up:
+  - Seeded differential coverage does not yet provide end-to-end `updateTowers` parity across every
+    targeting-mode and splash combination; `me-tester` owns this low, non-blocking follow-up.
+- Next:
+  - Perform backlog sequencing; the roadmap does not define a unique successor after ENG-020.

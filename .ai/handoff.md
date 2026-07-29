@@ -1,6 +1,6 @@
 # MyEngine Handoff
 
-Last updated: 2026-07-28 (ENG-009 accepted after all runner gates and final verifier; next backlog sequence is not yet selected)
+Last updated: 2026-07-29 (ENG-020 accepted after all runner gates and final verifier; next backlog sequence is not yet selected)
 Owner: Codex
 
 ## DONE
@@ -385,6 +385,11 @@ Owner: Codex
   immutable source/target/tick data from only the latest completed tick for presentation consumers;
   they are replaced per tick and intentionally excluded from save and stable-hash state. No content
   pack balance values changed and `SandboxSaveCodec.SAVE_VERSION` remains `8`.
+- ENG-020 is complete/accepted: an internal, non-persisted `GridSpatialIndex` supplies targeting and
+  splash candidates with exact post-filters, live `EntityStore` resolution, stable entity-id
+  ordering, and preserved Manhattan semantics. Devtools exposes deterministic machine-readable
+  metrics for 1024 concurrent enemies, 16 towers, and 16 queries; the accepted run measured
+  `5.3045 ms`.
 
 ## DECISIONS
 
@@ -430,6 +435,9 @@ Owner: Codex
 - ENG-009 uses no ADR: it is an additive content/defense/snapshot capability with no dependency
   direction or save-schema change. Presentation event data remains explicitly transient and never
   becomes authoritative state.
+- ENG-020 uses no ADR: the index is an engine-defense implementation detail, is rebuilt for the
+  update pass, is not persisted, and introduces no save/content schema, Android/render, public API,
+  or dependency-direction change.
 
 - Android remains the only shipping platform; desktop/JVM is a dev harness.
 - Simulation modules remain Android/render-free.
@@ -549,8 +557,8 @@ Owner: Codex
 
 ## NEXT
 
-Select the next backlog item after completed `ENG-009`. The current roadmap closes the explicit P1
-sequence at ENG-009 but does not define a unique successor, so perform backlog sequencing before
+Select the next backlog item after completed `ENG-020`. The current roadmap closes the explicit P1
+sequence at ENG-020 but does not define a unique successor, so perform backlog sequencing before
 starting another feature.
 
 ## BLOCKERS
@@ -571,6 +579,11 @@ starting another feature.
 
 - ENG-009 intentionally leaves all shipped content packs without splash values. Choose a game pack
   balance configuration only through an approved balance change; this is not an engine blocker.
+
+- ENG-020 has one low, non-blocking test-coverage follow-up: seeded differential tests do not yet
+  provide end-to-end `updateTowers` parity across every targeting-mode and splash combination.
+  Attribute this to `me-tester`; no production fix is requested in this close-out. The benchmark
+  is measurement-only and does not define PROC-004 budget thresholds.
 
 - ENG-015 device/instrumentation verification remains pending: exercise speed taps, lifecycle/
   recreation, Bundle restoration, and no-command behavior on a device/emulator; capture
@@ -664,6 +677,13 @@ starting another feature.
 
 ## VERIFICATION
 
+- ENG-020 (2026-07-29): focused engine-defense tests (14), focused engine-devtools tests (16), full
+  `.\gradlew.bat test`, `.\gradlew.bat projects` with explicit Android Studio `JAVA_HOME`, content
+  validation (2 packs), replay, save-compat, benchmark, and `git diff --check` -> pass. Replay
+  hashes remain canonical `12a65fd2b87593cf` and kill `bb37eefc1903cc77`; benchmark:
+  `enemy_count=1024`, `tower_count=16`, `query_count=16`, `sim_ms=5.3045`. `me-simulation-reviewer`
+  and `me-verifier` -> pass; all boundary checks are true. The low `me-tester` parity follow-up is
+  recorded above.
 - ENG-009 (2026-07-28): full `.\gradlew.bat test` and `.\gradlew.bat projects`, content validation
   (2 packs), replay, save-compat, benchmark, and `:android:assembleDebug` -> pass. Replay hashes
   remain canonical `12a65fd2b87593cf` and kill `bb37eefc1903cc77`; benchmark: canonical `324 ms`,

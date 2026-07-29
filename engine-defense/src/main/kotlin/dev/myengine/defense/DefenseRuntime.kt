@@ -181,6 +181,10 @@ class DefenseRuntime(private val pathfinder: GridPathfinder = GridPathfinder()) 
         val towerMetrics = mutableMapOf<Long, TowerDefenseMetrics>()
         val shots = mutableListOf<ShotEvent>()
         val hits = mutableListOf<HitEvent>()
+        // This cache is intentionally scoped to one deterministic tower-update pass. It is
+        // rebuilt before any tower can change health, and query results resolve ids through the
+        // live store so later towers observe earlier damage/removals exactly as before.
+        val enemyIndex = GridSpatialIndex.build(entities.byTag("enemy"))
         entities.byTag("tower").sortedBy { it.id.value }.forEach { towerEntity ->
             val towerComponent = towerEntity.tower ?: return@forEach
             val attack = towerEntity.attack ?: return@forEach
@@ -192,10 +196,16 @@ class DefenseRuntime(private val pathfinder: GridPathfinder = GridPathfinder()) 
             // Query the store for every firing tower: earlier towers may already have changed
             // health or killed a target during this same deterministic update pass.
             val target = if (goalField != null) {
-                TargetSelector.select(towerComponent.targetingMode, towerPosition, attack.range, entities.byTag("enemy"), goalField)
+                TargetSelector.select(
+                    towerComponent.targetingMode,
+                    towerPosition,
+                    attack.range,
+                    enemyIndex.query(towerPosition, attack.range, entities),
+                    goalField,
+                )
             } else {
                 // Compatibility for direct defense-module callers predating goal-field routing.
-                entities.byTag("enemy")
+                enemyIndex.query(towerPosition, attack.range, entities)
                     .filter { enemy ->
                         val position = enemy.position?.tile ?: return@filter false
                         val health = enemy.health ?: return@filter false
@@ -213,6 +223,7 @@ class DefenseRuntime(private val pathfinder: GridPathfinder = GridPathfinder()) 
                 primaryTarget = target,
                 primaryPosition = targetPosition,
                 splashRadius = towerContent.splashRadius,
+                enemyIndex = enemyIndex,
                 entities = entities,
             )
             targets.forEach { damagedTarget ->
@@ -264,10 +275,11 @@ class DefenseRuntime(private val pathfinder: GridPathfinder = GridPathfinder()) 
         primaryTarget: Entity,
         primaryPosition: TilePosition,
         splashRadius: Int?,
+        enemyIndex: GridSpatialIndex,
         entities: EntityStore,
     ): List<Entity> = when (splashRadius) {
         null -> listOf(primaryTarget)
-        else -> entities.byTag("enemy")
+        else -> enemyIndex.query(primaryPosition, splashRadius, entities)
             .asSequence()
             .filter { enemy ->
                 val position = enemy.position?.tile

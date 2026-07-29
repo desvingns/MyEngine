@@ -73,6 +73,38 @@ class DevtoolReportsTest {
     }
 
     @Test
+    fun spatialIndexBenchmarkReportsOneKContractAsStructuredJson() {
+        val report = DevtoolReports.spatialIndexBenchmark(enemyCount = 1_000, towerCount = 4)
+        val parsed = Json.parseToJsonElement(report.toJson()).jsonObject
+
+        assertEquals(
+            setOf(
+                "scenario",
+                "enemy_count",
+                "concurrent_enemies",
+                "tower_count",
+                "ticks",
+                "query_count",
+                "tower_shots",
+                "alive_enemies_after",
+                "elapsed_ns",
+                "sim_ms",
+            ),
+            parsed.keys,
+        )
+        assertEquals("spatial-index-1k", parsed.getValue("scenario").jsonPrimitive.content)
+        assertEquals(1_000, parsed.getValue("enemy_count").jsonPrimitive.content.toInt())
+        assertEquals(1_000, parsed.getValue("concurrent_enemies").jsonPrimitive.content.toInt())
+        assertEquals(4, parsed.getValue("tower_count").jsonPrimitive.content.toInt())
+        assertEquals(1, parsed.getValue("ticks").jsonPrimitive.content.toInt())
+        assertEquals(4, parsed.getValue("query_count").jsonPrimitive.content.toInt())
+        assertTrue(parsed.getValue("tower_shots").jsonPrimitive.content.toInt() in 0..4)
+        assertTrue(parsed.getValue("alive_enemies_after").jsonPrimitive.content.toInt() in 0..1_000)
+        assertTrue(parsed.getValue("elapsed_ns").jsonPrimitive.content.toLong() >= 0L)
+        assertTrue(parsed.getValue("sim_ms").jsonPrimitive.content.toDouble() >= 0.0)
+    }
+
+    @Test
     fun contentReportListsSandboxIds() {
         val report = DevtoolReports.contentReport()
 

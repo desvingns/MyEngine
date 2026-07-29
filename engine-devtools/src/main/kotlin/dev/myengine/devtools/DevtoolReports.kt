@@ -3,6 +3,14 @@ package dev.myengine.devtools
 import dev.myengine.ai.GoalField
 import dev.myengine.content.ContentPackLoader
 import dev.myengine.content.ContentRegistry
+import dev.myengine.core.Tick
+import dev.myengine.defense.DefenseRuntime
+import dev.myengine.entities.Entity
+import dev.myengine.entities.EntityStore
+import dev.myengine.entities.HealthComponent
+import dev.myengine.entities.MovementComponent
+import dev.myengine.entities.PositionComponent
+import dev.myengine.entities.TowerComponent
 import dev.myengine.games.sandbox.SandboxGame
 import dev.myengine.world.TilePosition
 import java.nio.file.Files
@@ -48,6 +56,31 @@ data class GoalFieldRebuildReport(
         "height" to height,
         "reachable_tiles" to reachableTiles,
         "rebuild_ns" to rebuildNanos,
+    )
+}
+
+data class SpatialIndexBenchmarkReport(
+    val scenario: String,
+    val enemyCount: Int,
+    val concurrentEnemies: Int,
+    val towerCount: Int,
+    val ticks: Int,
+    val queryCount: Int,
+    val towerShots: Int,
+    val aliveEnemiesAfter: Int,
+    val elapsedNanos: Long,
+) {
+    fun toJson(): String = buildJson(
+        "scenario" to scenario,
+        "enemy_count" to enemyCount,
+        "concurrent_enemies" to concurrentEnemies,
+        "tower_count" to towerCount,
+        "ticks" to ticks,
+        "query_count" to queryCount,
+        "tower_shots" to towerShots,
+        "alive_enemies_after" to aliveEnemiesAfter,
+        "elapsed_ns" to elapsedNanos,
+        "sim_ms" to elapsedNanos / 1_000_000.0,
     )
 }
 
@@ -226,7 +259,74 @@ object DevtoolReports {
     fun runScenarioSuite(): String {
         val reports = listOf(runSandboxScenario(), runSandboxKillScenario())
         return "{\"scenarios\":[${reports.joinToString(",") { it.toJson() }}]," +
-            "\"goal_field_rebuild\":${goalFieldRebuildBenchmark().toJson()}}"
+            "\"goal_field_rebuild\":${goalFieldRebuildBenchmark().toJson()}," +
+            "\"spatial_index\":${spatialIndexBenchmark().toJson()}}"
+    }
+
+    /** Deterministic one-tick workload with at least 1,000 concurrent enemies. */
+    fun spatialIndexBenchmark(
+        enemyCount: Int = 1_024,
+        towerCount: Int = 16,
+    ): SpatialIndexBenchmarkReport {
+        require(enemyCount >= 1_000) { "Spatial benchmark requires at least 1,000 enemies." }
+        require(towerCount > 0) { "Spatial benchmark requires at least one tower." }
+
+        val state = SandboxGame.createInitialState()
+        val registry = state.registry
+        val map = registry.requireMap(state.mapId)
+        val core = TilePosition(map.core.x, map.core.y)
+        val goalField = GoalField.build(state.world, core)
+        val positions = state.world.positions().filter(goalField::canReach)
+        check(positions.isNotEmpty()) { "Spatial benchmark requires reachable map positions." }
+        val enemy = registry.enemies.values.sortedBy { it.id }.first()
+        val tower = registry.towers.values.sortedBy { it.id }.first()
+        val entities = EntityStore()
+
+        repeat(enemyCount) { index ->
+            val position = positions[index % positions.size]
+            entities.create("enemy:${enemy.id}", setOf("enemy")) { id ->
+                Entity(
+                    id = id,
+                    type = "enemy:${enemy.id}",
+                    tags = setOf("enemy"),
+                    position = PositionComponent(position),
+                    health = HealthComponent(enemy.health, enemy.health),
+                    movement = MovementComponent(),
+                )
+            }
+        }
+        repeat(towerCount) { index ->
+            val position = positions[(index * 7) % positions.size]
+            entities.create("tower:${tower.id}", setOf("tower")) { id ->
+                Entity(
+                    id = id,
+                    type = "tower:${tower.id}",
+                    tags = setOf("tower"),
+                    position = PositionComponent(position),
+                    tower = TowerComponent(tower.id, targetingMode = tower.targetingMode),
+                    attack = dev.myengine.entities.AttackComponent(
+                        range = tower.range,
+                        damage = tower.damage,
+                        cooldownTicks = tower.cooldownTicks,
+                    ),
+                )
+            }
+        }
+
+        val started = System.nanoTime()
+        val result = DefenseRuntime().updateTowers(registry, entities, goalField, Tick(1))
+        val elapsedNanos = System.nanoTime() - started
+        return SpatialIndexBenchmarkReport(
+            scenario = "spatial-index-1k",
+            enemyCount = enemyCount,
+            concurrentEnemies = enemyCount,
+            towerCount = towerCount,
+            ticks = 1,
+            queryCount = towerCount,
+            towerShots = result.metrics.towerShots,
+            aliveEnemiesAfter = entities.byTag("enemy").count { it.health?.isAlive() == true },
+            elapsedNanos = elapsedNanos,
+        )
     }
 
     /**
