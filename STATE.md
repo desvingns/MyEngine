@@ -1,8 +1,8 @@
 # MyEngine State
 
 Last updated: 2026-07-29
-Active phase: Phase 00-14 complete; Signal Garden SG-001..005 complete; MyTD MTD-001..005 complete; DX-008, ENG-002, ENG-005, ENG-008, ENG-009, ENG-013, ENG-014, ENG-015, ENG-020, ENG-026, ENG-027, ENG-028, ENG-030, and PROC-002 complete; pipeline at v0.2.0; next engine backlog sequence is not yet selected after ENG-020
-Owner of last update: Codex (2026-07-29: ENG-020 accepted after all runner gates and final verifier; next backlog sequencing is the next planning action)
+Active phase: Phase 00-14 complete; Signal Garden SG-001..005 complete; MyTD MTD-001..005 complete; DX-008, ENG-002, ENG-005, ENG-008, ENG-009, ENG-013, ENG-014, ENG-015, ENG-020, ENG-026, ENG-027, ENG-028, ENG-030, PROC-002, and PROC-013 complete; pipeline at v0.2.0; next engine backlog sequence is not yet selected after ENG-020
+Owner of last update: Codex (2026-07-29: PROC-013 Variant B close-out recorded after developer/tester/runner/verifier pass; final commit/push is blocked by pre-existing unrelated dirty retro state)
 
 ## Current Status
 
@@ -17,6 +17,10 @@ Owner of last update: Codex (2026-07-29: ENG-020 accepted after all runner gates
   plus a full pinned MyEngine commit SHA; CI checks out and verifies the same revision. Stable APIs
   may be consumed directly, Experimental APIs require a consumer adapter and pin, and Internal APIs
   are not cross-repository dependencies.
+- PROC-013 Variant B is complete: the board checker compares card status/location with
+  `ENGINE_ROADMAP.md`, emits one JSON result, and is wired into `scripts/me-selfcheck.ps1` with
+  exit 0 on pass and exit 1 on mismatch. Twenty-three verified-done cards were migrated to
+  `.claude/specs/done/`; no ADR was needed.
 - MySD foundation filed ENG-036 for an Android-free reusable runtime/session extraction and
   PROC-015 for a reference-game state-graph/mechanic-claim bridge. Probable gameplay gaps and
   `mysd` demand remain deliberately uncarded until Luna evidence passes Gate 1.
@@ -251,10 +255,14 @@ Owner of last update: Codex (2026-07-29: ENG-020 accepted after all runner gates
 ## Next Exact Action
 
 The current roadmap does not define a unique implementation item after completed `ENG-020`.
-Perform backlog sequencing and select the next exact action before starting another feature.
+Final commit/push for this close-out remains blocked by the pre-existing unrelated dirty
+`.ai/retro/retro-2026-07-28.md` unless the user approves/clears it; then perform backlog sequencing
+and select the next exact action.
 
 ## Known Blockers
 
+- Final commit/push remains blocked by the pre-existing unrelated dirty
+  `.ai/retro/retro-2026-07-28.md` unless the user approves/clears it.
 - ENG-030 non-blocking follow-ups: existing content packs intentionally do not configure an
   early-call bonus because no balance value was approved; synthetic tests cover the data-driven
   path. Per-snapshot HUD allocation and device profiling remain follow-up work. The pre-existing
@@ -650,3 +658,18 @@ Environment used:
   (`me-dev` -> `/me`, `me-spec` -> `/me-spec`); adapters stay thin over `docs/agentic`.
 - `D:\Pet\mobile-pipeline` remains a process reference, not a copy source.
 - v0.1 content uses `.properties` files until a future ADR justifies another parser/schema stack.
+
+## PROC-013 Close-out (2026-07-29)
+
+- DONE: Variant B migrated 23 verified-done cards from `backlog/` to `done/` and reconciled the
+  PROC-013 roadmap status. The board checker is wired into `scripts/me-selfcheck.ps1`.
+- BEHAVIOR: The checker emits one compact JSON result; exit 0 means pass and exit 1 means a board
+  or roadmap mismatch.
+- DECISIONS: No ADR; this is documentation/process wiring with no canonical contract or adapter
+  change.
+- NEXT: Final commit/push remains blocked by the pre-existing unrelated dirty
+  `.ai/retro/retro-2026-07-28.md` unless the user approves/clears it; then perform backlog
+  sequencing after ENG-020.
+- BLOCKERS: Only the unrelated dirty retro file blocks final commit/push for this close-out.
+- VERIFICATION: Developer, tester, runner, and verifier passed; board checker, selfcheck, and
+  `git diff --check` verification are recorded for the close-out.

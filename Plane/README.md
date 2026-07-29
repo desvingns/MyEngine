@@ -54,6 +54,7 @@
 | Status | Feature | Spec | Result | Date |
 |---|---|---|---|---|
 | [x] | ENG-020 Spatial index + 1k-entity benchmark | [ENG-020](../.claude/specs/backlog/ENG-020-spatial-index-benchmark.md) | Internal non-persisted grid index for targeting/splash queries plus deterministic machine-readable 1024-enemy benchmark | 2026-07-29 |
+| [x] | PROC-013 Spec board hygiene | [PROC-013](../.claude/specs/done/PROC-013-spec-board-hygiene.md) | Variant B migrated 23 cards and wired the board checker into selfcheck | 2026-07-29 |
 
 ## Глобальные инварианты
 
@@ -1143,3 +1144,24 @@
     targeting-mode and splash combination; `me-tester` owns this low, non-blocking follow-up.
 - Next:
   - Perform backlog sequencing; the roadmap does not define a unique successor after ENG-020.
+
+### 2026-07-29 - PROC-013 (spec board hygiene, Variant B)
+
+- Status: Done / documentation close-out
+- Owner: Codex
+- DONE:
+  - Moved 23 verified-done cards from `.claude/specs/backlog/` to `.claude/specs/done/` and
+    reconciled the PROC-013 roadmap row.
+  - Added the read-only board checker and wired it into `scripts/me-selfcheck.ps1`.
+- DECISIONS:
+  - No ADR: no canonical contract or adapter changed. Checker exit 0 means pass; exit 1 means a
+    board/roadmap mismatch.
+- NEXT:
+  - Final commit/push remains blocked by the pre-existing unrelated dirty
+    `.ai/retro/retro-2026-07-28.md` unless the user approves/clears it; then perform backlog
+    sequencing after ENG-020.
+- BLOCKERS:
+  - Only the unrelated dirty retro file blocks final commit/push for this close-out.
+- VERIFICATION:
+  - Developer, tester, runner, and verifier passed; checker/selfcheck and `git diff --check` are
+    the documentation close-out checks.

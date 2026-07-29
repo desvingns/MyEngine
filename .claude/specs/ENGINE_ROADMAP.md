@@ -66,9 +66,18 @@ Last updated: 2026-07-29
 | Engine cookbook (agent task recipes) | DX-006 | agent pipeline | - | backlog |
 | Fuzz tests for ContentLoader + SaveCodec | DX-007 | agent pipeline | - | backlog |
 | ADR: JSON vs properties content format | DX-008 | agent pipeline | - | **done** (2026-07-16; ADR-0003 accepts `.properties` for flat definitions and JSON for nested assets) |
+| Spec board backsync | PROC-001 | process | - | backlog |
+| Domain roadmap sequencing | PROC-003 | process | - | backlog |
+| Performance budgets | PROC-004 | process | - | backlog |
+| Golden replay hashes | PROC-005 | process | - | backlog |
+| CI pre-push lane | PROC-006 | process | - | backlog |
+| Save migration matrix | PROC-007 | process | - | backlog |
+| Playtest bot | PROC-008 | process | - | backlog |
+| Android visual smoke | PROC-009 | process | - | backlog |
+| Cost telemetry | PROC-010 | process | - | backlog |
 | Codex adapter parity audit + selfcheck coverage | PROC-011 | process | - | backlog |
 | Emulator provisioning lane (managed devices) | PROC-012 | process | - | backlog |
-| Spec board hygiene | PROC-013 | process | - | backlog |
+| Spec board hygiene | PROC-013 | process | - | **done** (2026-07-29; Variant B migrated 23 cards and wired board checker into selfcheck) |
 | Android release build lane | PROC-014 | process | - | backlog |
 | Reference-game evidence bridge for me-spec | PROC-015 | process, mysd | - | backlog (state-graph.v1 + mechanic claims, clone-strict coverage, traceability, and gap dedup) |
 

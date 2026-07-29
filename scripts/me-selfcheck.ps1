@@ -71,6 +71,19 @@ if (Test-Path $mk) {
 }
 
 $failures = $missing.Count + $refMissing.Count + $jsonBad.Count + $mkMissing.Count
+$boardCheckRaw = & powershell.exe -NoProfile -File (Join-Path $root "scripts/me-spec-board-check.ps1") 2>$null | Out-String
+$boardCheckExit = $LASTEXITCODE
+$boardCheck = $null
+try {
+    $boardCheck = $boardCheckRaw.Trim() | ConvertFrom-Json -ErrorAction Stop
+} catch {
+    $boardCheck = [ordered]@{
+        verdict = "fail"
+        error = "spec board checker did not return one JSON result"
+    }
+    $boardCheckExit = 1
+}
+if ($boardCheckExit -ne 0 -or $null -eq $boardCheck -or $boardCheck.verdict -ne "pass") { $failures++ }
 $verdict = if ($failures -eq 0) { "pass" } else { "fail" }
 
 $result = [ordered]@{
@@ -80,5 +93,7 @@ $result = [ordered]@{
     adapters_not_referencing_canon = @($refMissing)
     unparseable_json               = @($jsonBad)
     marketplace_missing_sources    = @($mkMissing)
+    spec_board_check               = $boardCheck
 }
 $result | ConvertTo-Json -Compress -Depth 6
+if ($verdict -eq "pass") { exit 0 } else { exit 1 }

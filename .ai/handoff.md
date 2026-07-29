@@ -1,10 +1,12 @@
 # MyEngine Handoff
 
-Last updated: 2026-07-29 (ENG-020 accepted after all runner gates and final verifier; next backlog sequence is not yet selected)
+Last updated: 2026-07-29 (PROC-013 Variant B close-out recorded; final commit/push remains blocked by unrelated dirty retro state)
 Owner: Codex
 
 ## DONE
 
+- PROC-013 Variant B is done: 23 verified-done cards moved from `backlog/` to `done/`, PROC-013
+  roadmap status reconciled, and the read-only board checker wired into `scripts/me-selfcheck.ps1`.
 - PROC-002 / ADR-0004 is accepted: separate game repos use Gradle composite builds pinned to a
   full accepted MyEngine SHA, and CI checks out/verifies that same commit. Stable,
   Experimental-with-adapter, and Internal cross-repo rules are explicit.
@@ -393,6 +395,9 @@ Owner: Codex
 
 ## DECISIONS
 
+- PROC-013 uses documentation-only Variant B wiring: the checker emits one JSON result, returns
+  exit 0 on pass and exit 1 on mismatch, and requires no ADR because no canonical contract or
+  adapter changed.
 - ADR-0004 chooses composite build plus an exact commit lock instead of early Maven publication.
   A game updates its pin only after an engine commit is accepted and pushed; a game release tag
   contains that exact SHA. Revisit artifact publication only through a later ADR with demonstrated
@@ -557,12 +562,15 @@ Owner: Codex
 
 ## NEXT
 
-Select the next backlog item after completed `ENG-020`. The current roadmap closes the explicit P1
-sequence at ENG-020 but does not define a unique successor, so perform backlog sequencing before
-starting another feature.
+Final commit/push for this close-out remains blocked by the pre-existing unrelated dirty
+`.ai/retro/retro-2026-07-28.md` unless the user approves/clears it. After that, select the next
+backlog item: the current roadmap closes the explicit P1 sequence at ENG-020 without a unique
+successor.
 
 ## BLOCKERS
 
+- Final commit/push remains blocked by the pre-existing unrelated dirty
+  `.ai/retro/retro-2026-07-28.md` unless the user approves/clears it.
 - MySD ENG-036 is specified but intentionally not started until the MySD evidence/spec gates choose
   the implementation order. PROC-015 is a backlog process change, not an implemented adapter.
 
@@ -677,6 +685,9 @@ starting another feature.
 
 ## VERIFICATION
 
+- PROC-013 (2026-07-29): developer, tester, runner, and verifier passes are recorded; 23 card
+  migrations, board checker, selfcheck wiring, checker/selfcheck exit semantics, and no-ADR scope
+  were verified. `git diff --check` is required for this docs close-out.
 - ENG-020 (2026-07-29): focused engine-defense tests (14), focused engine-devtools tests (16), full
   `.\gradlew.bat test`, `.\gradlew.bat projects` with explicit Android Studio `JAVA_HOME`, content
   validation (2 packs), replay, save-compat, benchmark, and `git diff --check` -> pass. Replay

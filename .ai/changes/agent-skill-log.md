@@ -374,3 +374,8 @@ by: claude
 - Risks: Existing packs intentionally omit bonus values pending balance approval; low HUD
   per-snapshot allocation/device profiling follow-up; pre-existing save delimiter assumption.
 - No ADR was needed and the me-dev plugin version was not bumped. No commit or push was performed.
+
+## 2026-07-29 - MyEngine PROC-013 Variant B close-out
+
+- PROC-013 added board checker/selfcheck wiring and migrated 23 verified-done cards from backlog to
+  done. No adapter/skill version bump was needed because no canonical contract or adapter changed.
