@@ -25,6 +25,54 @@ class ContentPackLoaderTest {
     }
 
     @Test
+    fun statusEffectsAreDataDefinedAndReferencesAreValidated() {
+        val root = createPack()
+        root.resolve("effects.properties").writeText(
+            """
+            slow.kind=slow
+            slow.magnitude=40
+            slow.durationTicks=3
+            slow.stackingRule=refresh
+            burn.kind=dot
+            burn.magnitude=2
+            burn.durationTicks=2
+            burn.stackingRule=stack
+            """.trimIndent(),
+        )
+        root.resolve("towers.properties").writeText(
+            root.resolve("towers.properties").toFile().readText() + "\nbasic.effectId=slow\n",
+        )
+
+        val result = ContentPackLoader.load(root)
+
+        assertTrue(result.isValid, result.errors.joinToString("\n"))
+        assertEquals(StatusEffectKind.SLOW, result.registry!!.effects.getValue("slow").kind)
+        assertEquals(StatusEffectStackingRule.STACK, result.registry.effects.getValue("burn").stackingRule)
+        assertEquals("slow", result.registry.towers.getValue("basic").effectId)
+
+        val unknownReference = createPack()
+        unknownReference.resolve("towers.properties").writeText(
+            unknownReference.resolve("towers.properties").toFile().readText() + "\nbasic.effectId=missing\n",
+        )
+        val unknownResult = ContentPackLoader.load(unknownReference)
+        assertFalse(unknownResult.isValid)
+        assertTrue(unknownResult.errors.any { it.field == "effectId" && it.message.contains("Unknown status effect") })
+
+        val invalidDefinition = createPack()
+        invalidDefinition.resolve("effects.properties").writeText(
+            """
+            slow.kind=slow
+            slow.magnitude=101
+            slow.durationTicks=3
+            slow.stackingRule=ignore
+            """.trimIndent(),
+        )
+        val invalidResult = ContentPackLoader.load(invalidDefinition)
+        assertFalse(invalidResult.isValid)
+        assertTrue(invalidResult.errors.any { it.field == "magnitude" })
+    }
+
+    @Test
     fun visualReferencesLoadForTilesTowersTiersEnemiesAndBuildings() {
         val root = createPack()
         Files.createDirectories(root.resolve("visuals"))

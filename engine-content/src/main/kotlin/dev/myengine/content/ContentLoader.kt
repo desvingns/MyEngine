@@ -46,6 +46,7 @@ object ContentPackLoader {
         val waves = parseDefinitions(root, "waves.properties", errors, ::parseWave)
         val incidents = parseDefinitions(root, "incidents.properties", errors, ::parseIncident)
         val difficulties = parseOptionalDefinitions(root, "difficulties.properties", errors, ::parseDifficulty)
+        val effects = parseOptionalDefinitions(root, "effects.properties", errors, ::parseStatusEffect)
         val strings = readProperties(root.resolve("strings.properties"), errors)?.entries
             ?.associate { it.key.toString() to it.value.toString() }
             ?: emptyMap()
@@ -65,6 +66,7 @@ object ContentPackLoader {
             recipes = recipes,
             waves = waves,
             resources = resources,
+            effects = effects,
             errors = errors,
         )
         validateTerminalRules(maps, waves, errors)
@@ -88,6 +90,7 @@ object ContentPackLoader {
                 strings = strings,
                 difficulties = difficulties,
                 maps = maps,
+                effects = effects,
             ),
             errors = emptyList(),
         )
@@ -185,6 +188,12 @@ object ContentPackLoader {
             upgradeTiers = parseTowerUpgradeTiers(id, fields, errors, file),
             targetingMode = fields.targetingModeOrDefault(file, id, errors) ?: return null,
             assetRef = parseVisualAssetRef(id, fields, errors, file),
+            effectId = fields["effectId"]?.let { value ->
+                if (value.isBlank()) {
+                    errors += ContentValidationError(file, id, "effectId", "Expected a non-blank status effect id.")
+                    null
+                } else value
+            },
         )
 
     private fun parseTowerUpgradeTiers(
@@ -245,6 +254,44 @@ object ContentPackLoader {
             coreDamage = fields.requiredPositiveInt(file, id, "coreDamage", errors) ?: return null,
             assetRef = parseVisualAssetRef(id, fields, errors, file),
         )
+
+    private fun parseStatusEffect(
+        id: String,
+        fields: Map<String, String>,
+        errors: MutableList<ContentValidationError>,
+        file: String,
+    ): StatusEffectContent? {
+        val kind = when {
+            fields.containsKey("type") -> StatusEffectKind.fromId(fields["type"].orEmpty())
+            fields.containsKey("kind") -> StatusEffectKind.fromId(fields["kind"].orEmpty())
+            id.equals("slow", ignoreCase = true) -> StatusEffectKind.SLOW
+            id.equals("dot", ignoreCase = true) -> StatusEffectKind.DOT
+            else -> null
+        }
+        if (kind == null) {
+            val field = if (fields.containsKey("type")) "type" else "kind"
+            errors += ContentValidationError(file, id, field, "Expected one of slow or dot.")
+            return null
+        }
+        val magnitude = if (kind == StatusEffectKind.SLOW) {
+            fields.requiredNonNegativeInt(file, id, "magnitude", errors)?.takeIf { value ->
+                if (value > 100) {
+                    errors += ContentValidationError(file, id, "magnitude", "Slow magnitude must be between 0 and 100 percent.")
+                    false
+                } else true
+            }
+        } else {
+            fields.requiredPositiveInt(file, id, "magnitude", errors)
+        } ?: return null
+        val durationTicks = fields.requiredPositiveInt(file, id, "durationTicks", errors) ?: return null
+        val stackingRule = fields.required(file, id, "stackingRule", errors)?.let { raw ->
+            StatusEffectStackingRule.fromId(raw) ?: run {
+                errors += ContentValidationError(file, id, "stackingRule", "Expected one of refresh, stack, or ignore.")
+                null
+            }
+        } ?: return null
+        return StatusEffectContent(id, kind, magnitude, durationTicks, stackingRule)
+    }
 
     private fun parseBuilding(id: String, fields: Map<String, String>, errors: MutableList<ContentValidationError>, file: String): BuildingContent =
         BuildingContent(
@@ -719,6 +766,7 @@ object ContentPackLoader {
         recipes: Map<String, RecipeContent>,
         waves: Map<String, WaveContent>,
         resources: Map<String, ResourceContent>,
+        effects: Map<String, StatusEffectContent>,
         errors: MutableList<ContentValidationError>,
     ) {
         tiles.values.forEach { tile ->
@@ -726,6 +774,11 @@ object ContentPackLoader {
         }
         towers.values.forEach { tower ->
             validateVisualAsset(root, packId, "towers.properties", tower.id, "", tower.assetRef, errors)
+            tower.effectId?.let { effectId ->
+                if (!effects.containsKey(effectId)) {
+                    errors += ContentValidationError("towers.properties", tower.id, "effectId", "Unknown status effect '$effectId'.")
+                }
+            }
             if (!resources.containsKey(tower.costResource)) errors += ContentValidationError("towers.properties", tower.id, "costResource", "Unknown resource '${tower.costResource}'.")
             tower.upgradeTiers.values.forEach { tier ->
                 val prefix = "upgrade.${tier.branch}.${tier.tier}."

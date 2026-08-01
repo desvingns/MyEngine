@@ -1,8 +1,8 @@
 # MyEngine State
 
-Last updated: 2026-07-29
-Active phase: Phase 00-14 complete; Signal Garden SG-001..005 complete; MyTD MTD-001..005 complete; DX-008, ENG-002, ENG-005, ENG-008, ENG-009, ENG-013, ENG-014, ENG-015, ENG-020, ENG-026, ENG-027, ENG-028, ENG-030, PROC-002, PROC-003, and PROC-013 complete; pipeline at v0.2.0; PROC-003 sequencing adopted 2026-07-29 with ENG-010 as the unique successor to ENG-020
-Owner of last update: Claude (2026-07-29: PROC-003 domain systems sequencing close-out; adopted chain ENG-010 -> ENG-016 -> PROC-007 -> ENG-021 -> ENG-029 -> ENG-012 -> ENG-007 -> ENG-018 recorded in Plane/15)
+Last updated: 2026-08-01
+Active phase: Phase 00-14 complete; Signal Garden SG-001..005 complete; MyTD MTD-001..005 complete; DX-008, ENG-002, ENG-005, ENG-008, ENG-009, ENG-010, ENG-013, ENG-014, ENG-015, ENG-020, ENG-026, ENG-027, ENG-028, ENG-030, PROC-002, PROC-003, and PROC-013 complete; pipeline at v0.2.0; next exact item ENG-016
+Owner of last update: Codex (2026-08-01: ENG-010 status effects framework close-out; adopted chain continues ENG-016 -> PROC-007 -> ENG-021 -> ENG-029 -> ENG-012 -> ENG-007 -> ENG-018)
 
 ## Current Status
 
@@ -708,3 +708,34 @@ Environment used:
 - VERIFICATION:
   - Documentation-only close-out; no engine code changed. Card status/location consistency is
     covered by the PROC-013 board checker.
+
+## ENG-010 Close-out (2026-08-01)
+
+- DONE:
+  - Added optional content-defined slow/DoT effects with magnitude, duration, stacking rules,
+    tower references, loader validation, and focused fixtures.
+  - Added generic `StatusEffectComponent` state to entities and deterministic defense lifecycle:
+    old DoT/expire -> tower damage -> effect application -> movement; slow modifiers use capped
+    integer percentage math and DoT kills use the existing reward deposit path.
+  - Added sorted snapshot/render effect tags and `SandboxSaveCodec` v9 with v1-v8 empty-effect
+    migration and v9 active-effect roundtrip.
+  - Moved `.claude/specs/backlog/ENG-010-status-effects.md` to
+    `.claude/specs/done/ENG-010-status-effects.md`; roadmap and Plane status are synced.
+- DECISIONS:
+  - No ADR: implementation is additive and preserves Android-free simulation, snapshot-only
+    rendering, external content, and versioned saves. Default packs and balance values remain
+    unchanged.
+- NEXT:
+  - Run `/me --feature --next` for ENG-016 (incident execution pipeline + RNG fix).
+- BLOCKERS:
+  - Save-compat reviewer passed; renderer review passed after the snapshot tag defensive-copy fix.
+    The simulation review's non-enemy DoT metrics finding was fixed and covered by a regression
+    test; integer-floor partial slow remains an intentional scope decision with a focused test.
+    Other conditional reviewers/final verifier could not all be spawned because the app
+    subagent-thread limit was reached.
+  - Device/emulator smoke and FrameMetrics/JankStats profiling remain manual-pending, consistent
+    with earlier Android follow-ups.
+- VERIFICATION:
+  - Full `.\gradlew.bat test`, `.\gradlew.bat projects`, content validation, replay, save-compat,
+    benchmark, `.\gradlew.bat :android:assembleDebug`, focused content/defense/render/sandbox
+    tests, and `git diff --check` passed.

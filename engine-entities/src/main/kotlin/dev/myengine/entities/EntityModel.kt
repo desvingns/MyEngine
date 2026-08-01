@@ -24,7 +24,14 @@ data class Entity(
     val tower: TowerComponent? = null,
     val attack: AttackComponent? = null,
     val jobActor: JobActorComponent? = null,
+    val statusEffects: List<StatusEffectComponent> = emptyList(),
 ) {
+    init {
+        require(statusEffects.map { it.effectId }.distinct().size == statusEffects.size) {
+            "An entity cannot contain duplicate status effect ids."
+        }
+    }
+
     fun appendHash(hash: StableHash) {
         hash.add(id.value).add(type)
         tags.sorted().forEach(hash::add)
@@ -35,6 +42,10 @@ data class Entity(
         tower?.appendHash(hash) ?: hash.add("no-tower")
         attack?.appendHash(hash) ?: hash.add("no-attack")
         jobActor?.appendHash(hash) ?: hash.add("no-job")
+        statusEffects.sortedBy { it.effectId }.forEach { effect ->
+            hash.add("status-effect")
+            effect.appendHash(hash)
+        }
     }
 }
 
@@ -115,6 +126,22 @@ data class JobActorComponent(
 ) {
     fun appendHash(hash: StableHash) {
         hash.add(assignedJobId ?: "")
+    }
+}
+
+data class StatusEffectComponent(
+    val effectId: String,
+    val remainingTicks: Int,
+    val stacks: Int = 1,
+) {
+    init {
+        require(effectId.isNotBlank()) { "Status effect id cannot be blank." }
+        require(remainingTicks > 0) { "Remaining status-effect ticks must be positive." }
+        require(stacks > 0) { "Status-effect stacks must be positive." }
+    }
+
+    fun appendHash(hash: StableHash) {
+        hash.add(effectId).add(remainingTicks).add(stacks)
     }
 }
 

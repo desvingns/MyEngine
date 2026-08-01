@@ -8,6 +8,7 @@ import dev.myengine.core.CombatEvents
 import dev.myengine.core.command.TargetingMode
 import dev.myengine.world.TilePosition
 import dev.myengine.world.WorldSize
+import java.util.Collections
 
 /** Opaque path/key pair carried to a platform render consumer without asset decoding. */
 data class RenderAssetRef(
@@ -22,14 +23,31 @@ data class RenderTile(
     val assetRef: RenderAssetRef? = null,
 )
 
-data class RenderEntity(
+class RenderEntity(
     val id: Long,
     val type: String,
     val position: TilePosition,
     val health: Int? = null,
     val towerTier: Int? = null,
     val assetRef: RenderAssetRef? = null,
-)
+    activeEffectTags: List<String> = emptyList(),
+) {
+    val activeEffectTags: List<String> = Collections.unmodifiableList(activeEffectTags.toList().sorted())
+
+    override fun equals(other: Any?): Boolean = other is RenderEntity &&
+        id == other.id &&
+        type == other.type &&
+        position == other.position &&
+        health == other.health &&
+        towerTier == other.towerTier &&
+        assetRef == other.assetRef &&
+        activeEffectTags == other.activeEffectTags
+
+    override fun hashCode(): Int = listOf(id, type, position, health, towerTier, assetRef, activeEffectTags).hashCode()
+
+    override fun toString(): String = "RenderEntity(id=$id, type='$type', position=$position, health=$health, " +
+        "towerTier=$towerTier, assetRef=$assetRef, activeEffectTags=$activeEffectTags)"
+}
 
 data class DebugOverlay(
     val tick: Tick,

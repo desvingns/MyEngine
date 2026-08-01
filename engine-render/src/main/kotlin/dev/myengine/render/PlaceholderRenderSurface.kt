@@ -29,6 +29,7 @@ data class RenderPrimitive(
     val towerTier: Int? = null,
     val entityId: Long? = null,
     val assetRef: RenderAssetRef? = null,
+    val activeEffectTags: List<String> = emptyList(),
 )
 
 /**
@@ -76,6 +77,7 @@ class PlaceholderRenderSurface {
                 towerTier = if (kind == RenderKind.TOWER) entity.towerTier else null,
                 entityId = entity.id,
                 assetRef = entity.assetRef,
+                activeEffectTags = entity.activeEffectTags.sorted(),
             )
         }
 

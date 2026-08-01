@@ -37,6 +37,7 @@ import dev.myengine.entities.EntityStore
 import dev.myengine.entities.HealthComponent
 import dev.myengine.entities.MovementComponent
 import dev.myengine.entities.PositionComponent
+import dev.myengine.entities.StatusEffectComponent
 import dev.myengine.entities.TowerComponent
 import dev.myengine.logistics.Inventory
 import dev.myengine.logistics.Producer
@@ -186,6 +187,14 @@ class SandboxRuntime(
                 core,
                 goalField,
             )
+            val statusEffectResult = defenseRuntime.updateStatusEffects(state.registry, state.entities)
+            state.defense = state.defense.record(statusEffectResult.metrics)
+            val statusEffectDeposit = depositRewards(state.inventory, statusEffectResult.rewards)
+            state.inventory = statusEffectDeposit.inventory
+            if (statusEffectDeposit.dropped.isNotEmpty()) {
+                state.lastCommandOrError = statusEffectDeposit.dropped.entries
+                    .joinToString(",", prefix = "reward_dropped:") { "${it.key}:${it.value}" }
+            }
             val towerResult = defenseRuntime.updateTowers(state.registry, state.entities, goalField, state.tick)
             combatEvents = towerResult.events
             state.defense = state.defense.record(towerResult.metrics).recordTowerMetrics(towerResult.towerMetrics)
@@ -234,6 +243,8 @@ class SandboxRuntime(
                 health = it.health?.current,
                 towerTier = it.tower?.upgradeTier,
                 assetRef = assetRef,
+                activeEffectTags = it.statusEffects.sortedBy { effect -> effect.effectId }
+                    .map { effect -> effect.effectId },
             )
         }
         return EngineSnapshot(
@@ -629,7 +640,7 @@ class SandboxRuntime(
 private fun VisualAssetRef.toRenderAssetRef(): RenderAssetRef = RenderAssetRef(path = path, atlasKey = atlasKey)
 
 object SandboxSaveCodec {
-    const val SAVE_VERSION: Int = 8
+    const val SAVE_VERSION: Int = 9
 
     fun encode(state: SandboxState, seed: Long, pendingCommands: List<EngineCommand> = emptyList()): String {
         val props = Properties()
@@ -684,6 +695,9 @@ object SandboxSaveCodec {
                 entity.tower?.upgradeBranch ?: "",
                 entity.tower?.upgradeTier?.takeIf { entity.tower?.upgradeBranch != null } ?: "",
                 entity.tower?.targetingMode?.id ?: "",
+                entity.statusEffects.sortedBy { it.effectId }.joinToString(",") { effect ->
+                    "${effect.effectId}~${effect.remainingTicks}~${effect.stacks}"
+                },
             ).joinToString("|")
         }
         props["pendingCommands"] = pendingCommands.joinToString(";") { cmd ->
@@ -860,6 +874,11 @@ object SandboxSaveCodec {
             } else {
                 registry.requireTower(towerId).targetingMode
             }
+            val statusEffects = if (version >= 9) {
+                parseStatusEffects(parts.getOrNull(16).orEmpty(), registry)
+            } else {
+                emptyList()
+            }
             Entity(
                 id = id,
                 type = type,
@@ -872,6 +891,7 @@ object SandboxSaveCodec {
                 health = if (health != null && maxHealth != null) HealthComponent(health, maxHealth) else null,
                 tower = if (towerId != null && cooldown != null) TowerComponent(towerId, cooldown, upgradeBranch, upgradeTier, targetingMode) else null,
                 attack = if (range != null && damage != null && cooldownTicks != null) AttackComponent(range, damage, cooldownTicks) else null,
+                statusEffects = statusEffects,
                 // Wave routing is a derived GoalField cache.  Older v6 saves can still carry a
                 // serialized per-enemy path; discard it and rebuild from restored world occupancy.
                 movement = if (type.startsWith("enemy") && x != null && y != null) {
@@ -883,6 +903,21 @@ object SandboxSaveCodec {
                 },
             )
         }
+
+    private fun parseStatusEffects(text: String, registry: ContentRegistry): List<StatusEffectComponent> =
+        text.split(',').filter { it.isNotBlank() }.map { encoded ->
+            val parts = encoded.split('~')
+            require(parts.size == 3) { "Invalid status effect entry '$encoded'." }
+            val effectId = parts[0]
+            require(effectId.isNotBlank() && registry.effects.containsKey(effectId)) {
+                "Unknown status effect '$effectId' in save."
+            }
+            val remainingTicks = parts[1].toIntOrNull()
+                ?: error("Invalid remaining ticks for status effect '$effectId'.")
+            val stacks = parts[2].toIntOrNull()
+                ?: error("Invalid stacks for status effect '$effectId'.")
+            StatusEffectComponent(effectId, remainingTicks, stacks)
+        }.sortedBy { it.effectId }
 }
 
 data class SandboxScenarioResult(

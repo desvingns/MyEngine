@@ -2,6 +2,9 @@ package dev.myengine.defense
 
 import dev.myengine.ai.GoalField
 import dev.myengine.content.ContentPackLoader
+import dev.myengine.content.StatusEffectContent
+import dev.myengine.content.StatusEffectKind
+import dev.myengine.content.StatusEffectStackingRule
 import dev.myengine.content.WaveContent
 import dev.myengine.content.WaveSpawn
 import dev.myengine.core.Tick
@@ -12,6 +15,8 @@ import dev.myengine.entities.EntityId
 import dev.myengine.entities.EntityStore
 import dev.myengine.entities.HealthComponent
 import dev.myengine.entities.PositionComponent
+import dev.myengine.entities.MovementComponent
+import dev.myengine.entities.StatusEffectComponent
 import dev.myengine.world.TerrainRule
 import dev.myengine.world.TilePosition
 import dev.myengine.world.TileWorld
@@ -270,6 +275,165 @@ class DefenseRuntimeTest {
         val result = runtime.updateTowers(registry, entities)
         assertEquals(0, result.metrics.enemiesKilled)
         assertTrue(result.rewards.isEmpty())
+    }
+
+    @Test
+    fun statusEffectsApplyInStableOrderAndDotUsesTheExistingRewardPath() {
+        val base = testRegistry()
+        val registry = base.copy(
+            effects = mapOf(
+                "burn" to StatusEffectContent(
+                    "burn", StatusEffectKind.DOT, magnitude = 1, durationTicks = 2,
+                    stackingRule = StatusEffectStackingRule.STACK,
+                ),
+                "slow" to StatusEffectContent(
+                    "slow", StatusEffectKind.SLOW, magnitude = 100, durationTicks = 2,
+                    stackingRule = StatusEffectStackingRule.REFRESH,
+                ),
+                "ignore" to StatusEffectContent(
+                    "ignore", StatusEffectKind.SLOW, magnitude = 10, durationTicks = 4,
+                    stackingRule = StatusEffectStackingRule.IGNORE,
+                ),
+            ),
+            towers = base.towers + ("basic" to base.requireTower("basic").copy(effectId = "burn")),
+        )
+        val world = TileWorld.filled(
+            WorldSize(3, 3),
+            mapOf("floor" to TerrainRule("floor", buildable = true, blocksMovement = false)),
+            "floor",
+        )
+        val entities = EntityStore()
+        val runtime = DefenseRuntime()
+        val tower = assertIs<TowerPlacementResult.Placed>(
+            runtime.placeTower("basic", TilePosition(1, 1), registry, world, entities),
+        )
+        val enemy = Entity(
+            id = EntityId(20),
+            type = "enemy:scout",
+            tags = setOf("enemy"),
+            position = PositionComponent(TilePosition(2, 1)),
+            health = HealthComponent(3, 3),
+            movement = MovementComponent(listOf(TilePosition(2, 1), TilePosition(2, 2)), 0),
+        )
+        entities.upsert(enemy)
+
+        val towerResult = runtime.updateTowers(registry, entities, tick = Tick(1))
+        assertEquals(1, towerResult.metrics.towerShots)
+        assertEquals(listOf(StatusEffectComponent("burn", 2)), entities.require(enemy.id).statusEffects)
+
+        runtime.applyStatusEffect(registry, entities, enemy.id, "burn")
+        runtime.applyStatusEffect(registry, entities, enemy.id, "slow")
+        runtime.applyStatusEffect(registry, entities, enemy.id, "ignore")
+        runtime.applyStatusEffect(registry, entities, enemy.id, "ignore")
+        val active = entities.require(enemy.id).statusEffects
+        assertEquals(listOf("burn", "ignore", "slow"), active.map { it.effectId })
+        assertEquals(2, active.first { it.effectId == "burn" }.stacks)
+        assertEquals(4, active.first { it.effectId == "ignore" }.remainingTicks)
+
+        val effectResult = runtime.updateStatusEffects(registry, entities)
+        assertEquals(1, effectResult.metrics.enemiesKilled)
+        assertEquals(mapOf("bolt" to 1), effectResult.rewards)
+        assertTrue(entities.byTag("enemy").isEmpty())
+        assertEquals(tower.entityId.value, towerResult.towerMetrics.keys.single())
+    }
+
+    @Test
+    fun fullSlowPreventsMovementWithoutChangingTheAuthoritativePath() {
+        val base = testRegistry()
+        val registry = base.copy(
+            effects = mapOf(
+                "slow" to StatusEffectContent(
+                    "slow", StatusEffectKind.SLOW, magnitude = 100, durationTicks = 2,
+                    stackingRule = StatusEffectStackingRule.REFRESH,
+                ),
+            ),
+        )
+        val world = TileWorld.filled(
+            WorldSize(3, 1),
+            mapOf("floor" to TerrainRule("floor", buildable = true, blocksMovement = false)),
+            "floor",
+        )
+        val entities = EntityStore()
+        val enemy = Entity(
+            id = EntityId(7),
+            type = "enemy:scout",
+            tags = setOf("enemy"),
+            position = PositionComponent(TilePosition(0, 0)),
+            health = HealthComponent(5, 5),
+            movement = MovementComponent(listOf(TilePosition(0, 0), TilePosition(1, 0), TilePosition(2, 0)), 0),
+            statusEffects = listOf(StatusEffectComponent("slow", 2)),
+        )
+        entities.upsert(enemy)
+
+        val state = DefenseRuntime().updateEnemies(
+            registry,
+            DefenseState(coreHealth = 5),
+            entities,
+            goalField = null,
+        )
+
+        assertEquals(TilePosition(0, 0), entities.require(enemy.id).position?.tile)
+        assertEquals(0, state.metrics.enemiesLeaked)
+    }
+
+    @Test
+    fun partialSlowUsesTheDocumentedIntegerFloorForOneTileBaseSpeed() {
+        val base = testRegistry()
+        val registry = base.copy(
+            effects = mapOf(
+                "slow" to StatusEffectContent(
+                    "slow", StatusEffectKind.SLOW, magnitude = 50, durationTicks = 2,
+                    stackingRule = StatusEffectStackingRule.REFRESH,
+                ),
+            ),
+        )
+        val world = TileWorld.filled(
+            WorldSize(3, 1),
+            mapOf("floor" to TerrainRule("floor", buildable = true, blocksMovement = false)),
+            "floor",
+        )
+        val entities = EntityStore()
+        val enemy = Entity(
+            id = EntityId(8),
+            type = "enemy:scout",
+            tags = setOf("enemy"),
+            position = PositionComponent(TilePosition(0, 0)),
+            health = HealthComponent(5, 5),
+            movement = MovementComponent(listOf(TilePosition(0, 0), TilePosition(1, 0)), 0),
+            statusEffects = listOf(StatusEffectComponent("slow", 2)),
+        )
+        entities.upsert(enemy)
+
+        DefenseRuntime().updateEnemies(registry, DefenseState(coreHealth = 5), entities)
+
+        assertEquals(TilePosition(0, 0), entities.require(enemy.id).position?.tile)
+    }
+
+    @Test
+    fun dotOnNonEnemyDoesNotCreateEnemyKillMetricsOrRemoveTheEntity() {
+        val base = testRegistry()
+        val registry = base.copy(
+            effects = mapOf(
+                "burn" to StatusEffectContent(
+                    "burn", StatusEffectKind.DOT, magnitude = 5, durationTicks = 1,
+                    stackingRule = StatusEffectStackingRule.REFRESH,
+                ),
+            ),
+        )
+        val entities = EntityStore()
+        val tower = Entity(
+            id = EntityId(9),
+            type = "tower:basic",
+            tags = setOf("tower"),
+            health = HealthComponent(2, 2),
+            statusEffects = listOf(StatusEffectComponent("burn", 1)),
+        )
+        entities.upsert(tower)
+
+        val result = DefenseRuntime().updateStatusEffects(registry, entities)
+
+        assertEquals(DefenseMetrics(), result.metrics)
+        assertEquals(tower.copy(statusEffects = emptyList()), entities.require(tower.id))
     }
 
     @Test

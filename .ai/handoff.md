@@ -1,7 +1,7 @@
 # MyEngine Handoff
 
-Last updated: 2026-07-29 (PROC-003 domain systems sequencing close-out; ENG-010 adopted as successor to ENG-020)
-Owner: Claude
+Last updated: 2026-08-01 (ENG-010 status effects framework close-out; next ENG-016)
+Owner: Codex
 
 ## DONE
 
@@ -914,3 +914,40 @@ successor to ENG-020. The earlier commit blocker is resolved: PROC-013 commit 5e
   `claude-plugins/me-spec`) shipped via `.claude-plugin/marketplace.json`; verify wiring
   with `scripts\me-selfcheck.ps1`.
 - Gradle emits the same Gradle 10 deprecation warning noted earlier; current builds pass.
+
+## ENG-010 Close-out (2026-08-01)
+
+### DONE
+
+- Implemented content-defined `slow` and `dot` status effects with `magnitude`, `durationTicks`,
+  and `refresh`/`stack`/`ignore` stacking validation.
+- Added deterministic entity effect state, DoT/slow simulation integration, sorted immutable
+  snapshot/render tags, and `SandboxSaveCodec` v9 with v1-v8 migration plus v9 effect roundtrip.
+- Added loader, defense, save, render, slow replay, and overflow-boundary tests; moved ENG-010 to
+  `.claude/specs/done/` and synced the engine roadmap/Plane.
+
+### DECISIONS
+
+- No ADR: additive generic entity state preserves the existing Android-free simulation,
+  snapshot-only rendering, external content, and versioned-save boundaries.
+- Default packs and balance values remain unchanged; no Android simulation logic was added.
+
+### NEXT
+
+- Run `/me --feature --next` for ENG-016 (incident execution pipeline + RNG fix).
+
+### BLOCKERS
+
+- Save-compat reviewer passed with no findings; renderer review passed after the snapshot tag
+  defensive-copy fix. The simulation review's non-enemy DoT metrics finding was fixed and covered
+  by a regression test; integer-floor partial slow remains an intentional scope decision with a
+  focused test. Other conditional reviewers and final verifier could not all be spawned because
+  the app subagent-thread limit was reached.
+- Device/emulator smoke and FrameMetrics/JankStats profiling remain manual-pending from earlier
+  Android work.
+
+### VERIFICATION
+
+- Passed full `.\gradlew.bat test`, `.\gradlew.bat projects`, content validation, replay,
+  save-compat, benchmark, `.\gradlew.bat :android:assembleDebug`, focused tests, and
+  `git diff --check`.

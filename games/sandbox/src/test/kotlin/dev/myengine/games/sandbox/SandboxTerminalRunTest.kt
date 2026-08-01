@@ -173,14 +173,14 @@ class SandboxTerminalRunTest {
     }
 
     @Test
-    fun v8CompletedRunSaveRestorePreservesFrozenSummary() {
+    fun v9CompletedRunSaveRestorePreservesFrozenSummary() {
         val registry = singleWaveRegistry()
         val session = SandboxSession(terminalWinningRuntime(registry), seed = 41)
         val save = session.save()
 
         val restored = SandboxSession.restore(save, registry)
 
-        assertEquals("8", saveProperty(save, "saveVersion"))
+        assertEquals("9", saveProperty(save, "saveVersion"))
         assertEquals(session.runtime.state.run, restored.runtime.state.run)
         assertEquals(session.stableHash(), restored.stableHash())
         assertEquals(session.runtime.snapshot().runSummary, restored.runtime.snapshot().runSummary)

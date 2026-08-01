@@ -32,7 +32,7 @@ Last updated: 2026-07-29
 | Multiple spawn points + per-wave routing | ENG-007 | vision:td, vision:mindustry-like | 2 | backlog |
 | Targeting priority modes | ENG-008 | mytd, vision:td | 2 | **done** (2026-07-18; pure deterministic first/last/nearest/strongest/weakest selector with entity-id tiebreak, content default + queued per-tower override, HUD projection, and save v7 migration) |
 | Splash damage + shot events | ENG-009 | mytd, vision:td, vision:mindustry-like | 3 | **done** (2026-07-28; stable entity-id-ordered Manhattan AoE, integer per-ring falloff, and transient immutable source/target/tick shot-hit events; save v8 and replay hashes unchanged) |
-| Status effects framework | ENG-010 | mytd, vision:td, vision:mindustry-like | 3 | backlog |
+| Status effects framework | ENG-010 | mytd, vision:td, vision:mindustry-like | 3 | **done** (2026-08-01; content-defined slow/DoT, deterministic lifecycle, movement/damage modifiers, save v9 migration, immutable snapshot tags, and stable slow replay coverage) |
 | Enemy armor + damage types | ENG-011 | vision:td, vision:mindustry-like | 2 | backlog |
 | Flying enemies | ENG-025 | vision:td | 1 | backlog |
 | Boss/elite enemies + wave modifiers | ENG-012 | vision:td | 1 | backlog |

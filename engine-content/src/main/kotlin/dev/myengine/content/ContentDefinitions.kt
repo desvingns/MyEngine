@@ -60,7 +60,52 @@ data class TowerContent(
     val upgradeTiers: Map<String, TowerUpgradeTier> = emptyMap(),
     val displayKey: String = "tower.$id",
     val assetRef: VisualAssetRef? = null,
+    val effectId: String? = null,
 ) : ContentDefinition
+
+enum class StatusEffectKind(val id: String) {
+    SLOW("slow"),
+    DOT("dot"),
+    ;
+
+    companion object {
+        fun fromId(id: String): StatusEffectKind? = entries.firstOrNull { it.id == id.trim().lowercase() }
+    }
+}
+
+enum class StatusEffectStackingRule(val id: String) {
+    REFRESH("refresh"),
+    STACK("stack"),
+    IGNORE("ignore"),
+    ;
+
+    companion object {
+        fun fromId(id: String): StatusEffectStackingRule? = entries.firstOrNull { it.id == id.trim().lowercase() }
+    }
+}
+
+typealias StackingRule = StatusEffectStackingRule
+
+/** Optional data-defined effect consumed by the defense simulation. */
+data class StatusEffectContent(
+    override val id: String,
+    val kind: StatusEffectKind,
+    val magnitude: Int,
+    val durationTicks: Int,
+    val stackingRule: StatusEffectStackingRule,
+) : ContentDefinition {
+    init {
+        require(magnitude >= 0) { "Status effect magnitude cannot be negative." }
+        require(durationTicks > 0) { "Status effect duration must be positive." }
+        if (kind == StatusEffectKind.SLOW) {
+            require(magnitude <= 100) { "Slow magnitude cannot exceed 100 percent." }
+        } else {
+            require(magnitude > 0) { "Damage-over-time magnitude must be positive." }
+        }
+    }
+}
+
+typealias EffectContent = StatusEffectContent
 
 data class TowerUpgradeTier(
     val branch: String,
@@ -226,12 +271,14 @@ data class ContentRegistry(
     val difficulties: Map<String, DifficultyContent> = emptyMap(),
     val maps: Map<String, MapContent> = emptyMap(),
     val resolvedDifficultyId: String? = null,
+    val effects: Map<String, StatusEffectContent> = emptyMap(),
 ) {
     fun requireTile(id: String): TileContent = tiles[id] ?: error("Unknown tile '$id'.")
     fun requireResource(id: String): ResourceContent = resources[id] ?: error("Unknown resource '$id'.")
     fun requireTower(id: String): TowerContent = towers[id] ?: error("Unknown tower '$id'.")
     fun requireEnemy(id: String): EnemyContent = enemies[id] ?: error("Unknown enemy '$id'.")
     fun requireBuilding(id: String): BuildingContent = buildings[id] ?: error("Unknown building '$id'.")
+    fun requireEffect(id: String): StatusEffectContent = effects[id] ?: error("Unknown status effect '$id'.")
     fun requireMap(id: String? = null): MapContent = when {
         id != null -> maps[id] ?: error("Unknown map '$id'.")
         maps.size == 1 -> maps.values.single()

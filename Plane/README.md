@@ -45,7 +45,7 @@
    and `ENG-020` (spatial index + 1k-entity benchmark) are closed; `ENG-020` was accepted on
    2026-07-29. PROC-003 sequencing adopted 2026-07-29 (see Plane/15): ENG-010 -> ENG-016 ->
    PROC-007 -> ENG-021 -> ENG-029 -> ENG-012 -> ENG-007 -> ENG-018; next exact implementation
-   item is `ENG-010` (status effects framework, MyTD FR-007).
+   item was `ENG-010` (status effects framework, MyTD FR-007); the next exact item is `ENG-016`.
 4. Hardening gaps из `docs/HARDENING_AUDIT.md` закрывать по одному, с тестами и обновлением handoff.
 
 Новые крупные фазы добавлять только после того, как backlog specs перестанут быть достаточно
@@ -58,6 +58,7 @@
 | [x] | ENG-020 Spatial index + 1k-entity benchmark | [ENG-020](../.claude/specs/done/ENG-020-spatial-index-benchmark.md) | Internal non-persisted grid index for targeting/splash queries plus deterministic machine-readable 1024-enemy benchmark | 2026-07-29 |
 | [x] | PROC-013 Spec board hygiene | [PROC-013](../.claude/specs/done/PROC-013-spec-board-hygiene.md) | Variant B migrated 23 cards and wired the board checker into selfcheck | 2026-07-29 |
 | [x] | PROC-003 Domain roadmap sequencing | [PROC-003](../.claude/specs/done/PROC-003-domain-roadmap.md) | Plane/15 sequencing adopted; ENG-010 named successor to ENG-020 | 2026-07-29 |
+| [x] | ENG-010 Status effects framework | [ENG-010](../.claude/specs/done/ENG-010-status-effects.md) | Content-defined slow/DoT, deterministic lifecycle, movement/damage modifiers, save v9 migration, immutable snapshot tags, and stable replay coverage | 2026-08-01 |
 
 ## Глобальные инварианты
 
@@ -1192,3 +1193,38 @@
   - Demand tags corrected: `mytd` removed from ENG-012/021/022/029 as unbacked by the MyTD bundle.
 - Next:
   - Run `/me --feature --next` for ENG-010 (status effects framework).
+
+### 2026-08-01 - ENG-010 (status effects framework)
+
+- Status: Done / accepted
+- Owner: Codex
+- Created/changed:
+  - `engine-content/src/main/kotlin/dev/myengine/content/ContentDefinitions.kt`
+  - `engine-content/src/main/kotlin/dev/myengine/content/ContentLoader.kt`
+  - `engine-content/src/test/kotlin/dev/myengine/content/ContentPackLoaderTest.kt`
+  - `engine-entities/src/main/kotlin/dev/myengine/entities/EntityModel.kt`
+  - `engine-defense/src/main/kotlin/dev/myengine/defense/DefenseRuntime.kt`
+  - `engine-defense/src/test/kotlin/dev/myengine/defense/DefenseRuntimeTest.kt`
+  - `engine-render/src/main/kotlin/dev/myengine/render/RenderModel.kt`
+  - `engine-render/src/main/kotlin/dev/myengine/render/PlaceholderRenderSurface.kt`
+  - `games/sandbox/src/main/kotlin/dev/myengine/games/sandbox/SandboxGame.kt`
+  - `games/sandbox/src/main/kotlin/dev/myengine/games/sandbox/SandboxSession.kt`
+  - `games/sandbox/src/test/kotlin/dev/myengine/games/sandbox/SandboxStatusEffectTest.kt`
+  - save-version expectation updates in Android/sandbox tests
+- Result:
+  - Added optional data-defined slow and DoT effects with refresh/stack/ignore semantics.
+  - Added deterministic entity status state, DoT damage/rewards, slow movement modifiers, v9 save
+    migration, and sorted immutable snapshot/render effect tags.
+- Verification:
+  - Full `.\gradlew.bat test`, `.\gradlew.bat projects`, content validation, replay,
+    save-compat, benchmark, `.\gradlew.bat :android:assembleDebug`, and `git diff --check`
+    passed. Focused content/defense/render/sandbox tests passed.
+  - Save-compat review passed; renderer review passed after defensive tag copying; the simulation
+    review's non-enemy DoT metrics finding was fixed with regression coverage. Partial slow uses
+    the documented integer-floor rule. Other conditional reviewers/final verifier were unavailable
+    after the app subagent-thread limit; device/performance follow-ups remain manual-pending.
+- Decisions:
+  - No ADR: additive generic status state and existing versioned-save/content boundaries suffice.
+  - Default content packs remain unchanged; no balance values or Android simulation logic added.
+- Next:
+  - Run `/me --feature --next` for ENG-016 (incident execution pipeline + RNG fix).

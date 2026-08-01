@@ -28,7 +28,7 @@ import kotlin.test.assertTrue
  * [SandboxSession] holder the lifecycle delegates to: that a save-at-pause then
  * restore-and-resume is behaviorally indistinguishable from an uninterrupted run.
  *
- * Save format v8 persists `state`, tower upgrade branch/tier/targeting-mode markers, per-tower metrics, the data-defined map identity,
+ * Save format v9 persists `state`, active status effects, tower upgrade branch/tier/targeting-mode markers, per-tower metrics, the data-defined map identity,
  * content version, and the runtime's pending
  * (not-yet-drained) [dev.myengine.core.CommandQueue] contents, so [SandboxSession.save] is sound at ANY tick.
  * Tests below cover both shapes: saves taken at a quiescent tick where the submitted build
@@ -148,10 +148,10 @@ class SandboxSessionLifecycleTest {
     fun v1ThroughV7SavesMigrateWithoutTargetingMode() {
         val registry = SandboxGame.loadRegistry()
         assertEquals(1, registry.maps.size, "legacy migration is only valid while the content pack has one map")
-        val v8Save = SandboxSession.start(registry).also { it.step(5) }.save()
+        val v9Save = SandboxSession.start(registry).also { it.step(5) }.save()
 
         (1..7).forEach { version ->
-            val legacy = legacySave(v8Save, version, dropPendingCommands = version == 1)
+            val legacy = legacySave(v9Save, version, dropPendingCommands = version == 1)
 
             val decoded = SandboxSaveCodec.decode(legacy, registry)
 
@@ -163,7 +163,7 @@ class SandboxSessionLifecycleTest {
     }
 
     @Test
-    fun v8SavePersistsMapContentVersionAndTowerMetrics() {
+    fun v9SavePersistsMapContentVersionTowerMetricsAndEffectsField() {
         val registry = SandboxGame.loadRegistry()
         val map = registry.requireMap("sandbox-canonical")
         val session = SandboxSession.start(registry, mapId = map.id)
@@ -172,7 +172,7 @@ class SandboxSessionLifecycleTest {
         val expectedTowerMetrics = session.runtime.state.defense.towerMetrics
         val save = session.save()
 
-        assertEquals(8, SandboxSaveCodec.SAVE_VERSION)
+        assertEquals(9, SandboxSaveCodec.SAVE_VERSION)
         assertEquals(map.id, saveProperty(save, "mapId"))
         assertEquals(registry.manifest.version, saveProperty(save, "contentVersion"))
         assertEquals(map.id, SandboxSaveCodec.decode(save, registry).mapId)
@@ -357,10 +357,10 @@ class SandboxSessionLifecycleTest {
 
         val valid = session.save()
         // Sanity: the valid save carries the codec's current version and decodes cleanly.
-        assertEquals(8, SandboxSaveCodec.SAVE_VERSION)
+        assertEquals(9, SandboxSaveCodec.SAVE_VERSION)
         SandboxSaveCodec.decode(valid, registry)
 
-        val future = valid.replace("saveVersion=8", "saveVersion=9")
+        val future = valid.replace("saveVersion=9", "saveVersion=10")
         // Guard against a silent no-op swap if the encoded key/format ever changes.
         assertNotEquals(valid, future)
 
@@ -378,7 +378,7 @@ class SandboxSessionLifecycleTest {
         val registry = SandboxGame.loadRegistry()
         val valid = SandboxSession.start(registry).also { it.step(5) }.save()
 
-        val garbled = valid.replace("saveVersion=8", "saveVersion=x")
+        val garbled = valid.replace("saveVersion=9", "saveVersion=x")
         assertNotEquals(valid, garbled)
 
         assertFailsWith<IllegalArgumentException> { SandboxSaveCodec.decode(garbled, registry) }
@@ -389,9 +389,9 @@ class SandboxSessionLifecycleTest {
         val registry = SandboxGame.loadRegistry()
         val valid = SandboxSession.start(registry).also { it.step(5) }.save()
         val unsupportedSaves = listOf(
-            valid.replace("saveVersion=8", "saveVersion=9"),
-            valid.replace("saveVersion=8", "saveVersion=x"),
-            valid.replace("saveVersion=8", "saveVersion=0"),
+            valid.replace("saveVersion=9", "saveVersion=10"),
+            valid.replace("saveVersion=9", "saveVersion=x"),
+            valid.replace("saveVersion=9", "saveVersion=0"),
         )
 
         unsupportedSaves.forEach { save ->

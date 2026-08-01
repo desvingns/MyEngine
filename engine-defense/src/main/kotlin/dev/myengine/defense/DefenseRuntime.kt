@@ -6,6 +6,8 @@ import dev.myengine.ai.PathRequest
 import dev.myengine.ai.PathResult
 import dev.myengine.content.ContentRegistry
 import dev.myengine.content.EnemyContent
+import dev.myengine.content.StatusEffectKind
+import dev.myengine.content.StatusEffectStackingRule
 import dev.myengine.content.TowerContent
 import dev.myengine.content.WaveContent
 import dev.myengine.core.Tick
@@ -19,6 +21,7 @@ import dev.myengine.entities.EntityStore
 import dev.myengine.entities.HealthComponent
 import dev.myengine.entities.MovementComponent
 import dev.myengine.entities.PositionComponent
+import dev.myengine.entities.StatusEffectComponent
 import dev.myengine.entities.TowerComponent
 import dev.myengine.world.TilePosition
 import dev.myengine.world.TileWorld
@@ -78,6 +81,11 @@ data class TowerUpdateResult(
     val rewards: Map<String, Int> = emptyMap(),
     val towerMetrics: Map<Long, TowerDefenseMetrics> = emptyMap(),
     val events: CombatEvents = CombatEvents.EMPTY,
+)
+
+data class StatusEffectUpdateResult(
+    val metrics: DefenseMetrics = DefenseMetrics(),
+    val rewards: Map<String, Int> = emptyMap(),
 )
 
 class DefenseRuntime(private val pathfinder: GridPathfinder = GridPathfinder()) {
@@ -170,6 +178,88 @@ class DefenseRuntime(private val pathfinder: GridPathfinder = GridPathfinder()) 
         return nextState.copy(spawnedWaveIds = nextState.spawnedWaveIds + wave.id)
     }
 
+    /**
+     * Advances effects that were already active at the start of this tick. New effects are
+     * applied by [updateTowers] after tower damage, so their first DoT tick is deterministic on
+     * the following tick. Expiration and DoT traversal are ordered by entity id, then effect id.
+     */
+    fun updateStatusEffects(
+        registry: ContentRegistry,
+        entities: EntityStore,
+    ): StatusEffectUpdateResult {
+        var metrics = DefenseMetrics()
+        val rewards = mutableMapOf<String, Int>()
+        entities.all().sortedBy { it.id.value }.forEach { entity ->
+            if (entity.statusEffects.isEmpty()) return@forEach
+            var current = entities.get(entity.id) ?: return@forEach
+            val nextEffects = mutableListOf<StatusEffectComponent>()
+            entity.statusEffects.sortedBy { it.effectId }.forEach { active ->
+                if (current.health?.isAlive() != true) return@forEach
+                val definition = registry.requireEffect(active.effectId)
+                if (definition.kind == StatusEffectKind.DOT && current.tags.contains("enemy")) {
+                    val damage = (definition.magnitude.toLong() * active.stacks.toLong())
+                        .coerceAtMost(Int.MAX_VALUE.toLong()).toInt()
+                    val health = current.health ?: return@forEach
+                    val damaged = health.damage(damage)
+                    val killed = !damaged.isAlive()
+                    val actualDamage = minOf(damage, health.current)
+                    current = current.copy(health = damaged)
+                    entities.update(entity.id) { it.copy(health = damaged) }
+                    if (killed) {
+                        metrics = metrics.plus(DefenseMetrics(enemiesKilled = 1))
+                        val enemyId = current.type.substringAfter("enemy:")
+                        registry.enemies[enemyId]?.let { enemyDefinition ->
+                            if (enemyDefinition.rewardAmount > 0) {
+                                rewards[enemyDefinition.rewardResource] =
+                                    (rewards[enemyDefinition.rewardResource] ?: 0) + enemyDefinition.rewardAmount
+                            }
+                        }
+                        entities.markRemove(entity.id)
+                    }
+                    if (actualDamage < 0) error("Status effect damage cannot be negative.")
+                }
+                if (current.health?.isAlive() == true && active.remainingTicks > 1) {
+                    nextEffects += active.copy(remainingTicks = active.remainingTicks - 1)
+                }
+            }
+            if (current.health?.isAlive() == true) {
+                entities.update(entity.id) { it.copy(statusEffects = nextEffects.sortedBy { effect -> effect.effectId }) }
+            }
+        }
+        entities.flushRemovals()
+        return StatusEffectUpdateResult(metrics, rewards.toSortedMap())
+    }
+
+    /** Applies one content-defined effect after the current tower damage phase. */
+    fun applyStatusEffect(
+        registry: ContentRegistry,
+        entities: EntityStore,
+        targetId: EntityId,
+        effectId: String,
+    ): Boolean {
+        val definition = registry.requireEffect(effectId)
+        val current = entities.get(targetId) ?: return false
+        if (current.health?.isAlive() == false) return false
+        val existing = current.statusEffects.firstOrNull { it.effectId == effectId }
+        val next = when {
+            existing == null -> StatusEffectComponent(effectId, definition.durationTicks)
+            definition.stackingRule == StatusEffectStackingRule.IGNORE -> existing
+            definition.stackingRule == StatusEffectStackingRule.REFRESH ->
+                existing.copy(remainingTicks = definition.durationTicks, stacks = 1)
+            else -> existing.copy(
+                remainingTicks = definition.durationTicks,
+                stacks = if (existing.stacks == Int.MAX_VALUE) Int.MAX_VALUE else existing.stacks + 1,
+            )
+        }
+        if (existing == next) return true
+        val effects = current.statusEffects
+            .filterNot { it.effectId == effectId }
+            .plus(next)
+            .sortedBy { it.effectId }
+        entities.update(targetId) { it.copy(statusEffects = effects) }
+        return true
+    }
+
     fun updateTowers(
         registry: ContentRegistry,
         entities: EntityStore,
@@ -181,6 +271,7 @@ class DefenseRuntime(private val pathfinder: GridPathfinder = GridPathfinder()) 
         val towerMetrics = mutableMapOf<Long, TowerDefenseMetrics>()
         val shots = mutableListOf<ShotEvent>()
         val hits = mutableListOf<HitEvent>()
+        val pendingEffects = mutableListOf<PendingStatusEffect>()
         // This cache is intentionally scoped to one deterministic tower-update pass. It is
         // rebuilt before any tower can change health, and query results resolve ids through the
         // live store so later towers observe earlier damage/removals exactly as before.
@@ -257,8 +348,18 @@ class DefenseRuntime(private val pathfinder: GridPathfinder = GridPathfinder()) 
                     }
                 }
             }
+            towerContent.effectId?.let { effectId ->
+                if (entities.get(target.id)?.health?.isAlive() == true) {
+                    pendingEffects += PendingStatusEffect(target.id, effectId, towerEntity.id)
+                }
+            }
             entities.update(towerEntity.id) { it.copy(tower = towerComponent.copy(cooldownRemaining = attack.cooldownTicks)) }
         }
+        pendingEffects
+            .sortedWith(compareBy<PendingStatusEffect> { it.targetId.value }.thenBy { it.effectId }.thenBy { it.sourceTowerId.value })
+            .forEach { pending ->
+                applyStatusEffect(registry, entities, pending.targetId, pending.effectId)
+            }
         entities.flushRemovals()
         return TowerUpdateResult(
             metrics = metrics,
@@ -299,6 +400,12 @@ class DefenseRuntime(private val pathfinder: GridPathfinder = GridPathfinder()) 
         return ((baseDamage.toLong() * remainingPercent) / 100L).toInt()
     }
 
+    private data class PendingStatusEffect(
+        val targetId: EntityId,
+        val effectId: String,
+        val sourceTowerId: EntityId,
+    )
+
     fun updateEnemies(
         registry: ContentRegistry,
         state: DefenseState,
@@ -309,9 +416,9 @@ class DefenseRuntime(private val pathfinder: GridPathfinder = GridPathfinder()) 
         entities.byTag("enemy").sortedBy { it.id.value }.forEach { enemy ->
             val movement = enemy.movement ?: return@forEach
             val position = enemy.position?.tile ?: return@forEach
-            val nextPosition = goalField?.nextStep(position)
+            val speed = effectiveMovementSpeed(registry, enemy)
             val reachesCore = if (goalField != null) goalField.isGoal(position) else {
-                val nextIndex = movement.pathIndex + 1
+                val nextIndex = movement.pathIndex + speed
                 nextIndex >= movement.path.lastIndex
             }
             if (reachesCore) {
@@ -320,12 +427,16 @@ class DefenseRuntime(private val pathfinder: GridPathfinder = GridPathfinder()) 
                 entities.markRemove(enemy.id)
                 nextState = nextState.copy(coreHealth = (nextState.coreHealth - damage).coerceAtLeast(0))
                     .record(DefenseMetrics(enemiesLeaked = 1, coreDamage = damage))
-            } else if (goalField != null && nextPosition != null) {
-                entities.update(enemy.id) {
-                    it.copy(position = PositionComponent(nextPosition))
+            } else if (speed > 0 && goalField != null) {
+                var nextPosition = position
+                repeat(speed) {
+                    nextPosition = goalField.nextStep(nextPosition) ?: return@repeat
                 }
-            } else if (goalField == null) {
-                val nextIndex = movement.pathIndex + 1
+                if (nextPosition != position) {
+                    entities.update(enemy.id) { it.copy(position = PositionComponent(nextPosition)) }
+                }
+            } else if (speed > 0) {
+                val nextIndex = movement.pathIndex + speed
                 val legacyNextPosition = movement.path[nextIndex]
                 entities.update(enemy.id) {
                     it.copy(
@@ -337,6 +448,26 @@ class DefenseRuntime(private val pathfinder: GridPathfinder = GridPathfinder()) 
         }
         entities.flushRemovals()
         return nextState
+    }
+
+    private fun effectiveMovementSpeed(registry: ContentRegistry, enemy: Entity): Int {
+        val enemyId = enemy.type.substringAfter("enemy:")
+        val baseSpeed = registry.enemies[enemyId]?.speedTilesPerTick ?: 1
+        val slowPercent = enemy.statusEffects
+            .sortedBy { it.effectId }
+            .fold(0L) { accumulated, active ->
+                val definition = registry.requireEffect(active.effectId)
+                if (definition.kind != StatusEffectKind.SLOW || accumulated >= 100L) {
+                    accumulated
+                } else {
+                    val contribution = definition.magnitude.toLong() * active.stacks.toLong()
+                    (accumulated + contribution).coerceAtMost(100L)
+                }
+            }
+            .coerceIn(0L, 100L)
+        return ((baseSpeed.toLong() * (100L - slowPercent)) / 100L)
+            .coerceAtMost(Int.MAX_VALUE.toLong())
+            .toInt()
     }
 
     private fun spawnEnemy(

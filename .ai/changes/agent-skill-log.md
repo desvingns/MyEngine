@@ -379,3 +379,21 @@ by: claude
 
 - PROC-013 added board checker/selfcheck wiring and migrated 23 verified-done cards from backlog to
   done. No adapter/skill version bump was needed because no canonical contract or adapter changed.
+
+## 2026-08-01 - MyEngine ENG-010 feature run
+
+- Owner: Codex
+- Change type: normal feature run; no agent/skill/adapter/pipeline contract change.
+- Summary: `/me --feature --next` selected ENG-010 and implemented content-defined slow/DoT status
+  effects, deterministic defense lifecycle, save v9 migration, immutable snapshot/render tags,
+  and focused replay/content/save tests.
+- Pipeline: selfcheck pass; scouts partial with verified file facts; architect pass/no ADR; writer
+  agents timed out after partial production edits, so the orchestrator completed the bounded scope;
+  tester agent timed out, so test-only updates were completed locally; runner agent timed out, so
+  canonical runner commands were executed locally; save-compat reviewer pass/no findings; renderer
+  review passed after defensive tag copying; the simulation review's non-enemy DoT metrics finding
+  was fixed with regression coverage; other conditional reviewers/final verifier were unavailable
+  after the subagent thread limit was reached.
+- Verification: full tests, projects, content validation, replay, save-compat, benchmark, Android
+  assemble, focused tests, and `git diff --check` passed.
+- No plugin version bump; no ADR.
