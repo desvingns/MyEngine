@@ -1,8 +1,8 @@
 # MyEngine State
 
 Last updated: 2026-08-02
-Active phase: Phase 00-14 complete; Signal Garden SG-001..005 complete; MyTD MTD-001..005 complete; DX-008, ENG-002, ENG-005, ENG-008, ENG-009, ENG-010, ENG-013, ENG-014, ENG-015, ENG-016, ENG-020, ENG-026, ENG-027, ENG-028, ENG-030, PROC-002, PROC-003, and PROC-013 complete; pipeline at v0.2.0; next exact item PROC-007
-Owner of last update: Codex (2026-08-02: ENG-016 incident execution close-out; adopted chain continues PROC-007 -> ENG-021 -> ENG-029 -> ENG-012 -> ENG-007 -> ENG-018)
+Active phase: Phase 00-14 complete; Signal Garden SG-001..005 complete; MyTD MTD-001..005 complete; DX-008, ENG-002, ENG-005, ENG-008, ENG-009, ENG-010, ENG-013, ENG-014, ENG-015, ENG-016, ENG-020, ENG-026, ENG-027, ENG-028, ENG-030, PROC-002, PROC-003, PROC-007, and PROC-013 complete; pipeline at v0.2.0; next exact item ENG-021
+Owner of last update: Codex (2026-08-02: PROC-007 save migration matrix close-out; adopted chain continues ENG-021 -> ENG-029 -> ENG-012 -> ENG-007 -> ENG-018)
 
 ## Current Status
 
@@ -21,6 +21,9 @@ Owner of last update: Codex (2026-08-02: ENG-016 incident execution close-out; a
   `ENGINE_ROADMAP.md`, emits one JSON result, and is wired into `scripts/me-selfcheck.ps1` with
   exit 0 on pass and exit 1 on mismatch. Twenty-three verified-done cards were migrated to
   `.claude/specs/done/`; no ADR was needed.
+- PROC-007 is complete: checked-in v1-v10 sandbox save fixtures, an independent canonical-state
+  migration matrix with deterministic stable-hash assertions, and matrix reporting in the save-
+  compatibility gate. No production save format or codec version changed.
 - MySD foundation filed ENG-036 for an Android-free reusable runtime/session extraction and
   PROC-015 for a reference-game state-graph/mechanic-claim bridge. Probable gameplay gaps and
   `mysd` demand remain deliberately uncarded until Luna evidence passes Gate 1.
@@ -264,9 +267,9 @@ Owner of last update: Codex (2026-08-02: ENG-016 incident execution close-out; a
 
 ## Next Exact Action
 
-Run `/me --feature --next` for PROC-007 (save migration matrix), the next item in the
-PROC-003-adopted chain after ENG-016. The PROC-013 commit 5eaaa78 was pushed, so the earlier
-retro-file commit blocker is resolved.
+Run `/me --feature --next` for ENG-021 (save slots + autosave policy), the next item in the
+PROC-003-adopted chain after completed PROC-007. The PROC-013 commit 5eaaa78 was pushed, so the
+earlier retro-file commit blocker is resolved.
 
 ## Known Blockers
 
@@ -770,3 +773,24 @@ Environment used:
   - Replay hashes: canonical `e4892bcc18f9d8dc`, kill `a763da4ac32b15b4`.
   - Remediation benchmark: `sim=418 ms`, `kill=85 ms`, `spatial-index-1k=6.1036 ms`,
     `goal-field=10.427 ms`.
+
+## PROC-007 Close-out (2026-08-02)
+
+- DONE:
+  - Added checked-in Java Properties fixtures for every released sandbox save version v1-v10.
+  - Added `SandboxSaveMigrationMatrixTest` with an independently constructed canonical state
+    oracle, meaningful non-default state fields, stable-hash comparison, and repeated-decode
+    determinism assertions.
+  - Extended `scripts/me-save-compat.ps1` to run and report the migration matrix.
+- DECISIONS:
+  - No ADR: this is a test/process gate strengthening existing versioned-save behavior; production
+    `SandboxSaveCodec` and `SAVE_VERSION=10` are unchanged.
+- NEXT:
+  - Run `/me --feature --next` for ENG-021 (save slots + autosave policy).
+- BLOCKERS:
+  - No PROC-007 implementation blocker. Existing Android/device and FrameMetrics/JankStats
+    follow-ups remain manual-pending and are outside this test-only scope.
+- VERIFICATION:
+  - Focused matrix, full Gradle tests, projects, content validation, replay, save-compat, benchmark,
+    `git diff --check`, save-compat review, and final verifier passed.
+  - Replay hashes remain `e4892bcc18f9d8dc` / `a763da4ac32b15b4`; matrix passed on two runs.

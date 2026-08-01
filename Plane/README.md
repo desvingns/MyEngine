@@ -44,8 +44,8 @@
    `ENG-028` (sprite/atlas references in content schema), `ENG-009` (splash damage + shot events),
    and `ENG-020` (spatial index + 1k-entity benchmark) are closed; `ENG-020` was accepted on
    2026-07-29. PROC-003 sequencing adopted 2026-07-29 (see Plane/15): ENG-010 -> ENG-016 ->
-   PROC-007 -> ENG-021 -> ENG-029 -> ENG-012 -> ENG-007 -> ENG-018; ENG-010 and ENG-016 are
-   closed, and the next exact item is `PROC-007`.
+   PROC-007 -> ENG-021 -> ENG-029 -> ENG-012 -> ENG-007 -> ENG-018; ENG-010, ENG-016, and
+   PROC-007 are closed, and the next exact item is `ENG-021`.
 4. Hardening gaps из `docs/HARDENING_AUDIT.md` закрывать по одному, с тестами и обновлением handoff.
 
 Новые крупные фазы добавлять только после того, как backlog specs перестанут быть достаточно
@@ -60,6 +60,7 @@
 | [x] | PROC-003 Domain roadmap sequencing | [PROC-003](../.claude/specs/done/PROC-003-domain-roadmap.md) | Plane/15 sequencing adopted; ENG-010 named successor to ENG-020 | 2026-07-29 |
 | [x] | ENG-010 Status effects framework | [ENG-010](../.claude/specs/done/ENG-010-status-effects.md) | Content-defined slow/DoT, deterministic lifecycle, movement/damage modifiers, save v9 migration, immutable snapshot tags, and stable replay coverage | 2026-08-01 |
 | [x] | ENG-016 Incident execution pipeline + RNG fix | [ENG-016](../.claude/specs/done/ENG-016-incident-execution.md) | Stateful deterministic director, persistent RNG cursor, cadence/pacing/cooldown selection, atomic typed effects, save v10 with v1-v9 migration, and remediation gates | 2026-08-02 |
+| [x] | PROC-007 Save migration matrix | [PROC-007](../.claude/specs/done/PROC-007-save-migration-matrix.md) | Checked-in v1-v10 save fixtures, independent stable-hash migration matrix, and save-compat JSON reporting | 2026-08-02 |
 
 ## Глобальные инварианты
 
@@ -1257,3 +1258,26 @@
   - Replay hashes: canonical `e4892bcc18f9d8dc`, kill `a763da4ac32b15b4`.
   - Remediation benchmark: `sim=418 ms`, `kill=85 ms`, `spatial-index-1k=6.1036 ms`,
     `goal-field=10.427 ms`; initial `614/120 ms` values are superseded.
+
+### 2026-08-02 - MyEngine PROC-007 (save migration matrix)
+
+- Status: Done / accepted
+- Owner: Codex
+- Created/changed:
+  - `games/sandbox/src/test/resources/save-fixtures/v1.properties` through `v10.properties`
+  - `games/sandbox/src/test/kotlin/dev/myengine/games/sandbox/SandboxSaveMigrationMatrixTest.kt`
+  - `scripts/me-save-compat.ps1`
+  - `.claude/specs/done/PROC-007-save-migration-matrix.md`
+- Result:
+  - Every released sandbox save version is checked in and loaded through `SandboxSaveCodec`.
+  - The matrix compares each result to an independently constructed canonical state hash and
+    repeats decoding to prove deterministic migration.
+  - The save-compat JSON now includes `matrix` and runs the matrix test.
+- Verification:
+  - Focused matrix, full tests, projects, content validation, replay, save-compat, benchmark,
+    `git diff --check`, save reviewer, and final verifier -> pass.
+  - Replay hashes remain `e4892bcc18f9d8dc` / `a763da4ac32b15b4`; matrix passed twice.
+- Decisions:
+  - No ADR; production codec/save version and Android/render boundaries are unchanged.
+- Next:
+  - Run `/me --feature --next` for ENG-021 (save slots + autosave policy).

@@ -71,7 +71,7 @@ Last updated: 2026-08-02
 | Performance budgets | PROC-004 | process | - | backlog |
 | Golden replay hashes | PROC-005 | process | - | backlog |
 | CI pre-push lane | PROC-006 | process | - | backlog |
-| Save migration matrix | PROC-007 | process | - | backlog |
+| Save migration matrix | PROC-007 | process | - | **done** (2026-08-02; checked-in v1-v10 fixtures, independent stable-hash migration matrix, and save-compat JSON result) |
 | Playtest bot | PROC-008 | process | - | backlog |
 | Android visual smoke | PROC-009 | process | - | backlog |
 | Cost telemetry | PROC-010 | process | - | backlog |

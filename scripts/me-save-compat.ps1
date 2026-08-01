@@ -6,9 +6,11 @@ try {
     & .\gradlew.bat --quiet :games:sandbox:test `
         --tests "dev.myengine.games.sandbox.SandboxGoalFieldTest.midRerouteSaveRestoreReachesTheSameStableHash" `
         --tests "dev.myengine.games.sandbox.SandboxSessionLifecycleTest.legacyV6EnemyRouteIsDiscardedAndGoalFieldMigrationIsReplayStable" `
-        --tests "dev.myengine.games.sandbox.SandboxSessionLifecycleTest.futureSaveVersionIsRejected"
-    $status = if ($LASTEXITCODE -eq 0) { "pass" } else { "fail" }
-    @{ status = $status; command = "games:sandbox:test mid-reroute, legacy-v6-route, future-version"; exit_code = $LASTEXITCODE } | ConvertTo-Json -Compress
+        --tests "dev.myengine.games.sandbox.SandboxSessionLifecycleTest.futureSaveVersionIsRejected" `
+        --tests "dev.myengine.games.sandbox.SandboxSaveMigrationMatrixTest"
+    $exitCode = $LASTEXITCODE
+    $status = if ($exitCode -eq 0) { "pass" } else { "fail" }
+    @{ status = $status; matrix = $status; command = "games:sandbox:test mid-reroute, legacy-v6-route, future-version, migration-matrix"; exit_code = $exitCode } | ConvertTo-Json -Compress
 } finally {
     Pop-Location
 }

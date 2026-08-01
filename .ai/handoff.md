@@ -1,6 +1,6 @@
 # MyEngine Handoff
 
-Last updated: 2026-08-02 (ENG-016 incident execution close-out; next PROC-007)
+Last updated: 2026-08-02 (PROC-007 save migration matrix close-out; next ENG-021)
 Owner: Codex
 
 ## DONE
@@ -580,9 +580,9 @@ Owner: Codex
 
 ## NEXT
 
-Run `/me --feature --next` for PROC-007 (save migration matrix), the next item in the
-PROC-003-adopted chain after ENG-016. The earlier commit blocker is resolved: PROC-013 commit
-5eaaa78 was pushed.
+Run `/me --feature --next` for ENG-021 (save slots + autosave policy), the next item in the
+PROC-003-adopted chain after completed PROC-007. The earlier commit blocker is resolved:
+PROC-013 commit 5eaaa78 was pushed.
 
 ## BLOCKERS
 
@@ -992,3 +992,35 @@ PROC-003-adopted chain after ENG-016. The earlier commit blocker is resolved: PR
 - Replay hashes: canonical `e4892bcc18f9d8dc`, kill `a763da4ac32b15b4`.
 - Remediation benchmark: `sim=418 ms`, `kill=85 ms`, `spatial-index-1k=6.1036 ms`,
   `goal-field=10.427 ms`.
+
+## PROC-007 Close-out (2026-08-02)
+
+### DONE
+
+- Added checked-in `games/sandbox/src/test/resources/save-fixtures/v1.properties` through
+  `v10.properties` covering every released sandbox save version.
+- Added `SandboxSaveMigrationMatrixTest` with an independently constructed canonical state oracle,
+  non-default tick/metrics/inventory/producer/entity data, stable-hash comparison, and repeated
+  decode determinism checks.
+- Extended `scripts/me-save-compat.ps1` to execute the matrix and emit its result in the compact JSON.
+
+### DECISIONS
+
+- No ADR: PROC-007 strengthens the existing test/process gate without changing production save
+  encoding, `SandboxSaveCodec.SAVE_VERSION` (10), or migration behavior.
+
+### NEXT
+
+- Run `/me --feature --next` for ENG-021 (save slots + autosave policy), then continue
+  `ENG-029 -> ENG-012 -> ENG-007 -> ENG-018`.
+
+### BLOCKERS
+
+- None for PROC-007. Existing Android/device and FrameMetrics/JankStats follow-ups remain
+  manual-pending and were not part of this test-only change.
+
+### VERIFICATION
+
+- Focused matrix, full tests, projects, content validation, replay, save-compat, benchmark, and
+  `git diff --check` passed. Save reviewer and final verifier passed with no findings.
+- Replay hashes remain `e4892bcc18f9d8dc` / `a763da4ac32b15b4`; matrix passed on two runs.
