@@ -7,7 +7,7 @@ two or more games outranks single-game gaps of the same severity.
 Updated by: the `/me-spec` backlog bridge (new gaps / new demand) and `/me`
 close-out (status changes).
 
-Last updated: 2026-07-29
+Last updated: 2026-08-02
 
 ## Capabilities
 
@@ -52,7 +52,7 @@ Last updated: 2026-07-29
 | Stockpile zones + designations | ENG-031 | vision:rimworld-like, vision:mindustry-like | 2 | backlog |
 | Construction system (blueprint, haul, build) | ENG-032 | vision:rimworld-like, vision:mindustry-like | 2 | backlog |
 | Colonist needs MVP (hunger/rest) | ENG-033 | vision:rimworld-like | 1 | backlog |
-| Incident execution pipeline + RNG fix | ENG-016 | vision:rimworld-like, vision:mindustry-like, vision:td | 3 | backlog |
+| Incident execution pipeline + RNG fix | ENG-016 | vision:rimworld-like, vision:mindustry-like, vision:td | 3 | **done** (2026-08-02; stateful deterministic director with persistent RNG cursor, cadence/pacing/cooldown selection, atomic typed spawn-wave/resource-event/modifier interpreter, v10 save with v1-v9 migration, remediation replay/save/overflow diagnostics and benchmark gates pass) |
 | Research/tech tree + unlock gating | ENG-017 | vision:mindustry-like, vision:td | 2 | backlog |
 | Seeded procedural map generation | ENG-006 | vision:rimworld-like, vision:mindustry-like, vision:td | 3 | backlog |
 | Enemy attacks on structures | ENG-034 | vision:mindustry-like | 1 | backlog |
@@ -111,7 +111,8 @@ Last updated: 2026-07-29
    evidence remains explicitly pending).
 3. P1 opener: ENG-002 (done) -> ENG-013 (done) -> ENG-008 (done) -> ENG-015 (done) -> ENG-030
    (done 2026-07-21) -> ENG-028 (done 2026-07-28) -> ENG-009 (done 2026-07-28) -> ENG-020
-   (done 2026-07-29). PROC-003 sequencing adopted 2026-07-29: ENG-010 -> ENG-016 -> PROC-007
+   (done 2026-07-29). PROC-003 sequencing adopted 2026-07-29: ENG-010 -> ENG-016 (done 2026-08-02)
+   -> PROC-007
    -> ENG-021 -> ENG-029 -> ENG-012 -> ENG-007 -> ENG-018. Colony slice (ENG-001 -> ENG-003
    -> ENG-031 -> ENG-004 -> ENG-032) deferred until a colony/MySD spec supplies named FRs
    (see Plane/15).

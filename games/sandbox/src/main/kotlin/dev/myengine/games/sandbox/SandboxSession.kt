@@ -13,13 +13,12 @@ import java.util.Properties
  * that keeps simulation Android-free. The owning lifecycle (e.g. an Activity) calls [save] on
  * pause and [restore] on recreate; it must not reach into the runtime directly.
  *
- * SAVE SOUNDNESS: [SandboxSaveCodec] v9 persists `state`, active status effects, terminal run status/summary, selected
+ * SAVE SOUNDNESS: [SandboxSaveCodec] v10 persists `state`, active status effects, terminal run status/summary, selected
  * map id, content version, tower upgrade branch/tier/targeting-mode markers, and the runtime's pending
  * [dev.myengine.core.CommandQueue], so [save] is sound at ANY tick — a future-tick command still
  * queued at save time round-trips through [restore] and is re-queued on the reconstructed runtime.
- * The per-tick `SeededRandom(17)` incident cursor is NOT persisted, but is confirmed to be a fresh
- * instance constructed every tick rather than a persistent cursor, so there is nothing to persist
- * for it.
+ * The simulation RNG cursor, stateful incident director, selected effect history, and persistent
+ * incident modifiers are part of the v10 save so continuation does not restart randomness.
  */
 class SandboxSession(
     val runtime: SandboxRuntime,
@@ -54,7 +53,7 @@ class SandboxSession(
             seed: Long = DEFAULT_SEED,
             difficultyId: String? = null,
             mapId: String? = null,
-        ): SandboxSession = SandboxSession(SandboxGame.createRuntime(registry, difficultyId, mapId), seed)
+        ): SandboxSession = SandboxSession(SandboxGame.createRuntime(registry, difficultyId, mapId, seed), seed)
 
         /**
          * Restores a session from a save [text] produced by [save].
@@ -72,7 +71,7 @@ class SandboxSession(
             val state = SandboxSaveCodec.decode(text, registry)
             val pendingCommands = SandboxSaveCodec.decodePendingCommands(text)
             val seed = parseSeed(text)
-            val runtime = SandboxRuntime(state)
+            val runtime = SandboxRuntime(state, seed = seed)
             runtime.restorePendingCommands(pendingCommands)
             return SandboxSession(runtime, seed)
         }

@@ -1,6 +1,6 @@
 # MyEngine Handoff
 
-Last updated: 2026-08-01 (ENG-010 status effects framework close-out; next ENG-016)
+Last updated: 2026-08-02 (ENG-016 incident execution close-out; next PROC-007)
 Owner: Codex
 
 ## DONE
@@ -580,8 +580,9 @@ Owner: Codex
 
 ## NEXT
 
-Run `/me --feature --next` for ENG-010 (status effects framework), the PROC-003-adopted unique
-successor to ENG-020. The earlier commit blocker is resolved: PROC-013 commit 5eaaa78 was pushed.
+Run `/me --feature --next` for PROC-007 (save migration matrix), the next item in the
+PROC-003-adopted chain after ENG-016. The earlier commit blocker is resolved: PROC-013 commit
+5eaaa78 was pushed.
 
 ## BLOCKERS
 
@@ -951,3 +952,43 @@ successor to ENG-020. The earlier commit blocker is resolved: PROC-013 commit 5e
 - Passed full `.\gradlew.bat test`, `.\gradlew.bat projects`, content validation, replay,
   save-compat, benchmark, `.\gradlew.bat :android:assembleDebug`, focused tests, and
   `git diff --check`.
+
+## ENG-016 Close-out (2026-08-02)
+
+### DONE
+
+- Closed the incident execution pipeline with optional incident definitions, cadence start/end,
+  pacing threat windows, cooldowns, and typed `spawn_wave`, `resource_event`, and `modifier` effects.
+- The stateful deterministic director uses a persistent simulation RNG cursor. The atomic sandbox
+  interpreter preflights all references, capacity, and arithmetic before mutation; repeated
+  resource/modifier effects aggregate via `Long` before overflow checks, and cross-field validation
+  reports `ContentValidationError` with the incident field path.
+- `SandboxSaveCodec` v10 persists RNG cursor, director state, executions, and active modifiers with
+  v1-v9 migration. The card moved to `.claude/specs/done/`; schema, roadmap, Plane, STATE, and DIGEST
+  close-out docs are synchronized.
+
+### DECISIONS
+
+- No ADR: the implementation remains inside the existing Android-free simulation, data-driven
+  content, stable-hash, and versioned-save boundaries. Default pack balance and Android production,
+  renderer, and input boundaries are unchanged.
+- Remediation rerun metrics supersede the initial first-run `614/120 ms` values.
+
+### NEXT
+
+- Run `/me --feature --next` for PROC-007, then continue `ENG-021 -> ENG-029 -> ENG-012 -> ENG-007
+  -> ENG-018`.
+
+### BLOCKERS
+
+- No ENG-016 implementation blocker remains. No device proof is claimed; existing Android/device,
+  FrameMetrics/JankStats, and other manual performance follow-ups remain pending.
+- Gradle verification requires process-local `JAVA_HOME=C:\Program Files\Android\Android Studio\jbr`.
+
+### VERIFICATION
+
+- Full Gradle test/projects/content/replay/save-compat/benchmark/diff-check lanes passed; focused
+  `SandboxIncidentTest` and content tests passed; simulation/save reviews passed.
+- Replay hashes: canonical `e4892bcc18f9d8dc`, kill `a763da4ac32b15b4`.
+- Remediation benchmark: `sim=418 ms`, `kill=85 ms`, `spatial-index-1k=6.1036 ms`,
+  `goal-field=10.427 ms`.

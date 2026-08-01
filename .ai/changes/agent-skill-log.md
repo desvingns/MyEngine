@@ -397,3 +397,28 @@ by: claude
 - Verification: full tests, projects, content validation, replay, save-compat, benchmark, Android
   assemble, focused tests, and `git diff --check` passed.
 - No plugin version bump; no ADR.
+
+## 2026-08-02 - MyEngine ENG-016 documentation close-out
+
+- Owner: Codex
+- Change type: none (documentation-only close-out; no agent/skill/adapter/pipeline contract change)
+- Changed:
+  - `.claude/specs/done/ENG-016-incident-execution.md` (status done, completion note, verification;
+    moved from `.claude/specs/backlog/` per board convention)
+  - `docs/content-schemas/PROPERTIES_SCHEMA.md`, `.claude/specs/ENGINE_ROADMAP.md`, `STATE.md`,
+    `.ai/handoff.md`, `Plane/README.md`, and `.ai/DIGEST.md`
+- DONE: Documented optional incidents, cadence start/end, pacing threat windows, cooldown defaults,
+  typed spawn-wave/resource-event/modifier effects, diagnostics paths, atomic preflight, `Long`
+  aggregation remediation, and v10/v1-v9 save compatibility. Synced the card, roadmap, state,
+  handoff, Plane, and digest to the accepted implementation.
+- DECISIONS: No ADR; default pack balance and Android production, renderer, and input boundaries
+  remain unchanged. This close-out did not edit the pre-existing ENG-016 production/test changes.
+- NEXT: Run `/me --feature --next` for PROC-007, then continue the adopted chain.
+- BLOCKERS: No ENG-016 implementation blocker remains. No device proof is claimed; existing device,
+  FrameMetrics/JankStats, and other manual performance follow-ups remain pending. Gradle requires
+  process-local `JAVA_HOME=C:\Program Files\Android\Android Studio\jbr`.
+- VERIFICATION: Full Gradle test/projects/content/replay/save-compat/benchmark/diff-check lanes,
+  focused `SandboxIncidentTest` and content tests, and simulation/save reviews passed. Canonical
+  replay `e4892bcc18f9d8dc`, kill replay `a763da4ac32b15b4`; remediation benchmark `sim=418 ms`,
+  `kill=85 ms`, `spatial-index-1k=6.1036 ms`, `goal-field=10.427 ms`. Initial `614/120 ms` values
+  are superseded. No plugin version bump; no commit or push was performed.

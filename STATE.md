@@ -1,8 +1,8 @@
 # MyEngine State
 
-Last updated: 2026-08-01
-Active phase: Phase 00-14 complete; Signal Garden SG-001..005 complete; MyTD MTD-001..005 complete; DX-008, ENG-002, ENG-005, ENG-008, ENG-009, ENG-010, ENG-013, ENG-014, ENG-015, ENG-020, ENG-026, ENG-027, ENG-028, ENG-030, PROC-002, PROC-003, and PROC-013 complete; pipeline at v0.2.0; next exact item ENG-016
-Owner of last update: Codex (2026-08-01: ENG-010 status effects framework close-out; adopted chain continues ENG-016 -> PROC-007 -> ENG-021 -> ENG-029 -> ENG-012 -> ENG-007 -> ENG-018)
+Last updated: 2026-08-02
+Active phase: Phase 00-14 complete; Signal Garden SG-001..005 complete; MyTD MTD-001..005 complete; DX-008, ENG-002, ENG-005, ENG-008, ENG-009, ENG-010, ENG-013, ENG-014, ENG-015, ENG-016, ENG-020, ENG-026, ENG-027, ENG-028, ENG-030, PROC-002, PROC-003, and PROC-013 complete; pipeline at v0.2.0; next exact item PROC-007
+Owner of last update: Codex (2026-08-02: ENG-016 incident execution close-out; adopted chain continues PROC-007 -> ENG-021 -> ENG-029 -> ENG-012 -> ENG-007 -> ENG-018)
 
 ## Current Status
 
@@ -264,9 +264,9 @@ Owner of last update: Codex (2026-08-01: ENG-010 status effects framework close-
 
 ## Next Exact Action
 
-Run `/me --feature --next` for ENG-010 (status effects framework), the PROC-003-adopted unique
-successor to ENG-020 (backed by named MyTD FR-007). The PROC-013 commit 5eaaa78 was pushed, so
-the earlier retro-file commit blocker is resolved.
+Run `/me --feature --next` for PROC-007 (save migration matrix), the next item in the
+PROC-003-adopted chain after ENG-016. The PROC-013 commit 5eaaa78 was pushed, so the earlier
+retro-file commit blocker is resolved.
 
 ## Known Blockers
 
@@ -739,3 +739,34 @@ Environment used:
   - Full `.\gradlew.bat test`, `.\gradlew.bat projects`, content validation, replay, save-compat,
     benchmark, `.\gradlew.bat :android:assembleDebug`, focused content/defense/render/sandbox
     tests, and `git diff --check` passed.
+
+## ENG-016 Close-out (2026-08-02)
+
+- DONE:
+  - Closed the incident execution pipeline: optional incident content now supports cadence start/end,
+    pacing threat windows, cooldowns, and typed `spawn_wave`, `resource_event`, and `modifier` effects.
+  - The stateful deterministic director consumes a persistent simulation RNG cursor; the atomic
+    sandbox interpreter preflights references, capacity, and overflow before mutation. Repeated
+    resource/modifier effects aggregate via `Long` before overflow checks, and cross-field failures
+    report `ContentValidationError` diagnostics with the incident field path.
+  - `SandboxSaveCodec` v10 persists RNG cursor, director state, executions, and active modifiers with
+    v1-v9 migration. The card moved to `.claude/specs/done/`, the properties schema was completed,
+    and the roadmap/Plane/DIGEST/handoff are synced.
+- DECISIONS:
+  - No ADR: the change stays within existing Android-free simulation, data-driven content, stable-hash,
+    and versioned-save boundaries. Default pack balance remains unchanged; no renderer/input or
+    Android production behavior was changed by this documentation close-out.
+  - Remediation rerun metrics supersede the initial first-run `614/120 ms` values.
+- NEXT:
+  - Run `/me --feature --next` for PROC-007 (save migration matrix), then continue
+    `ENG-021 -> ENG-029 -> ENG-012 -> ENG-007 -> ENG-018`.
+- BLOCKERS:
+  - No ENG-016 implementation blocker remains. No device proof is claimed; existing Android/device,
+    FrameMetrics/JankStats, and other manual performance follow-ups remain pending.
+  - Gradle requires process-local `JAVA_HOME=C:\Program Files\Android\Android Studio\jbr`.
+- VERIFICATION:
+  - Full Gradle test/projects/content/replay/save-compat/benchmark/diff-check lanes passed; focused
+    `SandboxIncidentTest` and content tests passed; simulation/save reviews passed.
+  - Replay hashes: canonical `e4892bcc18f9d8dc`, kill `a763da4ac32b15b4`.
+  - Remediation benchmark: `sim=418 ms`, `kill=85 ms`, `spatial-index-1k=6.1036 ms`,
+    `goal-field=10.427 ms`.

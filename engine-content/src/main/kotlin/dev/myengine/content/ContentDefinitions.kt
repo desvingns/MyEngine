@@ -188,6 +188,55 @@ data class DifficultyContent(
     val goldRateMult: BigDecimal,
 ) : ContentDefinition
 
+enum class IncidentEffectType(val id: String) {
+    SPAWN_WAVE("spawn_wave"),
+    RESOURCE_EVENT("resource_event"),
+    MODIFIER("modifier"),
+    ;
+
+    companion object {
+        fun fromId(id: String): IncidentEffectType? = entries.firstOrNull {
+            it.id == id.trim().lowercase().replace('-', '_')
+        }
+    }
+}
+
+/** Content-only effect descriptors. Execution belongs to the consuming simulation, not content. */
+sealed interface IncidentEffectDescriptor {
+    val type: IncidentEffectType
+
+    data class SpawnWave(val waveId: String) : IncidentEffectDescriptor {
+        override val type: IncidentEffectType = IncidentEffectType.SPAWN_WAVE
+
+        init {
+            require(waveId.isNotBlank()) { "Incident spawn-wave id cannot be blank." }
+        }
+    }
+
+    data class ResourceEvent(val resourceId: String, val amount: Int) : IncidentEffectDescriptor {
+        override val type: IncidentEffectType = IncidentEffectType.RESOURCE_EVENT
+
+        init {
+            require(resourceId.isNotBlank()) { "Incident resource id cannot be blank." }
+            require(amount > 0) { "Incident resource amount must be positive." }
+        }
+    }
+
+    data class Modifier(val modifierId: String, val amount: Int, val durationTicks: Int) : IncidentEffectDescriptor {
+        override val type: IncidentEffectType = IncidentEffectType.MODIFIER
+
+        init {
+            require(modifierId.isNotBlank()) { "Incident modifier id cannot be blank." }
+            require(amount > 0) { "Incident modifier amount must be positive." }
+            require(durationTicks > 0) { "Incident modifier duration must be positive." }
+        }
+    }
+}
+
+typealias SpawnWaveEffectDescriptor = IncidentEffectDescriptor.SpawnWave
+typealias ResourceEventEffectDescriptor = IncidentEffectDescriptor.ResourceEvent
+typealias ModifierEffectDescriptor = IncidentEffectDescriptor.Modifier
+
 /** A grid coordinate that belongs to content data, independent of a simulation-world implementation. */
 data class MapCoordinate(
     val x: Int,
@@ -255,7 +304,33 @@ data class IncidentContent(
     val minThreat: Int,
     val maxThreat: Int,
     val weight: Int,
-) : ContentDefinition
+    /** Tick at which the periodic selection window opens. */
+    val cadenceStartTick: Long = 0,
+    /** Positive interval enables selection; zero preserves legacy no-cadence content as inert. */
+    val cadenceIntervalTicks: Int = 0,
+    /** Optional inclusive end of the cadence window. */
+    val cadenceEndTick: Long? = null,
+    /** Optional explicit pacing window; legacy min/max threat remain the defaults. */
+    val pacingMinThreat: Int = minThreat,
+    val pacingMaxThreat: Int = maxThreat,
+    val cooldownTicks: Int = 0,
+    val effects: List<IncidentEffectDescriptor> = emptyList(),
+) : ContentDefinition {
+    init {
+        require(minThreat >= 0) { "Incident minimum threat cannot be negative." }
+        require(maxThreat >= 0) { "Incident maximum threat cannot be negative." }
+        require(weight > 0) { "Incident weight must be positive." }
+        require(cadenceStartTick >= 0) { "Incident cadence start must be non-negative." }
+        require(cadenceIntervalTicks >= 0) { "Incident cadence interval must be non-negative." }
+        require(cadenceEndTick == null || cadenceEndTick >= 0) { "Incident cadence end cannot be negative." }
+        require(pacingMinThreat >= 0) { "Incident pacing minimum threat cannot be negative." }
+        require(pacingMaxThreat >= 0) { "Incident pacing maximum threat cannot be negative." }
+        require(cooldownTicks >= 0) { "Incident cooldown must be non-negative." }
+    }
+
+    val cadenceTicks: Int get() = cadenceIntervalTicks
+    val pacingWindow: IntRange get() = pacingMinThreat..pacingMaxThreat
+}
 
 data class ContentRegistry(
     val manifest: ContentPackManifest,

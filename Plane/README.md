@@ -44,8 +44,8 @@
    `ENG-028` (sprite/atlas references in content schema), `ENG-009` (splash damage + shot events),
    and `ENG-020` (spatial index + 1k-entity benchmark) are closed; `ENG-020` was accepted on
    2026-07-29. PROC-003 sequencing adopted 2026-07-29 (see Plane/15): ENG-010 -> ENG-016 ->
-   PROC-007 -> ENG-021 -> ENG-029 -> ENG-012 -> ENG-007 -> ENG-018; next exact implementation
-   item was `ENG-010` (status effects framework, MyTD FR-007); the next exact item is `ENG-016`.
+   PROC-007 -> ENG-021 -> ENG-029 -> ENG-012 -> ENG-007 -> ENG-018; ENG-010 and ENG-016 are
+   closed, and the next exact item is `PROC-007`.
 4. Hardening gaps из `docs/HARDENING_AUDIT.md` закрывать по одному, с тестами и обновлением handoff.
 
 Новые крупные фазы добавлять только после того, как backlog specs перестанут быть достаточно
@@ -59,6 +59,7 @@
 | [x] | PROC-013 Spec board hygiene | [PROC-013](../.claude/specs/done/PROC-013-spec-board-hygiene.md) | Variant B migrated 23 cards and wired the board checker into selfcheck | 2026-07-29 |
 | [x] | PROC-003 Domain roadmap sequencing | [PROC-003](../.claude/specs/done/PROC-003-domain-roadmap.md) | Plane/15 sequencing adopted; ENG-010 named successor to ENG-020 | 2026-07-29 |
 | [x] | ENG-010 Status effects framework | [ENG-010](../.claude/specs/done/ENG-010-status-effects.md) | Content-defined slow/DoT, deterministic lifecycle, movement/damage modifiers, save v9 migration, immutable snapshot tags, and stable replay coverage | 2026-08-01 |
+| [x] | ENG-016 Incident execution pipeline + RNG fix | [ENG-016](../.claude/specs/done/ENG-016-incident-execution.md) | Stateful deterministic director, persistent RNG cursor, cadence/pacing/cooldown selection, atomic typed effects, save v10 with v1-v9 migration, and remediation gates | 2026-08-02 |
 
 ## Глобальные инварианты
 
@@ -1228,3 +1229,31 @@
   - Default content packs remain unchanged; no balance values or Android simulation logic added.
 - Next:
   - Run `/me --feature --next` for ENG-016 (incident execution pipeline + RNG fix).
+
+### 2026-08-02 - MyEngine ENG-016 (incident execution pipeline + RNG fix)
+
+- Status: Done / accepted; documentation close-out completed
+- Owner: Codex
+- DONE:
+  - Closed optional incident content with cadence start/end ticks, pacing threat windows, cooldowns,
+    and typed `spawn_wave`, `resource_event`, and `modifier` effects.
+  - Confirmed the stateful deterministic director uses a persistent RNG cursor and that the sandbox
+    interpreter preflights atomically; repeated resource/modifier effects aggregate via `Long`
+    before overflow checks and cross-field validation reports incident field paths.
+  - `SandboxSaveCodec` v10 persists incident/RNG/modifier state with v1-v9 migration; moved the
+    feature card to `.claude/specs/done/` and synced the schema/roadmap/handoff/state/digest docs.
+- DECISIONS:
+  - No ADR. Default pack balance and Android production, renderer, and input boundaries remain
+    unchanged; this close-out edits documentation only.
+- NEXT:
+  - Run `/me --feature --next` for PROC-007, then `ENG-021 -> ENG-029 -> ENG-012 -> ENG-007 -> ENG-018`.
+- BLOCKERS:
+  - No ENG-016 implementation blocker remains. No device proof is claimed; existing device and
+    FrameMetrics/JankStats/manual performance follow-ups remain pending.
+  - Gradle requires process-local `JAVA_HOME=C:\Program Files\Android\Android Studio\jbr`.
+- VERIFICATION:
+  - Full Gradle test/projects/content/replay/save-compat/benchmark/diff-check, focused
+    `SandboxIncidentTest`/content tests, and simulation/save reviews passed.
+  - Replay hashes: canonical `e4892bcc18f9d8dc`, kill `a763da4ac32b15b4`.
+  - Remediation benchmark: `sim=418 ms`, `kill=85 ms`, `spatial-index-1k=6.1036 ms`,
+    `goal-field=10.427 ms`; initial `614/120 ms` values are superseded.

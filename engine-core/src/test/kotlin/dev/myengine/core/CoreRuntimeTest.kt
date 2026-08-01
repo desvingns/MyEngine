@@ -57,6 +57,18 @@ class CoreRuntimeTest {
     }
 
     @Test
+    fun seededRandomSnapshotRestoresExactContinuation() {
+        val original = SeededRandom(123)
+        repeat(4) { original.nextLong() }
+        val cursor = original.snapshot()
+        val restored = SeededRandom.fromSnapshot(cursor)
+
+        assertEquals(List(6) { original.nextLong() }, List(6) { restored.nextLong() })
+        restored.restore(cursor)
+        assertEquals(cursor, restored.snapshot())
+    }
+
+    @Test
     fun replaySameInputsProducesSameHash() {
         val runner = ScenarioRunner(::CounterState) { listOf(CounterSystem()) }
         val scenario = ScenarioDefinition(

@@ -2,6 +2,7 @@ package dev.myengine.games.sandbox
 
 import dev.myengine.content.ContentPackLoader
 import dev.myengine.content.ContentRegistry
+import dev.myengine.content.IncidentEffectDescriptor
 import dev.myengine.content.MapContent
 import dev.myengine.content.MapWinCondition
 import dev.myengine.content.TowerUpgradeTier
@@ -17,6 +18,7 @@ import dev.myengine.core.HashableState
 import dev.myengine.core.RunState
 import dev.myengine.core.RunStatus
 import dev.myengine.core.RunSummary
+import dev.myengine.core.SeededRandom
 import dev.myengine.core.StableHash
 import dev.myengine.core.TerminalReason
 import dev.myengine.core.Tick
@@ -55,6 +57,8 @@ import dev.myengine.render.RenderEntity
 import dev.myengine.render.RenderAssetRef
 import dev.myengine.render.RenderTile
 import dev.myengine.storyteller.IncidentDirector
+import dev.myengine.storyteller.IncidentDirectorState
+import dev.myengine.storyteller.IncidentExecution
 import dev.myengine.world.ResourceNode
 import dev.myengine.world.TerrainRule
 import dev.myengine.world.TilePosition
@@ -75,6 +79,16 @@ data class SandboxDescriptor(
     val engineName: String = EngineInfo.NAME,
 )
 
+data class SandboxIncidentModifier(
+    val amount: Int,
+    val remainingTicks: Int,
+) {
+    init {
+        require(amount > 0) { "Incident modifier amount must be positive." }
+        require(remainingTicks > 0) { "Incident modifier duration must be positive." }
+    }
+}
+
 data class SandboxState(
     var tick: Tick,
     val registry: ContentRegistry,
@@ -86,6 +100,9 @@ data class SandboxState(
     var defense: DefenseState,
     var run: RunState = RunState(),
     var lastCommandOrError: String? = null,
+    var randomCursor: Long = Long.MIN_VALUE,
+    var incidentState: IncidentDirectorState = IncidentDirectorState(),
+    var incidentModifiers: Map<String, SandboxIncidentModifier> = emptyMap(),
 ) : HashableState {
     override fun appendHash(hash: StableHash) {
         hash.add(tick.value)
@@ -101,6 +118,25 @@ data class SandboxState(
             .add(defense.metrics.enemiesLeaked)
             .add(defense.metrics.coreDamage)
             .add(defense.metrics.towerShots)
+        hash.add("rng-cursor").add(randomCursor)
+        val canonicalIncidentState = incidentState.canonical()
+        canonicalIncidentState.cooldownUntil.forEach { (id, tick) -> hash.add("cooldown").add(id).add(tick) }
+        hash.add(canonicalIncidentState.lastSelectionTick ?: -1L)
+            .add(canonicalIncidentState.lastSelectionId ?: "")
+        canonicalIncidentState.executions.forEach { execution ->
+            hash.add("incident").add(execution.tick).add(execution.incidentId).add(execution.threat)
+            execution.effects.forEach { effect ->
+                hash.add(effect.type.id)
+                when (effect) {
+                    is IncidentEffectDescriptor.SpawnWave -> hash.add(effect.waveId)
+                    is IncidentEffectDescriptor.ResourceEvent -> hash.add(effect.resourceId).add(effect.amount)
+                    is IncidentEffectDescriptor.Modifier -> hash.add(effect.modifierId).add(effect.amount).add(effect.durationTicks)
+                }
+            }
+        }
+        incidentModifiers.toSortedMap().forEach { (id, modifier) ->
+            hash.add("incident-modifier").add(id).add(modifier.amount).add(modifier.remainingTicks)
+        }
         if (run.isTerminal) run.appendHash(hash)
     }
 
@@ -135,6 +171,7 @@ class SandboxRuntime(
     val state: SandboxState,
     private val defenseRuntime: DefenseRuntime = DefenseRuntime(),
     private val commandQueue: CommandQueue = CommandQueue(),
+    seed: Long = 7L,
 ) {
     private val producerSystem = ProducerSystem(state.registry.recipes)
     private val map = state.registry.requireMap(state.mapId)
@@ -145,6 +182,15 @@ class SandboxRuntime(
     private var goalField: GoalField = rebuildAfterWalkabilityChange()
     /** Latest transient combat events, replaced every completed simulation tick. */
     private var combatEvents: CombatEvents = CombatEvents.EMPTY
+    private val simulationRandom = SeededRandom.fromSnapshot(
+        state.randomCursor.takeIf { it != Long.MIN_VALUE } ?: seed,
+    )
+    private val incidentDirector = IncidentDirector(
+        incidents = state.registry.incidents.values,
+        random = simulationRandom,
+        initialState = state.incidentState,
+    )
+    private val incidentInterpreter = SandboxIncidentEffectInterpreter(defenseRuntime)
     private val renderPath: List<TilePosition> get() = goalField.pathFrom(spawn)
 
     /** Returns false without mutating state when the run has already reached its terminal boundary. */
@@ -174,6 +220,7 @@ class SandboxRuntime(
         repeat(ticks) {
             if (state.run.isTerminal) return
             state.tick = state.tick.next()
+            advanceIncidentModifiers()
             val commands = commandQueue.drainFor(state.tick)
             commands.forEach(::applyCommand)
             updateProduction()
@@ -209,8 +256,39 @@ class SandboxRuntime(
             state.defense = defenseRuntime.updateEnemies(state.registry, state.defense, state.entities, goalField)
             evaluateTerminalState()
             if (state.run.isTerminal) return
-            IncidentDirector(state.registry.incidents.values).select(state.defense.metrics.enemiesSpawned, dev.myengine.core.SeededRandom(17))
+            val directorBefore = state.incidentState
+            val randomBefore = simulationRandom.snapshot()
+            val selection = incidentDirector.select(state.tick.value, state.defense.metrics.enemiesSpawned)
+            state.randomCursor = simulationRandom.snapshot()
+            state.incidentState = incidentDirector.state()
+            if (selection != null) {
+                val application = incidentInterpreter.apply(
+                    selection = selection,
+                    state = state,
+                    spawn = spawn,
+                    core = core,
+                    goalField = goalField,
+                )
+                if (application.applied) {
+                    state.lastCommandOrError = "incident_applied:${selection.incidentId}"
+                } else {
+                    incidentDirector.restore(directorBefore)
+                    simulationRandom.restore(randomBefore)
+                    state.randomCursor = randomBefore
+                    state.incidentState = directorBefore
+                    state.lastCommandOrError = "incident_rejected:${application.reason}"
+                }
+            }
         }
+    }
+
+    private fun advanceIncidentModifiers() {
+        state.incidentModifiers = state.incidentModifiers.toSortedMap()
+            .mapNotNull { (id, modifier) ->
+                if (modifier.remainingTicks <= 1) null
+                else id to modifier.copy(remainingTicks = modifier.remainingTicks - 1)
+            }
+            .toMap()
     }
 
     fun snapshot(): EngineSnapshot {
@@ -640,7 +718,7 @@ class SandboxRuntime(
 private fun VisualAssetRef.toRenderAssetRef(): RenderAssetRef = RenderAssetRef(path = path, atlasKey = atlasKey)
 
 object SandboxSaveCodec {
-    const val SAVE_VERSION: Int = 9
+    const val SAVE_VERSION: Int = 10
 
     fun encode(state: SandboxState, seed: Long, pendingCommands: List<EngineCommand> = emptyList()): String {
         val props = Properties()
@@ -651,6 +729,24 @@ object SandboxSaveCodec {
         props["mapId"] = state.mapId
         props["contentVersion"] = state.registry.manifest.version
         props["seed"] = seed.toString()
+        props["randomCursor"] = state.randomCursor.toString()
+        props["incidentCooldowns"] = state.incidentState.cooldownUntil.toSortedMap().entries
+            .joinToString(";") { (id, tick) -> "${encodeToken(id)}:$tick" }
+        props["incidentLastSelection"] = listOf(
+            state.incidentState.lastSelectionTick?.toString().orEmpty(),
+            encodeToken(state.incidentState.lastSelectionId.orEmpty()),
+        ).joinToString(":")
+        props["incidentExecutions"] = state.incidentState.executions.joinToString(";") { execution ->
+            listOf(
+                execution.tick,
+                encodeToken(execution.incidentId),
+                execution.threat,
+                execution.effects.joinToString(",", transform = ::encodeIncidentEffect),
+            ).joinToString("~")
+        }
+        props["incidentModifiers"] = state.incidentModifiers.toSortedMap().entries.joinToString(";") { (id, modifier) ->
+            "${encodeToken(id)}:${modifier.amount}:${modifier.remainingTicks}"
+        }
         props["tick"] = state.tick.value.toString()
         props["runStatus"] = state.run.status.name
         props["terminalReason"] = state.run.terminalReason?.name.orEmpty()
@@ -723,6 +819,13 @@ object SandboxSaveCodec {
         }
         val state = SandboxGame.createInitialState(registry = registry, mapId = mapId)
         state.tick = Tick(props.getProperty("tick").toLong())
+        val seed = props.getProperty("seed")?.toLongOrNull() ?: 7L
+        state.randomCursor = if (version >= 10) {
+            props.getProperty("randomCursor")?.toLongOrNull()
+                ?: error("Save version 10 is missing randomCursor.")
+        } else {
+            SeededRandom(seed).snapshot()
+        }
         val metrics = props.getProperty("metrics", "0,0,0,0,0").split(',').map { it.toInt() }
         state.defense = DefenseState(
             coreHealth = props.getProperty("coreHealth").toInt(),
@@ -739,6 +842,8 @@ object SandboxSaveCodec {
                 Producer(parts[0], parts[1], parts[2].toInt())
             }
         state.run = if (version >= 5) parseRunState(props) else RunState()
+        state.incidentState = if (version >= 10) parseIncidentState(props) else IncidentDirectorState()
+        state.incidentModifiers = if (version >= 10) parseIncidentModifiers(props) else emptyMap()
         val entities = parseEntities(props.getProperty("entities", ""), registry, version)
         state.world.positions().forEach { state.world.clearOccupancy(it) }
         val loadedStore = EntityStore(props.getProperty("nextEntityId").toLong(), entities)
@@ -765,6 +870,88 @@ object SandboxSaveCodec {
         require(version != null && version in 1..SAVE_VERSION) { "Unsupported save version '$version'." }
         return version
     }
+
+    private fun parseIncidentState(props: Properties): IncidentDirectorState {
+        val cooldowns = props.getProperty("incidentCooldowns", "")
+            .split(';')
+            .filter { it.isNotBlank() }
+            .associate { encoded ->
+                val parts = encoded.split(':')
+                require(parts.size == 2) { "Invalid incident cooldown entry '$encoded'." }
+                decodeToken(parts[0]) to parts[1].toLongOrNull().let {
+                    require(it != null && it >= 0) { "Invalid incident cooldown tick in '$encoded'." }
+                    it
+                }
+            }
+            .toSortedMap()
+        val last = props.getProperty("incidentLastSelection", ":").split(':')
+        require(last.size == 2) { "Invalid incident last-selection state." }
+        val lastTick = last[0].toLongOrNull()?.takeIf { it >= 0 }
+        val lastId = decodeToken(last[1]).takeIf { it.isNotBlank() }
+        val executions = props.getProperty("incidentExecutions", "")
+            .split(';')
+            .filter { it.isNotBlank() }
+            .map { encoded ->
+                val parts = encoded.split('~')
+                require(parts.size == 4) { "Invalid incident execution entry '$encoded'." }
+                val tick = parts[0].toLongOrNull()
+                require(tick != null && tick >= 0) { "Invalid incident execution tick '$encoded'." }
+                val threat = parts[2].toIntOrNull()
+                require(threat != null && threat >= 0) { "Invalid incident execution threat '$encoded'." }
+                IncidentExecution(
+                    tick = tick,
+                    incidentId = decodeToken(parts[1]).also { require(it.isNotBlank()) },
+                    threat = threat,
+                    effects = parts[3].split(',').filter { it.isNotBlank() }.map(::decodeIncidentEffect),
+                )
+            }
+        return IncidentDirectorState(cooldowns, lastTick, lastId, executions).canonical()
+    }
+
+    private fun parseIncidentModifiers(props: Properties): Map<String, SandboxIncidentModifier> =
+        props.getProperty("incidentModifiers", "")
+            .split(';')
+            .filter { it.isNotBlank() }
+            .associate { encoded ->
+                val parts = encoded.split(':')
+                require(parts.size == 3) { "Invalid incident modifier entry '$encoded'." }
+                val amount = parts[1].toIntOrNull()
+                val remaining = parts[2].toIntOrNull()
+                require(amount != null && remaining != null) { "Invalid incident modifier values '$encoded'." }
+                decodeToken(parts[0]) to SandboxIncidentModifier(amount, remaining)
+            }
+            .toSortedMap()
+
+    private fun encodeIncidentEffect(effect: IncidentEffectDescriptor): String = when (effect) {
+        is IncidentEffectDescriptor.SpawnWave -> "spawn_wave|${encodeToken(effect.waveId)}"
+        is IncidentEffectDescriptor.ResourceEvent -> "resource_event|${encodeToken(effect.resourceId)}|${effect.amount}"
+        is IncidentEffectDescriptor.Modifier -> "modifier|${encodeToken(effect.modifierId)}|${effect.amount}|${effect.durationTicks}"
+    }
+
+    private fun decodeIncidentEffect(encoded: String): IncidentEffectDescriptor {
+        val parts = encoded.split('|')
+        return when (parts.firstOrNull()) {
+            "spawn_wave" -> {
+                require(parts.size == 2) { "Invalid spawn-wave incident effect '$encoded'." }
+                IncidentEffectDescriptor.SpawnWave(decodeToken(parts[1]))
+            }
+            "resource_event" -> {
+                require(parts.size == 3) { "Invalid resource incident effect '$encoded'." }
+                IncidentEffectDescriptor.ResourceEvent(decodeToken(parts[1]), parts[2].toInt())
+            }
+            "modifier" -> {
+                require(parts.size == 4) { "Invalid modifier incident effect '$encoded'." }
+                IncidentEffectDescriptor.Modifier(decodeToken(parts[1]), parts[2].toInt(), parts[3].toInt())
+            }
+            else -> error("Unknown incident effect '$encoded'.")
+        }
+    }
+
+    private fun encodeToken(value: String): String =
+        java.util.Base64.getUrlEncoder().withoutPadding().encodeToString(value.toByteArray())
+
+    private fun decodeToken(value: String): String =
+        java.util.Base64.getUrlDecoder().decode(value).toString(Charsets.UTF_8)
 
     private fun parseRunState(props: Properties): RunState {
         val status = RunStatus.values().firstOrNull { it.name == props.getProperty("runStatus") }
@@ -943,6 +1130,7 @@ object SandboxGame {
         registry: ContentRegistry = loadRegistry(),
         difficultyId: String? = null,
         mapId: String? = null,
+        seed: Long = 7L,
     ): SandboxState {
         val effectiveRegistry = difficultyId?.let(registry::resolveDifficulty) ?: registry
         val map = effectiveRegistry.requireMap(mapId)
@@ -956,6 +1144,7 @@ object SandboxGame {
             inventory = Inventory(mapOf("bolt" to 6)),
             producers = listOf(Producer("generator-1", "bolt-generator")),
             defense = DefenseState(coreHealth = 20),
+            randomCursor = SeededRandom(seed).snapshot(),
         )
     }
 
@@ -963,8 +1152,9 @@ object SandboxGame {
         registry: ContentRegistry = loadRegistry(),
         difficultyId: String? = null,
         mapId: String? = null,
+        seed: Long = 7L,
     ): SandboxRuntime =
-        SandboxRuntime(createInitialState(registry, difficultyId, mapId))
+        SandboxRuntime(createInitialState(registry, difficultyId, mapId, seed), seed = seed)
 
     /**
      * Canonical replay/benchmark scenario. The pulse tower at (30,32) is adjacent to the core and
@@ -991,7 +1181,7 @@ object SandboxGame {
         mapId: String?,
     ): SandboxScenarioResult {
         val registry = loadRegistry(difficultyId = difficultyId)
-        val runtime = createRuntime(registry, mapId = mapId)
+        val runtime = createRuntime(registry, mapId = mapId, seed = seed)
         runtime.submit(BuildTowerCommand(dev.myengine.core.CommandId(1), Tick(1), "pulse", TileCoordinate(towerPosition.x, towerPosition.y)))
         runtime.step(35)
         val save = SandboxSaveCodec.encode(runtime.state, seed)

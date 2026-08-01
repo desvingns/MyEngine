@@ -57,7 +57,7 @@ class SandboxGoalFieldTest {
 
         val first = run()
         assertEquals(first, run())
-        assertEquals("f118e5a6fdf815e4", first)
+        assertEquals("fdf6a084891f61af", first)
     }
 
     @Test

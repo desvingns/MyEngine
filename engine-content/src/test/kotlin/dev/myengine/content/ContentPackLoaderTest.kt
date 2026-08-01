@@ -8,6 +8,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
+import kotlin.test.assertIs
 
 class ContentPackLoaderTest {
     @Test
@@ -70,6 +71,60 @@ class ContentPackLoaderTest {
         val invalidResult = ContentPackLoader.load(invalidDefinition)
         assertFalse(invalidResult.isValid)
         assertTrue(invalidResult.errors.any { it.field == "magnitude" })
+    }
+
+    @Test
+    fun incidentsAreOptionalAndTypedEffectsValidateReferencesAndValues() {
+        val noIncidents = createPack()
+        Files.delete(noIncidents.resolve("incidents.properties"))
+        val noIncidentResult = ContentPackLoader.load(noIncidents)
+        assertTrue(noIncidentResult.isValid, noIncidentResult.errors.joinToString("\n"))
+        assertTrue(noIncidentResult.registry!!.incidents.isEmpty())
+
+        val valid = createPack()
+        valid.resolve("incidents.properties").writeText(
+            "spark.minThreat=0\nspark.maxThreat=5\nspark.weight=1\n" +
+                "spark.cadenceStartTick=2\nspark.cadenceIntervalTicks=3\nspark.cooldownTicks=4\n" +
+                "spark.effects=spawn_wave:wave1,resource_event:bolt:2,modifier:storm:3:5\n",
+        )
+        val validResult = ContentPackLoader.load(valid)
+        assertTrue(validResult.isValid, validResult.errors.joinToString("\n"))
+        val effects = validResult.registry!!.incidents.getValue("spark").effects
+        assertIs<IncidentEffectDescriptor.SpawnWave>(effects[0])
+        assertIs<IncidentEffectDescriptor.ResourceEvent>(effects[1])
+        assertIs<IncidentEffectDescriptor.Modifier>(effects[2])
+
+        val invalidRef = createPack()
+        invalidRef.resolve("incidents.properties").writeText(
+            "spark.minThreat=0\nspark.maxThreat=5\nspark.weight=1\n" +
+                "spark.cadenceIntervalTicks=1\nspark.effects=spawn_wave:missing,resource_event:missing:0\n",
+        )
+        val invalidResult = ContentPackLoader.load(invalidRef)
+        assertFalse(invalidResult.isValid)
+        assertTrue(invalidResult.errors.any { it.message.contains("Unknown wave") })
+        assertTrue(invalidResult.errors.any { it.message.contains("positive integer") })
+    }
+
+    @Test
+    fun crossFieldIncidentValidationUsesDiagnosticsInsteadOfConstructorRequirements() {
+        val invalidCases = listOf(
+            "maxThreat" to "spark.minThreat=5\nspark.maxThreat=4\nspark.weight=1\n",
+            "pacingMaxThreat" to "spark.minThreat=0\nspark.maxThreat=5\nspark.weight=1\n" +
+                "spark.pacingMinThreat=5\nspark.pacingMaxThreat=4\n",
+            "cadenceEndTick" to "spark.minThreat=0\nspark.maxThreat=5\nspark.weight=1\n" +
+                "spark.cadenceStartTick=5\nspark.cadenceEndTick=4\n",
+        )
+
+        invalidCases.forEach { (field, content) ->
+            val root = createPack()
+            root.resolve("incidents.properties").writeText(content)
+
+            val result = ContentPackLoader.load(root)
+
+            assertFalse(result.isValid, "Expected invalid incident field $field to be diagnosed.")
+            assertTrue(result.registry == null)
+            assertTrue(result.errors.any { it.id == "spark" && it.field == field })
+        }
     }
 
     @Test

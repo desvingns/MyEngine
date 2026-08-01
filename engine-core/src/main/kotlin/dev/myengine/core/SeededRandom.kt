@@ -25,7 +25,16 @@ class SeededRandom(seed: Long) {
 
     fun snapshot(): Long = state
 
+    /** Restores the exact internal cursor captured by [snapshot]. */
+    fun restore(snapshot: Long): SeededRandom {
+        state = snapshot
+        return this
+    }
+
+    /** Creates an independent stream positioned at an existing cursor. */
     companion object {
+        fun fromSnapshot(snapshot: Long): SeededRandom = SeededRandom(0L).restore(snapshot)
+
         private const val GOLDEN_GAMMA: Long = -7046029254386353131L
         private const val DOUBLE_UNIT: Double = 1.0 / (1L shl 53).toDouble()
     }

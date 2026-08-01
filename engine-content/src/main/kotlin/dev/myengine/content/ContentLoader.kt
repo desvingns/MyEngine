@@ -44,7 +44,7 @@ object ContentPackLoader {
         val buildings = parseOptionalDefinitions(root, "buildings.properties", errors, ::parseBuilding)
         val recipes = parseDefinitions(root, "recipes.properties", errors, ::parseRecipe)
         val waves = parseDefinitions(root, "waves.properties", errors, ::parseWave)
-        val incidents = parseDefinitions(root, "incidents.properties", errors, ::parseIncident)
+        val incidents = parseOptionalDefinitions(root, "incidents.properties", errors, ::parseIncident)
         val difficulties = parseOptionalDefinitions(root, "difficulties.properties", errors, ::parseDifficulty)
         val effects = parseOptionalDefinitions(root, "effects.properties", errors, ::parseStatusEffect)
         val strings = readProperties(root.resolve("strings.properties"), errors)?.entries
@@ -65,6 +65,7 @@ object ContentPackLoader {
             buildings = buildings,
             recipes = recipes,
             waves = waves,
+            incidents = incidents,
             resources = resources,
             effects = effects,
             errors = errors,
@@ -395,13 +396,114 @@ object ContentPackLoader {
         return WaveEarlyCallBonus(resourceId, amount)
     }
 
-    private fun parseIncident(id: String, fields: Map<String, String>, errors: MutableList<ContentValidationError>, file: String): IncidentContent? =
-        IncidentContent(
+    private fun parseIncident(id: String, fields: Map<String, String>, errors: MutableList<ContentValidationError>, file: String): IncidentContent? {
+        val minThreat = fields.requiredNonNegativeInt(file, id, "minThreat", errors) ?: return null
+        val maxThreat = fields.requiredNonNegativeInt(file, id, "maxThreat", errors) ?: return null
+        val pacingMinThreat = fields.optionalNonNegativeInt(file, id, "pacingMinThreat", errors) ?: minThreat
+        val pacingMaxThreat = fields.optionalNonNegativeInt(file, id, "pacingMaxThreat", errors) ?: maxThreat
+        val cadenceInterval = fields.optionalNonNegativeInt(file, id, "cadenceIntervalTicks", errors)
+            ?: fields.optionalNonNegativeInt(file, id, "cadenceTicks", errors)
+            ?: 0
+        val cadenceStart = fields.optionalNonNegativeLong(file, id, "cadenceStartTick", errors) ?: 0
+        val cadenceEnd = fields.optionalNonNegativeLong(file, id, "cadenceEndTick", errors)
+        if (maxThreat < minThreat) {
+            errors += ContentValidationError(file, id, "maxThreat", "Must be greater than or equal to minThreat.")
+        }
+        if (pacingMaxThreat < pacingMinThreat) {
+            errors += ContentValidationError(file, id, "pacingMaxThreat", "Must be greater than or equal to pacingMinThreat.")
+        }
+        if (cadenceEnd != null && cadenceEnd < cadenceStart) {
+            errors += ContentValidationError(file, id, "cadenceEndTick", "Must be greater than or equal to cadenceStartTick.")
+        }
+        if (maxThreat < minThreat || pacingMaxThreat < pacingMinThreat || (cadenceEnd != null && cadenceEnd < cadenceStart)) {
+            return null
+        }
+        return IncidentContent(
             id = id,
-            minThreat = fields.requiredNonNegativeInt(file, id, "minThreat", errors) ?: return null,
-            maxThreat = fields.requiredNonNegativeInt(file, id, "maxThreat", errors) ?: return null,
+            minThreat = minThreat,
+            maxThreat = maxThreat,
             weight = fields.requiredPositiveInt(file, id, "weight", errors) ?: return null,
+            cadenceStartTick = cadenceStart,
+            cadenceIntervalTicks = cadenceInterval,
+            cadenceEndTick = cadenceEnd,
+            pacingMinThreat = pacingMinThreat,
+            pacingMaxThreat = pacingMaxThreat,
+            cooldownTicks = fields.optionalNonNegativeInt(file, id, "cooldownTicks", errors) ?: 0,
+            effects = parseIncidentEffects(id, fields, errors, file),
         )
+    }
+
+    private fun parseIncidentEffects(
+        id: String,
+        fields: Map<String, String>,
+        errors: MutableList<ContentValidationError>,
+        file: String,
+    ): List<IncidentEffectDescriptor> {
+        val direct = fields["effects"]?.split(',')?.map(String::trim)?.filter(String::isNotEmpty).orEmpty()
+        val indexed = fields.entries
+            .mapNotNull { entry ->
+                val match = Regex("(?:effect|effects)\\.(\\d+)").find(entry.key) ?: return@mapNotNull null
+                if (match.value == entry.key) match.groupValues[1].toInt() to entry.value else null
+            }
+            .sortedBy { it.first }
+            .map { it.second }
+        if (direct.isNotEmpty() && indexed.isNotEmpty()) {
+            errors += ContentValidationError(file, id, "effects", "Use either effects=... or indexed effect.N fields, not both.")
+            return emptyList()
+        }
+        if (indexed.isNotEmpty()) {
+            return indexed.mapIndexedNotNull { index, value ->
+                parseIncidentEffect(id, "effect.$index", value, errors, file)
+            }
+        }
+        return direct.mapIndexedNotNull { index, value ->
+            parseIncidentEffect(id, "effects[$index]", value, errors, file)
+        }
+    }
+
+    private fun parseIncidentEffect(
+        id: String,
+        field: String,
+        raw: String,
+        errors: MutableList<ContentValidationError>,
+        file: String,
+    ): IncidentEffectDescriptor? {
+        val parts = raw.split(':').map(String::trim)
+        val type = IncidentEffectType.fromId(parts.firstOrNull().orEmpty())
+        if (type == null) {
+            errors += ContentValidationError(file, id, field, "Expected spawn_wave, resource_event, or modifier.")
+            return null
+        }
+        return when (type) {
+            IncidentEffectType.SPAWN_WAVE -> if (parts.size == 2 && parts[1].isNotBlank()) {
+                IncidentEffectDescriptor.SpawnWave(parts[1])
+            } else {
+                errors += ContentValidationError(file, id, field, "Expected spawn_wave:waveId.")
+                null
+            }
+            IncidentEffectType.RESOURCE_EVENT -> if (parts.size == 3 && parts[1].isNotBlank()) {
+                val amount = parts[2].toIntOrNull()
+                if (amount == null || amount <= 0) {
+                    errors += ContentValidationError(file, id, field, "Resource event amount must be a positive integer.")
+                    null
+                } else IncidentEffectDescriptor.ResourceEvent(parts[1], amount)
+            } else {
+                errors += ContentValidationError(file, id, field, "Expected resource_event:resourceId:amount.")
+                null
+            }
+            IncidentEffectType.MODIFIER -> if (parts.size == 4 && parts[1].isNotBlank()) {
+                val amount = parts[2].toIntOrNull()
+                val duration = parts[3].toIntOrNull()
+                if (amount == null || amount <= 0 || duration == null || duration <= 0) {
+                    errors += ContentValidationError(file, id, field, "Modifier amount and duration must be positive integers.")
+                    null
+                } else IncidentEffectDescriptor.Modifier(parts[1], amount, duration)
+            } else {
+                errors += ContentValidationError(file, id, field, "Expected modifier:modifierId:amount:durationTicks.")
+                null
+            }
+        }
+    }
 
     private fun parseDifficulty(id: String, fields: Map<String, String>, errors: MutableList<ContentValidationError>, file: String): DifficultyContent? =
         DifficultyContent(
@@ -765,6 +867,7 @@ object ContentPackLoader {
         buildings: Map<String, BuildingContent>,
         recipes: Map<String, RecipeContent>,
         waves: Map<String, WaveContent>,
+        incidents: Map<String, IncidentContent>,
         resources: Map<String, ResourceContent>,
         effects: Map<String, StatusEffectContent>,
         errors: MutableList<ContentValidationError>,
@@ -811,6 +914,19 @@ object ContentPackLoader {
             wave.spawns.forEach { spawn ->
                 if (!enemies.containsKey(spawn.enemyId)) errors += ContentValidationError("waves.properties", wave.id, "spawns", "Unknown enemy '${spawn.enemyId}'.")
                 if (spawn.count <= 0) errors += ContentValidationError("waves.properties", wave.id, "spawns", "Spawn count must be positive.")
+            }
+        }
+        incidents.values.forEach { incident ->
+            incident.effects.forEachIndexed { index, effect ->
+                when (effect) {
+                    is IncidentEffectDescriptor.SpawnWave -> if (!waves.containsKey(effect.waveId)) {
+                        errors += ContentValidationError("incidents.properties", incident.id, "effects[$index]", "Unknown wave '${effect.waveId}'.")
+                    }
+                    is IncidentEffectDescriptor.ResourceEvent -> if (!resources.containsKey(effect.resourceId)) {
+                        errors += ContentValidationError("incidents.properties", incident.id, "effects[$index]", "Unknown resource '${effect.resourceId}'.")
+                    }
+                    is IncidentEffectDescriptor.Modifier -> Unit
+                }
             }
         }
     }
@@ -968,6 +1084,38 @@ object ContentPackLoader {
     private fun Map<String, String>.requiredNonNegativeLong(file: String, id: String, field: String, errors: MutableList<ContentValidationError>): Long? {
         val value = required(file, id, field, errors)?.toLongOrNull() ?: return errors.addAndNull(file, id, field, "Expected integer.")
         return if (value >= 0) value else errors.addAndNull(file, id, field, "Expected non-negative integer.")
+    }
+
+    private fun Map<String, String>.optionalNonNegativeInt(
+        file: String,
+        id: String,
+        field: String,
+        errors: MutableList<ContentValidationError>,
+    ): Int? {
+        val raw = this[field] ?: return null
+        val value = raw.toIntOrNull()
+        return if (value != null && value >= 0) value else errors.addAndNull(
+            file,
+            id,
+            field,
+            "Expected non-negative integer.",
+        )
+    }
+
+    private fun Map<String, String>.optionalNonNegativeLong(
+        file: String,
+        id: String,
+        field: String,
+        errors: MutableList<ContentValidationError>,
+    ): Long? {
+        val raw = this[field] ?: return null
+        val value = raw.toLongOrNull()
+        return if (value != null && value >= 0) value else errors.addAndNull(
+            file,
+            id,
+            field,
+            "Expected non-negative integer.",
+        )
     }
 
     /**

@@ -1,7 +1,7 @@
 # MyEngine Content Properties Schema
 
-Status: Phase 06 accepted; DX-008 hybrid format accepted; ENG-028 and ENG-009 fields documented
-Last updated: 2026-07-28
+Status: Phase 06 accepted; DX-008 hybrid format accepted; ENG-016, ENG-028, and ENG-009 fields documented
+Last updated: 2026-08-02
 
 Content packs use the DX-008 hybrid format defined by
 [`ADR-0003-content-format-hybrid.md`](../DECISIONS/ADR-0003-content-format-hybrid.md): flat entity
@@ -136,9 +136,51 @@ partial, non-positive, or unknown-resource values are rejected during content va
 
 ### Incidents
 
+`incidents.properties` is optional. A pack without this file, or with no incident definitions,
+remains valid and has no selectable incidents. Definitions use the standard
+`<incidentId>.<field>=<value>` form. `minThreat`/`maxThreat` are the legacy threat envelope;
+the stateful cadence selector uses the explicit pacing window below, which defaults to that
+envelope when omitted.
+
 - `minThreat`: non-negative int
-- `maxThreat`: non-negative int
-- `weight`: positive int
+- `maxThreat`: non-negative int; must be greater than or equal to `minThreat`
+- `weight`: required positive int used for weighted selection among eligible incidents
+- `cadenceStartTick`: optional non-negative long, inclusive; defaults to `0`
+- `cadenceIntervalTicks`: optional non-negative int; defaults to `0`. A value of `0` disables
+  cadence eligibility (the compatibility selector may still use the legacy threat envelope).
+  The legacy spelling `cadenceTicks` is accepted as an alias when `cadenceIntervalTicks` is absent.
+- `cadenceEndTick`: optional non-negative long, inclusive; when present it must be greater than or
+  equal to `cadenceStartTick`; omitted means that the cadence window has no explicit end
+- `pacingMinThreat`: optional non-negative int; defaults to `minThreat`
+- `pacingMaxThreat`: optional non-negative int; defaults to `maxThreat` and must be greater than or
+  equal to `pacingMinThreat`
+- `cooldownTicks`: optional non-negative int; defaults to `0`. After a selected incident, the same
+  incident is ineligible until `selectionTick + cooldownTicks`; `0` means no cooldown state is set
+- `effects`: optional comma-separated typed effect descriptors, or indexed `effect.0=...`,
+  `effect.1=...` fields. Use one form only; indexed entries are applied in numeric index order.
+
+Cadence eligibility is inclusive at `cadenceStartTick`, then every
+`cadenceIntervalTicks` ticks, through the inclusive `cadenceEndTick` when present. An incident is
+selected only when the current tick is in its cadence window, the current threat budget is inside
+`pacingMinThreat..pacingMaxThreat`, and its cooldown has expired. Eligible incidents are sorted by
+id before weighted selection. The stateful director consumes one persistent simulation RNG cursor;
+the cursor, cooldowns, selection history, and typed effects are part of the versioned sandbox save.
+
+Typed effect syntax and validation:
+
+- `spawn_wave:waveId`: queues the referenced content wave; `waveId` must resolve in the same pack
+- `resource_event:resourceId:amount`: adds a positive integer `amount` of the referenced resource;
+  `resourceId` must resolve in the same pack
+- `modifier:modifierId:amount:durationTicks`: applies a positive integer `amount` for a positive
+  integer `durationTicks`; `modifierId` is a non-blank data-defined id
+
+Repeated resource events with the same resource id and repeated modifiers with the same modifier id
+are aggregated before integer-overflow and inventory-capacity checks; modifier duration uses the
+maximum declared duration. Effect preflight is atomic: unknown references, invalid amounts,
+overflow, or capacity failure leave the authoritative state unchanged. Invalid cross-field values
+and effect syntax are reported as `ContentValidationError` diagnostics with the
+`incidents.properties` file, incident id, and field path (for example `effects[0]`); unknown waves
+and resources are reported at the corresponding indexed effect path.
 
 ### Strings
 

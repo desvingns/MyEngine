@@ -125,7 +125,7 @@ class SandboxStatusEffectTest {
         }
 
         val first = run()
-        assertEquals("3a9644f8035c6fd2", first)
+        assertEquals("017516c12eb955e1", first)
         assertEquals(first, run())
     }
 }
