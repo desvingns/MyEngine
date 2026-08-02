@@ -41,7 +41,7 @@ Last updated: 2026-08-02
 | Endless wave generation | ENG-018 | vision:td, vision:mindustry-like | 2 | backlog |
 | Walls + player-placed blockers | ENG-019 | vision:td, vision:mindustry-like | 2 | backlog |
 | Spatial index + 1k-entity benchmark | ENG-020 | mytd, vision:td, vision:rimworld-like, vision:mindustry-like | 4 | **done** (2026-07-29; internal non-persisted grid index powers targeting/splash candidate queries, and the deterministic 1024-enemy benchmark reports `5.3045 ms`) |
-| Save slots + autosave policy | ENG-021 | vision:td, vision:rimworld-like, vision:mindustry-like | 3 | backlog |
+| Save slots + autosave policy | ENG-021 | vision:td, vision:rimworld-like, vision:mindustry-like | 3 | **done** (2026-08-02; named `slots/`, rotating `autosave/`, atomic writes, metadata-only inspection, corruption-only fallback, codec v10 and Android Bundle path preserved) |
 | Meta-progression store | ENG-022 | vision:td | 1 | backlog |
 | Sprite/atlas references in content schema | ENG-028 | mytd, vision:td, vision:rimworld-like, vision:mindustry-like | 4 | **done** (2026-07-28; validated opaque refs for tiles/towers/tower tiers/enemies/buildings, pack-relative file/atlas-key checks, deterministic palette fallback, desktop/Android consumers, and replay/save boundaries unchanged) |
 | Audio event hooks (snapshot event feed) | ENG-029 | vision:td, vision:rimworld-like, vision:mindustry-like | 3 | backlog |
@@ -112,8 +112,7 @@ Last updated: 2026-08-02
 3. P1 opener: ENG-002 (done) -> ENG-013 (done) -> ENG-008 (done) -> ENG-015 (done) -> ENG-030
    (done 2026-07-21) -> ENG-028 (done 2026-07-28) -> ENG-009 (done 2026-07-28) -> ENG-020
    (done 2026-07-29). PROC-003 sequencing adopted 2026-07-29: ENG-010 -> ENG-016 (done 2026-08-02)
-   -> PROC-007
-   -> ENG-021 -> ENG-029 -> ENG-012 -> ENG-007 -> ENG-018. Colony slice (ENG-001 -> ENG-003
+   -> PROC-007 (done 2026-08-02) -> ENG-021 (done 2026-08-02) -> ENG-029 -> ENG-012 -> ENG-007 -> ENG-018. Colony slice (ENG-001 -> ENG-003
    -> ENG-031 -> ENG-004 -> ENG-032) deferred until a colony/MySD spec supplies named FRs
    (see Plane/15).
 4. DX-008 is done: use its hybrid-format ADR for ENG-017/ENG-028 schema work. Other high-leverage

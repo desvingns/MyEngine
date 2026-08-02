@@ -1,6 +1,6 @@
 # MyEngine Handoff
 
-Last updated: 2026-08-02 (PROC-007 save migration matrix close-out; next ENG-021)
+Last updated: 2026-08-02 (ENG-021 save slots + autosave close-out; next ENG-029)
 Owner: Codex
 
 ## DONE
@@ -1011,8 +1011,8 @@ PROC-013 commit 5eaaa78 was pushed.
 
 ### NEXT
 
-- Run `/me --feature --next` for ENG-021 (save slots + autosave policy), then continue
-  `ENG-029 -> ENG-012 -> ENG-007 -> ENG-018`.
+- Run `/me --feature --next` for ENG-029 (audio event hooks), then continue
+  `ENG-012 -> ENG-007 -> ENG-018`.
 
 ### BLOCKERS
 
@@ -1024,3 +1024,39 @@ PROC-013 commit 5eaaa78 was pushed.
 - Focused matrix, full tests, projects, content validation, replay, save-compat, benchmark, and
   `git diff --check` passed. Save reviewer and final verifier passed with no findings.
 - Replay hashes remain `e4892bcc18f9d8dc` / `a763da4ac32b15b4`; matrix passed on two runs.
+
+## ENG-021 Close-out (2026-08-02)
+
+### DONE
+
+- Accepted named slots under the separate `slots/` namespace and config-driven rotating autosaves
+  under `autosave/`.
+- Writes use a flushed temporary file plus `ATOMIC_MOVE`; there is no non-atomic fallback, so a
+  failed atomic replacement preserves the previous slot.
+- Slot metadata is readable without a full state load. Corruption-only fallback selects the latest
+  good autosave; future or incompatible saves are rejected explicitly.
+- `SandboxSaveCodec.SAVE_VERSION` remains 10 and the Android Bundle lifecycle save path is
+  unchanged.
+
+### DECISIONS
+
+- No ADR: the feature remains at the existing Android-free save boundary with no codec-version,
+  content-schema, dependency, or lifecycle-path change.
+
+### NEXT
+
+- Run `/me --feature --next` for ENG-029 (audio event hooks), then continue
+  `ENG-012 -> ENG-007 -> ENG-018`.
+
+### BLOCKERS
+
+- No ENG-021 implementation blocker remains. The pre-existing low manual device/emulator Bundle
+  save/restore smoke limitation remains; no device proof is claimed.
+
+### VERIFICATION
+
+- Full tests, projects, content validation, replay, save-compat matrix, benchmark, Android
+  assemble, focused `SandboxSaveSlotsTest`, and `git diff --check` all passed.
+- Replay hashes: canonical `e4892bcc18f9d8dc`, kill `a763da4ac32b15b4`.
+- Benchmark: `sim=473 ms`, `kill=87 ms`, `spatial-index-1k=6.6675 ms`,
+  `goal-field rebuild=10459200 ns`.

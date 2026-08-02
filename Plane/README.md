@@ -45,7 +45,7 @@
    and `ENG-020` (spatial index + 1k-entity benchmark) are closed; `ENG-020` was accepted on
    2026-07-29. PROC-003 sequencing adopted 2026-07-29 (see Plane/15): ENG-010 -> ENG-016 ->
    PROC-007 -> ENG-021 -> ENG-029 -> ENG-012 -> ENG-007 -> ENG-018; ENG-010, ENG-016, and
-   PROC-007 are closed, and the next exact item is `ENG-021`.
+   PROC-007 and ENG-021 are closed, and the next exact item is `ENG-029`.
 4. Hardening gaps из `docs/HARDENING_AUDIT.md` закрывать по одному, с тестами и обновлением handoff.
 
 Новые крупные фазы добавлять только после того, как backlog specs перестанут быть достаточно
@@ -61,6 +61,7 @@
 | [x] | ENG-010 Status effects framework | [ENG-010](../.claude/specs/done/ENG-010-status-effects.md) | Content-defined slow/DoT, deterministic lifecycle, movement/damage modifiers, save v9 migration, immutable snapshot tags, and stable replay coverage | 2026-08-01 |
 | [x] | ENG-016 Incident execution pipeline + RNG fix | [ENG-016](../.claude/specs/done/ENG-016-incident-execution.md) | Stateful deterministic director, persistent RNG cursor, cadence/pacing/cooldown selection, atomic typed effects, save v10 with v1-v9 migration, and remediation gates | 2026-08-02 |
 | [x] | PROC-007 Save migration matrix | [PROC-007](../.claude/specs/done/PROC-007-save-migration-matrix.md) | Checked-in v1-v10 save fixtures, independent stable-hash migration matrix, and save-compat JSON reporting | 2026-08-02 |
+| [x] | ENG-021 Save slots + autosave policy | [ENG-021](../.claude/specs/done/ENG-021-save-slots-autosave.md) | Named `slots/`, config-driven rotating `autosave/`, flushed temp + `ATOMIC_MOVE` only, metadata-only inspection, corruption-only fallback, codec v10 and Android Bundle path preserved | 2026-08-02 |
 
 ## Глобальные инварианты
 
@@ -1280,4 +1281,35 @@
 - Decisions:
   - No ADR; production codec/save version and Android/render boundaries are unchanged.
 - Next:
-  - Run `/me --feature --next` for ENG-021 (save slots + autosave policy).
+  - Run `/me --feature --next` for ENG-029 (audio event hooks).
+
+### 2026-08-02 - ENG-021 (save slots + autosave policy)
+
+- Status: Done / accepted
+- Owner: Codex
+- Created/changed:
+  - `.claude/specs/done/ENG-021-save-slots-autosave.md` (moved from `backlog/`)
+  - `.claude/specs/ENGINE_ROADMAP.md`
+  - `STATE.md`
+  - `.ai/handoff.md`
+  - `.ai/DIGEST.md`
+  - `Plane/README.md`
+- Result:
+  - Named slots use the separate `slots/` namespace; config-driven rotating autosaves use
+    `autosave/`.
+  - Writes use a flushed temporary file and `ATOMIC_MOVE` with no non-atomic fallback.
+  - Slot metadata is readable without a full load; corruption-only fallback selects the latest
+    good autosave. `SandboxSaveCodec.SAVE_VERSION` remains 10 and the Android Bundle path is
+    unchanged.
+- Verification:
+  - Full tests, projects, content validation, replay, save-compat matrix, benchmark, Android
+    assemble, focused `SandboxSaveSlotsTest`, and `git diff --check` -> pass.
+  - Replay hashes: canonical `e4892bcc18f9d8dc`, kill `a763da4ac32b15b4`.
+  - Benchmark: `sim=473 ms`, `kill=87 ms`, `spatial-index-1k=6.6675 ms`,
+    `goal-field rebuild=10459200 ns`.
+- Decisions:
+  - No ADR. The existing Android Bundle lifecycle path and codec version remain unchanged.
+- Blockers:
+  - Pre-existing low manual device/emulator Bundle save/restore smoke limitation remains.
+- Next:
+  - Run `/me --feature --next` for ENG-029 (audio event hooks).

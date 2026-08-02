@@ -1,8 +1,8 @@
 # MyEngine State
 
 Last updated: 2026-08-02
-Active phase: Phase 00-14 complete; Signal Garden SG-001..005 complete; MyTD MTD-001..005 complete; DX-008, ENG-002, ENG-005, ENG-008, ENG-009, ENG-010, ENG-013, ENG-014, ENG-015, ENG-016, ENG-020, ENG-026, ENG-027, ENG-028, ENG-030, PROC-002, PROC-003, PROC-007, and PROC-013 complete; pipeline at v0.2.0; next exact item ENG-021
-Owner of last update: Codex (2026-08-02: PROC-007 save migration matrix close-out; adopted chain continues ENG-021 -> ENG-029 -> ENG-012 -> ENG-007 -> ENG-018)
+Active phase: Phase 00-14 complete; Signal Garden SG-001..005 complete; MyTD MTD-001..005 complete; DX-008, ENG-002, ENG-005, ENG-008, ENG-009, ENG-010, ENG-013, ENG-014, ENG-015, ENG-016, ENG-020, ENG-021, ENG-026, ENG-027, ENG-028, ENG-030, PROC-002, PROC-003, PROC-007, and PROC-013 complete; pipeline at v0.2.0; next exact item ENG-029
+Owner of last update: Codex (2026-08-02: ENG-021 save slots + autosave close-out; adopted chain continues ENG-029 -> ENG-012 -> ENG-007 -> ENG-018)
 
 ## Current Status
 
@@ -24,6 +24,11 @@ Owner of last update: Codex (2026-08-02: PROC-007 save migration matrix close-ou
 - PROC-007 is complete: checked-in v1-v10 sandbox save fixtures, an independent canonical-state
   migration matrix with deterministic stable-hash assertions, and matrix reporting in the save-
   compatibility gate. No production save format or codec version changed.
+- ENG-021 is complete: named slots use the separate `slots/` namespace; config-driven rotating
+  autosaves use `autosave/`; writes use a flushed temporary file plus `ATOMIC_MOVE` with no
+  non-atomic fallback; metadata is readable without a full load; corruption-only fallback selects
+  the latest good autosave. `SandboxSaveCodec.SAVE_VERSION` remains 10 and the Android Bundle
+  lifecycle path is unchanged. No ADR was needed.
 - MySD foundation filed ENG-036 for an Android-free reusable runtime/session extraction and
   PROC-015 for a reference-game state-graph/mechanic-claim bridge. Probable gameplay gaps and
   `mysd` demand remain deliberately uncarded until Luna evidence passes Gate 1.
@@ -267,9 +272,9 @@ Owner of last update: Codex (2026-08-02: PROC-007 save migration matrix close-ou
 
 ## Next Exact Action
 
-Run `/me --feature --next` for ENG-021 (save slots + autosave policy), the next item in the
-PROC-003-adopted chain after completed PROC-007. The PROC-013 commit 5eaaa78 was pushed, so the
-earlier retro-file commit blocker is resolved.
+Run `/me --feature --next` for ENG-029 (audio event hooks), the next item in the PROC-003-adopted
+chain after completed ENG-021. The PROC-013 commit 5eaaa78 was pushed, so the earlier retro-file
+commit blocker is resolved.
 
 ## Known Blockers
 
@@ -794,3 +799,32 @@ Environment used:
   - Focused matrix, full Gradle tests, projects, content validation, replay, save-compat, benchmark,
     `git diff --check`, save-compat review, and final verifier passed.
   - Replay hashes remain `e4892bcc18f9d8dc` / `a763da4ac32b15b4`; matrix passed on two runs.
+
+## ENG-021 Close-out (2026-08-02)
+
+- DONE:
+  - Accepted named slots under the separate `slots/` namespace and config-driven rotating
+    autosaves under `autosave/`.
+  - Writes use a flushed temporary file and `ATOMIC_MOVE` with no non-atomic fallback; an
+    unsuccessful atomic replacement leaves the previous slot intact.
+  - Slot metadata is readable without decoding the authoritative state. Corruption-only fallback
+    selects the latest good autosave; incompatible or future saves are rejected rather than
+    treated as corruption.
+  - `SandboxSaveCodec.SAVE_VERSION` remains 10 and the Android Bundle lifecycle save path is
+    unchanged.
+- DECISIONS:
+  - No ADR: the feature stays at the existing Android-free save boundary and adds no dependency,
+    codec-version, content-schema, or lifecycle-path change.
+- NEXT:
+  - Run `/me --feature --next` for ENG-029 (audio event hooks), then continue
+    `ENG-012 -> ENG-007 -> ENG-018`.
+- BLOCKERS:
+  - No ENG-021 implementation blocker remains. The pre-existing low manual device/emulator
+    Bundle save/restore smoke limitation remains; the Android Bundle path was preserved and no
+    device proof is claimed.
+- VERIFICATION:
+  - Full tests, projects, content validation, replay, save-compat matrix, benchmark, Android
+    assemble, focused `SandboxSaveSlotsTest`, and `git diff --check` all passed.
+  - Replay hashes: canonical `e4892bcc18f9d8dc`, kill `a763da4ac32b15b4`.
+  - Benchmark: `sim=473 ms`, `kill=87 ms`, `spatial-index-1k=6.6675 ms`,
+    `goal-field rebuild=10459200 ns`.
