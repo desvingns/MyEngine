@@ -7,7 +7,7 @@ two or more games outranks single-game gaps of the same severity.
 Updated by: the `/me-spec` backlog bridge (new gaps / new demand) and `/me`
 close-out (status changes).
 
-Last updated: 2026-08-02 (ENG-011 close-out)
+Last updated: 2026-08-02 (ENG-019 close-out)
 
 ## Capabilities
 
@@ -39,7 +39,7 @@ Last updated: 2026-08-02 (ENG-011 close-out)
 | Tower sell/refund | ENG-013 | mytd, vision:td | 2 | **done** (2026-07-18; required validated `sellRefundRatio`, deterministic cumulative per-resource floor refund, atomic capacity rejection, occupancy/metrics cleanup, same-tick goal-field rebuild, and pending-sell save coverage; `SAVE_VERSION` remains 6) |
 | Game speed control (presentation-side) | ENG-015 | mytd, vision:td, vision:rimworld-like | 3 | **done** (2026-07-21; Android-local 0x/1x/2x/4x pacing and HUD controls preserve fixed-tick simulation, per-tick trajectory parity, save/replay boundaries, and all verifier boundary checks; device/instrumentation and FrameMetrics/JankStats remain pending) |
 | Endless wave generation | ENG-018 | vision:td, vision:mindustry-like | 2 | **done** (2026-08-02; content-defined endless schedule, deterministic RNG generation, no-win validation, and scaling-table report) |
-| Walls + player-placed blockers | ENG-019 | vision:td, vision:mindustry-like | 2 | backlog |
+| Walls + player-placed blockers | ENG-019 | vision:td, vision:mindustry-like | 2 | **done** (2026-08-02; validated 1x1 wall content, atomic place/remove commands with prospective path rejection and refund, immutable snapshot health, save v12/v1-v11 migration, forced-corridor replay and full gates) |
 | Spatial index + 1k-entity benchmark | ENG-020 | mytd, vision:td, vision:rimworld-like, vision:mindustry-like | 4 | **done** (2026-07-29; internal non-persisted grid index powers targeting/splash candidate queries, and the deterministic 1024-enemy benchmark reports `5.3045 ms`) |
 | Save slots + autosave policy | ENG-021 | vision:td, vision:rimworld-like, vision:mindustry-like | 3 | **done** (2026-08-02; named `slots/`, rotating `autosave/`, atomic writes, metadata-only inspection, corruption-only fallback, codec v10 and Android Bundle path preserved) |
 | Meta-progression store | ENG-022 | vision:td | 1 | backlog |
@@ -114,8 +114,8 @@ Last updated: 2026-08-02 (ENG-011 close-out)
    (done 2026-07-29). PROC-003 sequencing adopted 2026-07-29: ENG-010 -> ENG-016 (done 2026-08-02)
    -> PROC-007 (done 2026-08-02) -> ENG-021 (done 2026-08-02) -> ENG-029 (done 2026-08-02)
    -> ENG-012 (done 2026-08-02) -> ENG-007 (done 2026-08-02) -> ENG-018 (done 2026-08-02)
-   -> ENG-011 (done 2026-08-02) -> ENG-019 (next exact item). ENG-019 is the next remaining
-   TD-depth card with demand 2; the colony slice (ENG-001 ->
+   -> ENG-011 (done 2026-08-02) -> ENG-019 (done 2026-08-02) -> ENG-001 (next exact item).
+   ENG-001 is the next remaining colony-slice card with demand 2; the colony slice (ENG-001 ->
    ENG-003 -> ENG-031 -> ENG-004 -> ENG-032) deferred until a colony/MySD spec supplies named FRs
    (see Plane/15).
 4. DX-008 is done: use its hybrid-format ADR for ENG-017/ENG-028 schema work. Other high-leverage

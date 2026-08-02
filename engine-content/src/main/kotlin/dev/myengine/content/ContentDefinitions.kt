@@ -171,11 +171,29 @@ data class EnemyContent(
     }
 }
 
-/** Minimal data-driven building definition; gameplay components are intentionally out of scope. */
+/** Data-driven 1x1 wall definition for the player-placed blocker slice. */
 data class BuildingContent(
     override val id: String,
+    val costResource: String,
+    val costAmount: Int,
+    val maxHealth: Int,
+    val footprintWidth: Int,
+    val footprintHeight: Int,
+    val sellRefundRatio: BigDecimal,
+    val displayKey: String,
     val assetRef: VisualAssetRef? = null,
-) : ContentDefinition
+) : ContentDefinition {
+    init {
+        require(costResource.isNotBlank()) { "Building cost resource cannot be blank." }
+        require(costAmount > 0) { "Building cost must be positive." }
+        require(maxHealth > 0) { "Building max health must be positive." }
+        require(footprintWidth == 1 && footprintHeight == 1) { "Only 1x1 building footprints are supported." }
+        require(sellRefundRatio >= BigDecimal.ZERO && sellRefundRatio <= BigDecimal.ONE) {
+            "Building sell refund ratio must be between 0 and 1."
+        }
+        require(displayKey.isNotBlank()) { "Building display key cannot be blank." }
+    }
+}
 
 data class RecipeContent(
     override val id: String,

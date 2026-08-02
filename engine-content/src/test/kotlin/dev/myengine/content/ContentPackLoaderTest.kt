@@ -404,7 +404,10 @@ class ContentPackLoaderTest {
                 "\nscout.atlasPath=visuals/placeholder.atlas\nscout.atlasKey=enemy.scout\n",
         )
         root.resolve("buildings.properties").writeText(
-            "marker.atlasPath=visuals/placeholder.atlas\nmarker.atlasKey=building.marker\n",
+            "marker.displayKey=building.marker\n" +
+                "marker.costResource=bolt\nmarker.costAmount=2\nmarker.maxHealth=20\n" +
+                "marker.footprintWidth=1\nmarker.footprintHeight=1\nmarker.sellRefundRatio=0.5\n" +
+                "marker.atlasPath=visuals/placeholder.atlas\nmarker.atlasKey=building.marker\n",
         )
 
         val result = ContentPackLoader.load(root)
@@ -439,7 +442,10 @@ class ContentPackLoaderTest {
                 "\nscout.spritePath=visuals/placeholder.sprite\n",
         )
         root.resolve("buildings.properties").writeText(
-            "marker.spritePath=visuals/placeholder.sprite\n",
+            "marker.displayKey=building.marker\n" +
+                "marker.costResource=bolt\nmarker.costAmount=2\nmarker.maxHealth=20\n" +
+                "marker.footprintWidth=1\nmarker.footprintHeight=1\nmarker.sellRefundRatio=0.5\n" +
+                "marker.spritePath=visuals/placeholder.sprite\n",
         )
 
         val result = ContentPackLoader.load(root)
@@ -454,6 +460,93 @@ class ContentPackLoaderTest {
         )
         assertEquals(expected, result.registry.requireEnemy("scout").assetRef)
         assertEquals(expected, result.registry.requireBuilding("marker").assetRef)
+    }
+
+    @Test
+    fun buildingWallContractLoadsAndValidatesLocalizationAndReferences() {
+        val valid = createPack()
+        valid.resolve("buildings.properties").writeText(
+            "wall.displayKey=building.wall\n" +
+                "wall.costResource=bolt\nwall.costAmount=3\nwall.maxHealth=20\n" +
+                "wall.footprintWidth=1\nwall.footprintHeight=1\nwall.sellRefundRatio=0.5\n",
+        )
+        valid.resolve("strings.properties").writeText(
+            valid.resolve("strings.properties").toFile().readText() + "\nbuilding.wall=Wall\n",
+        )
+
+        val loaded = ContentPackLoader.load(valid)
+
+        assertTrue(loaded.isValid, loaded.errors.joinToString("\n"))
+        assertEquals(
+            BuildingContent(
+                id = "wall",
+                costResource = "bolt",
+                costAmount = 3,
+                maxHealth = 20,
+                footprintWidth = 1,
+                footprintHeight = 1,
+                sellRefundRatio = BigDecimal("0.5"),
+                displayKey = "building.wall",
+            ),
+            loaded.registry!!.requireBuilding("wall"),
+        )
+
+        val missingLocalization = createPack()
+        missingLocalization.resolve("buildings.properties").writeText(
+            "wall.displayKey=building.wall\n" +
+                "wall.costResource=bolt\nwall.costAmount=3\nwall.maxHealth=20\n" +
+                "wall.footprintWidth=1\nwall.footprintHeight=1\nwall.sellRefundRatio=0.5\n",
+        )
+        val missingResult = ContentPackLoader.load(missingLocalization)
+        assertFalse(missingResult.isValid)
+        assertTrue(
+            missingResult.errors.any {
+                it.file == "strings.properties" && it.id == "wall" &&
+                    it.field == "displayKey" && it.message.contains("building.wall")
+            },
+            missingResult.errors.joinToString("\n"),
+        )
+
+        val invalidDefinition = createPack()
+        invalidDefinition.resolve("buildings.properties").writeText(
+            "wall.displayKey=building.wall\n" +
+                "wall.costResource=missing\nwall.costAmount=0\nwall.maxHealth=0\n" +
+                "wall.footprintWidth=2\nwall.footprintHeight=1\nwall.sellRefundRatio=1.1\n",
+        )
+        invalidDefinition.resolve("strings.properties").writeText(
+            invalidDefinition.resolve("strings.properties").toFile().readText() + "\nbuilding.wall=Wall\n",
+        )
+        val invalidResult = ContentPackLoader.load(invalidDefinition)
+        assertFalse(invalidResult.isValid)
+        assertTrue(invalidResult.errors.any { it.id == "wall" && it.field == "footprint" })
+    }
+
+    @Test
+    fun zeroCostBuildingReturnsStructuredValidationError() {
+        val root = createPack()
+        root.resolve("buildings.properties").writeText(
+            "wall.displayKey=building.wall\n" +
+                "wall.costResource=bolt\nwall.costAmount=0\nwall.maxHealth=20\n" +
+                "wall.footprintWidth=1\nwall.footprintHeight=1\nwall.sellRefundRatio=0.5\n",
+        )
+        root.resolve("strings.properties").writeText(
+            root.resolve("strings.properties").toFile().readText() + "\nbuilding.wall=Wall\n",
+        )
+
+        val result = try {
+            ContentPackLoader.load(root)
+        } catch (error: Throwable) {
+            throw AssertionError("Zero-cost building must return structured validation errors, not throw.", error)
+        }
+
+        assertFalse(result.isValid)
+        assertTrue(
+            result.errors.any {
+                it.file == "buildings.properties" && it.id == "wall" &&
+                    it.field == "costAmount"
+            },
+            result.errors.joinToString("\n"),
+        )
     }
 
     @Test
@@ -1172,6 +1265,7 @@ class ContentPackLoaderTest {
             hud.damage=Damage
             hud.kills=Kills
             hud.tier=Tier
+            building.marker=Marker
             """.trimIndent(),
         )
     }

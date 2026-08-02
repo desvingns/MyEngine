@@ -37,3 +37,13 @@ Do not store facts that are easy to rediscover from the repository.
 ## Index
 
 - `reference-policy.md`: operational no-copy policy for reference material.
+
+## 2026-08-02 - ENG-019 retro lessons
+
+- When extending content schemas, preserve the validation contract of existing content types and
+  add boundary tests for both legacy and new definitions; wall cost must be positive while tower
+  cost remains non-negative.
+- A save-version bump is incomplete until current-version expectations, a checked-in fixture, and
+  a dedicated save-compat invocation are updated together.
+- Add focused acceptance tests before the full runner so content, command, and save regressions are
+  localized before integration gates.

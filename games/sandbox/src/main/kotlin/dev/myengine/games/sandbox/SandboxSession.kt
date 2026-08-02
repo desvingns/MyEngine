@@ -13,12 +13,12 @@ import java.util.Properties
  * that keeps simulation Android-free. The owning lifecycle (e.g. an Activity) calls [save] on
  * pause and [restore] on recreate; it must not reach into the runtime directly.
  *
- * SAVE SOUNDNESS: [SandboxSaveCodec] v11 persists `state`, active status effects, effective enemy components, terminal run status/summary, selected
+ * SAVE SOUNDNESS: [SandboxSaveCodec] v12 persists `state`, active status effects, effective enemy components, player-placed buildings, terminal run status/summary, selected
  * map id, content version, tower upgrade branch/tier/targeting-mode markers, and the runtime's pending
  * [dev.myengine.core.CommandQueue], so [save] is sound at ANY tick — a future-tick command still
  * queued at save time round-trips through [restore] and is re-queued on the reconstructed runtime.
  * The simulation RNG cursor, stateful incident director, selected effect history, and persistent
- * incident modifiers are part of the v11 save so continuation does not restart randomness.
+ * incident modifiers are part of the v12 save so continuation does not restart randomness.
  */
 class SandboxSession(
     val runtime: SandboxRuntime,

@@ -1,9 +1,25 @@
 # MyEngine Handoff
 
-Last updated: 2026-08-02 (ENG-011 armor + damage types close-out; next ENG-019)
+Last updated: 2026-08-02 (ENG-019 walls + player-placed blockers close-out; next ENG-001)
 Owner: Codex
 
 ## DONE
+
+- ENG-019 is done: the 1x1 wall MVP is content-defined and localized with validated cost, health,
+  footprint, visual reference, and refund metadata. Render-free place/remove commands perform atomic
+  resource and occupancy updates, reject prospective all-spawn path blocks, rebuild routing for
+  same-tick movement, expose immutable snapshot health, and persist through save v12 with v1-v11
+  migration and pending building-command restoration. The approved balance is 2 bolt, 20 HP, and
+  a 50% sell refund. Tower cost validation remains non-negative for compatibility; wall costs are
+  strictly positive and zero-cost wall content returns a structured validation error.
+
+- ENG-019 verification: final runner 9/9 passed. Replay hashes are
+  `e4892bcc18f9d8dc`, `a763da4ac32b15b4`, and `3f02607020d48668`; save-compat includes the v12
+  building fixture and v1-v11 migration matrix. Benchmark evidence includes GoalField 64x64 with
+  3,844 reachable tiles and 11,813,800 ns rebuild, plus 1,024 enemies / 16 towers / 16 queries /
+  16 shots at 5.201 ms. Canonical and kill scenarios ran 35 ticks at 431 ms and 79 ms. Android
+  evidence is assembleDebug only; no device/emulator or frame-budget claim is made. No ADR was
+  needed.
 
 - ENG-029 is done: the latest completed snapshot tick exposes a deterministic transient immutable
   `GameplayEvent` feed for shot, hit, death, wave-start, build, and sell events. Optional
@@ -609,8 +625,9 @@ Owner: Codex
 
 ## NEXT
 
-Run `/me --feature --next` for ENG-019 (walls + player-placed blockers), the next remaining TD-depth
-item with demand 2. The earlier commit blocker is resolved: PROC-013 commit 5eaaa78 was pushed.
+Run `/me --feature --next` for ENG-001 (A* point-to-point pathfinding for agents), the next
+backlog item in the deferred colony slice. The earlier commit blocker is resolved: PROC-013 commit
+5eaaa78 was pushed.
 
 ## BLOCKERS
 

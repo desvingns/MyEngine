@@ -465,3 +465,23 @@ by: claude
   benchmark, Android assemble, focused tests, selfcheck, and `git diff --check` passed. Canonical
   replay hashes remain `e4892bcc18f9d8dc` / `a763da4ac32b15b4`.
 - No plugin version bump; no ADR.
+
+## 2026-08-02 - MyEngine ENG-019 documentation close-out
+
+- Owner: Codex
+- Change type: none (documentation-only close-out; no pipeline, adapter, or plugin contract change).
+- Changed: ENG-019 card moved from `.claude/specs/backlog/` to `.claude/specs/done/`, roadmap/board
+  status, `STATE.md`, `.ai/handoff.md`, `Plane/README.md`, `.ai/DIGEST.md`, and directly related
+  SandboxSession/SandboxSaveSlotStore KDoc references from authoritative save v11 to v12.
+- Summary: Recorded the validated 1x1 wall MVP, render-free place/remove commands, atomic resource /
+  occupancy and path validation, immutable snapshot health, save v12 with v1-v11 migration, approved
+  balance (2 bolt / 20 HP / 50% refund), and the positive wall-cost validation remediation while
+  preserving non-negative tower-cost compatibility. No ADR was needed.
+- Verification: final runner 9/9 passed; replay hashes are
+  `e4892bcc18f9d8dc`, `a763da4ac32b15b4`, and `3f02607020d48668`; save-compat includes the v12
+  building fixture and v1-v11 matrix; benchmark metrics are GoalField 64x64 / 3,844 reachable /
+  11,813,800 ns, spatial index 1,024 enemies / 16 towers / 16 queries / 16 shots / 5.201 ms,
+  canonical and kill scenarios 35 ticks / 431 ms and 79 ms. Android assembleDebug passed only;
+  no device, emulator, visual-golden, or frame-budget claim is made.
+- Next: `/me --feature --next` for ENG-001 (A* point-to-point pathfinding for agents), the next
+  backlog item in the deferred colony slice. No plugin, skill, or adapter version bump.

@@ -26,6 +26,8 @@ import dev.myengine.core.StableHash
 import dev.myengine.core.TerminalReason
 import dev.myengine.core.Tick
 import dev.myengine.core.command.BuildTowerCommand
+import dev.myengine.core.command.PlaceBuildingCommand
+import dev.myengine.core.command.RemoveBuildingCommand
 import dev.myengine.core.command.CallWaveEarlyCommand
 import dev.myengine.core.command.SellTowerCommand
 import dev.myengine.core.command.SetTowerTargetingModeCommand
@@ -485,8 +487,10 @@ class SandboxRuntime(
     private fun applyCommand(command: EngineCommand, eventSink: MutableList<GameplayEvent>) {
         when (command) {
             is BuildTowerCommand -> buildTower(command, eventSink)
+            is PlaceBuildingCommand -> placeBuilding(command, eventSink)
             is UpgradeTowerCommand -> upgradeTower(command)
             is SellTowerCommand -> sellTower(command, eventSink)
+            is RemoveBuildingCommand -> removeBuilding(command, eventSink)
             is SetTowerTargetingModeCommand -> setTowerTargetingMode(command)
             is CallWaveEarlyCommand -> callWaveEarly(command, eventSink)
             else -> state.lastCommandOrError = "ignored:${command.type}"
@@ -613,6 +617,69 @@ class SandboxRuntime(
         }
     }
 
+    private fun placeBuilding(command: PlaceBuildingCommand, eventSink: MutableList<GameplayEvent>) {
+        val building = state.registry.buildings[command.buildingId]
+        if (building == null) {
+            state.lastCommandOrError = "unknown_building:${command.buildingId}"
+            return
+        }
+        if (building.footprintWidth != 1 || building.footprintHeight != 1) {
+            state.lastCommandOrError = "unsupported_building_footprint:${command.buildingId}"
+            return
+        }
+        if (!state.inventory.canRemove(building.costResource, building.costAmount)) {
+            state.lastCommandOrError = "missing_resource:${building.costResource}"
+            return
+        }
+        val position = TilePosition(command.position.x, command.position.y)
+        if (!state.world.inBounds(position)) {
+            state.lastCommandOrError = "position_out_of_bounds"
+            return
+        }
+        if (!state.world.canBuild(position)) {
+            state.lastCommandOrError = "tile_not_buildable"
+            return
+        }
+        if (state.entities.byTag("enemy").any { enemy ->
+                enemy.position?.tile == position && enemy.health?.isAlive() == true
+            }
+        ) {
+            state.lastCommandOrError = "occupied_by_enemy"
+            return
+        }
+        val prospective = GoalField.rebuildAfterWalkabilityChange(
+            world = state.world,
+            goal = core,
+            spawns = spawns,
+            additionalBlocked = position,
+        )
+        if (!prospective.keepsAllSpawnsReachable) {
+            state.lastCommandOrError = "blocks_spawn_path"
+            return
+        }
+
+        val entity = state.entities.create("building:${building.id}", setOf("building")) { id ->
+            Entity(
+                id = id,
+                type = "building:${building.id}",
+                tags = setOf("building"),
+                position = PositionComponent(position),
+                health = HealthComponent(building.maxHealth, building.maxHealth),
+            )
+        }
+        state.world.occupy(position, entity.id.value)
+        goalField = rebuildAfterWalkabilityChange()
+        state.inventory = state.inventory.remove(building.costResource, building.costAmount)
+        state.lastCommandOrError = "placed:${entity.id.value}"
+        eventSink += GameplayEvent(
+            tick = state.tick,
+            type = dev.myengine.core.GameplayEventType.BUILD,
+            sourceEntityId = command.actorId,
+            targetEntityId = entity.id.value,
+            contentId = building.id,
+        )
+    }
+
     private fun upgradeTower(command: UpgradeTowerCommand) {
         val entityId = EntityId(command.towerEntityId)
         val entity = state.entities.get(entityId)
@@ -708,6 +775,48 @@ class SandboxRuntime(
         )
     }
 
+    private fun removeBuilding(command: RemoveBuildingCommand, eventSink: MutableList<GameplayEvent>) {
+        val entityId = EntityId(command.buildingEntityId)
+        val entity = state.entities.get(entityId)
+        if (entity == null || "building" !in entity.tags || !entity.type.startsWith("building:")) {
+            state.lastCommandOrError = "unknown_building_entity:${command.buildingEntityId}"
+            return
+        }
+        val position = entity.position?.tile
+        if (position == null) {
+            state.lastCommandOrError = "building_missing_position:${command.buildingEntityId}"
+            return
+        }
+        val buildingId = entity.type.substringAfter(':')
+        val building = state.registry.buildings[buildingId]
+        if (building == null) {
+            state.lastCommandOrError = "unknown_building:$buildingId"
+            return
+        }
+        val refund = calculateBuildingRefund(building)
+        var refundedInventory = state.inventory
+        for ((resourceId, amount) in refund) {
+            if (!refundedInventory.canAdd(resourceId, amount)) {
+                state.lastCommandOrError = "refund_capacity:$resourceId"
+                return
+            }
+            refundedInventory = refundedInventory.add(resourceId, amount)
+        }
+
+        state.world.clearOccupancy(position, entityId.value)
+        state.entities.remove(entityId)
+        goalField = rebuildAfterWalkabilityChange()
+        state.inventory = refundedInventory
+        state.lastCommandOrError = "removed:${command.buildingEntityId}"
+        eventSink += GameplayEvent(
+            tick = state.tick,
+            type = dev.myengine.core.GameplayEventType.SELL,
+            sourceEntityId = command.actorId,
+            targetEntityId = command.buildingEntityId,
+            contentId = building.id,
+        )
+    }
+
     private fun setTowerTargetingMode(command: SetTowerTargetingModeCommand) {
         val entityId = EntityId(command.towerEntityId)
         val entity = state.entities.get(entityId)
@@ -761,6 +870,14 @@ class SandboxRuntime(
             if (refund > 0) refunds[resourceId] = refund
         }
         return refunds
+    }
+
+    private fun calculateBuildingRefund(building: dev.myengine.content.BuildingContent): Map<String, Int> {
+        val refund = BigDecimal.valueOf(building.costAmount.toLong())
+            .multiply(building.sellRefundRatio)
+            .setScale(0, RoundingMode.DOWN)
+            .intValueExact()
+        return if (refund > 0) mapOf(building.costResource to refund) else emptyMap()
     }
 
     private fun canApplyUpgrade(current: TowerComponent, command: UpgradeTowerCommand): Boolean {
@@ -822,7 +939,7 @@ class SandboxRuntime(
 private fun VisualAssetRef.toRenderAssetRef(): RenderAssetRef = RenderAssetRef(path = path, atlasKey = atlasKey)
 
 object SandboxSaveCodec {
-    const val SAVE_VERSION: Int = 11
+    const val SAVE_VERSION: Int = 12
 
     fun encode(state: SandboxState, seed: Long, pendingCommands: List<EngineCommand> = emptyList()): String {
         val props = Properties()
@@ -962,7 +1079,7 @@ object SandboxSaveCodec {
         val entities = parseEntities(props.getProperty("entities", ""), registry, version)
         state.world.positions().forEach { state.world.clearOccupancy(it) }
         val loadedStore = EntityStore(props.getProperty("nextEntityId").toLong(), entities)
-        entities.filter { it.tower != null }.forEach { entity ->
+        entities.filter { it.tower != null || "building" in it.tags }.forEach { entity ->
             entity.position?.let { state.world.occupy(it.tile, entity.id.value) }
         }
         return state.copy(entities = loadedStore)
@@ -1112,11 +1229,17 @@ object SandboxSaveCodec {
             if (type == "build_tower") {
                 val payloadParts = payload.split(':')
                 BuildTowerCommand(id, scheduledTick, payloadParts[0], TileCoordinate(payloadParts[1].toInt(), payloadParts[2].toInt()), actorId)
+            } else if (type == "place_building") {
+                val payloadParts = payload.split(':')
+                require(payloadParts.size == 3) { "Invalid place-building command payload '$payload'." }
+                PlaceBuildingCommand(id, scheduledTick, payloadParts[0], TileCoordinate(payloadParts[1].toInt(), payloadParts[2].toInt()), actorId)
             } else if (type == "upgrade_tower") {
                 val payloadParts = payload.split(':')
                 UpgradeTowerCommand(id, scheduledTick, payloadParts[0].toLong(), payloadParts[1], payloadParts[2].toInt(), actorId)
             } else if (type == "sell_tower") {
                 SellTowerCommand(id, scheduledTick, payload.toLong(), actorId)
+            } else if (type == "remove_building") {
+                RemoveBuildingCommand(id, scheduledTick, payload.toLong(), actorId)
             } else if (type == "set_tower_targeting_mode") {
                 val payloadParts = payload.split(':')
                 require(payloadParts.size == 2) { "Invalid targeting mode command payload '$payload'." }
@@ -1192,6 +1315,7 @@ object SandboxSaveCodec {
                 tags = when {
                     type.startsWith("tower") -> setOf("tower")
                     type.startsWith("enemy") -> setOf("enemy")
+                    type.startsWith("building:") -> setOf("building")
                     else -> emptySet()
                 },
                 position = if (x != null && y != null) PositionComponent(TilePosition(x, y)) else null,

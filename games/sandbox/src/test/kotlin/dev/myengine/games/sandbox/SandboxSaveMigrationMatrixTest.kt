@@ -1,6 +1,9 @@
 package dev.myengine.games.sandbox
 
 import dev.myengine.core.Tick
+import dev.myengine.core.CommandId
+import dev.myengine.core.command.PlaceBuildingCommand
+import dev.myengine.core.command.TileCoordinate
 import dev.myengine.defense.DefenseState
 import dev.myengine.entities.Entity
 import dev.myengine.entities.EntityId
@@ -45,6 +48,32 @@ class SandboxSaveMigrationMatrixTest {
             assertEquals(expectedHash, second.stableHash(), "v$version repeated post-migration state hash")
             assertEquals(first.stableHash(), second.stableHash(), "v$version migration must be deterministic")
         }
+    }
+
+    @Test
+    fun v12BuildingFixtureRestoresWallOccupancyHealthAndPendingPlacement() {
+        val registry = SandboxGame.loadRegistry()
+        val save = fixture(12)
+
+        val state = SandboxSaveCodec.decode(save, registry)
+        val wall = state.entities.byTag("building").single()
+
+        assertEquals(EntityId(1), wall.id)
+        assertEquals("building:wall", wall.type)
+        assertEquals(17, wall.health?.current)
+        assertEquals(20, wall.health?.max)
+        assertEquals(1L, state.world.tileAt(TilePosition(4, 1)).tile.occupiedBy)
+        assertEquals(
+            listOf(
+                PlaceBuildingCommand(
+                    id = CommandId(2),
+                    scheduledTick = Tick(10),
+                    buildingId = "wall",
+                    position = TileCoordinate(5, 1),
+                ),
+            ),
+            SandboxSaveCodec.decodePendingCommands(save),
+        )
     }
 
     private fun fixture(version: Int): String =

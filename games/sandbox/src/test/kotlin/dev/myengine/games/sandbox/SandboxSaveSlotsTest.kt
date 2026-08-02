@@ -11,7 +11,7 @@ import kotlin.test.assertTrue
 
 class SandboxSaveSlotsTest {
     @Test
-    fun namedSlotsAreIsolatedAndRoundTripThroughCodecV11() {
+    fun namedSlotsAreIsolatedAndRoundTripThroughCodecV12() {
         val registry = SandboxGame.loadRegistry()
         val store = SandboxSaveSlotStore(
             Files.createTempDirectory("sandbox-save-slot-store-isolation"),
@@ -32,8 +32,8 @@ class SandboxSaveSlotsTest {
         )
         assertEquals(3L, store.restore("first", registry).runtime.state.tick.value)
         assertEquals(7L, store.restore("second", registry).runtime.state.tick.value)
-        assertEquals(11, SandboxSaveCodec.SAVE_VERSION)
-        assertEquals(11, firstMetadata.codecVersion)
+        assertEquals(12, SandboxSaveCodec.SAVE_VERSION)
+        assertEquals(12, firstMetadata.codecVersion)
         assertTrue(Files.isRegularFile(store.pathFor("first")))
     }
 
@@ -124,7 +124,7 @@ class SandboxSaveSlotsTest {
         )
 
         assertEquals(session.stableHash(), restored.stableHash())
-        assertEquals(11, SandboxSaveCodec.SAVE_VERSION)
+        assertEquals(12, SandboxSaveCodec.SAVE_VERSION)
     }
 
     @Test

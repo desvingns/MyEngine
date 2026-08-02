@@ -45,8 +45,9 @@
    and `ENG-020` (spatial index + 1k-entity benchmark) are closed; `ENG-020` was accepted on
    2026-07-29. PROC-003 sequencing adopted 2026-07-29 (see Plane/15): ENG-010 -> ENG-016 ->
    PROC-007 -> ENG-021 -> ENG-029 -> ENG-012 -> ENG-007 -> ENG-018 (done 2026-08-02)
-   -> ENG-011 (done 2026-08-02) -> ENG-019; ENG-010, ENG-016, PROC-007, ENG-021, ENG-029,
-   ENG-012, ENG-007, ENG-018, and ENG-011 are closed, and the next exact item is `ENG-019`.
+   -> ENG-011 (done 2026-08-02) -> ENG-019 (done 2026-08-02) -> ENG-001; ENG-010, ENG-016,
+   PROC-007, ENG-021, ENG-029, ENG-012, ENG-007, ENG-018, ENG-011, and ENG-019 are closed, and
+   the next exact item is `ENG-001`.
 4. Hardening gaps из `docs/HARDENING_AUDIT.md` закрывать по одному, с тестами и обновлением handoff.
 
 Новые крупные фазы добавлять только после того, как backlog specs перестанут быть достаточно
@@ -68,6 +69,7 @@
 | [x] | ENG-007 Multiple spawn points + per-wave routing | [ENG-007](../.claude/specs/done/ENG-007-multi-spawn-wave-routing.md) | Optional validated wave spawn selection, deterministic scheduled/early/incident routing, reserved spawn-id guards, checked-in multi-spawn fixture, replay/save coverage; `SAVE_VERSION` remains 11 | 2026-08-02 |
 | [x] | ENG-018 Endless wave generation | [ENG-018](../.claude/specs/done/ENG-018-endless-wave-generation.md) | Validated endless schedule, shared-RNG deterministic generation, count/health/reward growth, no-win validation, and scaling report; `SAVE_VERSION` remains 11 | 2026-08-02 |
 | [x] | ENG-011 Enemy armor + damage types | [ENG-011](../.claude/specs/done/ENG-011-armor-damage-types.md) | Option A typed damage content, 0..100 resistances, bidirectional validation, Long/final-floor direct+splash formula, effective-DPS matrix, resist replay hash, and `SAVE_VERSION=11` preserved | 2026-08-02 |
+| [x] | ENG-019 Walls + player-placed blockers | [ENG-019](../.claude/specs/done/ENG-019-walls-blocking-buildings.md) | Validated 1x1 wall content, atomic place/remove commands with path rejection and refund, immutable snapshot health, save v12 with v1-v11 migration, forced-corridor replay, and full gates | 2026-08-02 |
 
 ## Глобальные инварианты
 
@@ -1406,4 +1408,4 @@
   resist `3f02607020d48668`. Benchmark: `sim=422 ms`, `kill=63 ms`,
   `goal-field=10743500 ns`, `spatial-index=6.4719 ms`.
 - Blockers: no implementation blocker; no device/emulator evidence is claimed.
-- Next: Run `/me --feature --next` for ENG-019 (walls + player-placed blockers).
+- Next: Run `/me --feature --next` for ENG-001 (A* point-to-point pathfinding for agents).

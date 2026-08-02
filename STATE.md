@@ -1,8 +1,8 @@
 # MyEngine State
 
-Last updated: 2026-08-02 (ENG-011 close-out)
-Active phase: Phase 00-14 complete; Signal Garden SG-001..005 complete; MyTD MTD-001..005 complete; DX-008, ENG-002, ENG-005, ENG-007, ENG-008, ENG-009, ENG-010, ENG-011, ENG-012, ENG-013, ENG-014, ENG-015, ENG-016, ENG-018, ENG-020, ENG-021, ENG-026, ENG-027, ENG-028, ENG-029, ENG-030, PROC-002, PROC-003, PROC-007, and PROC-013 complete; pipeline at v0.2.0; next exact item ENG-019
-Owner of last update: Codex (2026-08-02: ENG-011 armor + damage types close-out; next exact item ENG-019)
+Last updated: 2026-08-02 (ENG-019 close-out)
+Active phase: Phase 00-14 complete; Signal Garden SG-001..005 complete; MyTD MTD-001..005 complete; DX-008, ENG-002, ENG-005, ENG-007, ENG-008, ENG-009, ENG-010, ENG-011, ENG-012, ENG-013, ENG-014, ENG-015, ENG-016, ENG-018, ENG-019, ENG-020, ENG-021, ENG-026, ENG-027, ENG-028, ENG-029, ENG-030, PROC-002, PROC-003, PROC-007, and PROC-013 complete; pipeline at v0.2.0; next exact item ENG-001
+Owner of last update: Codex (2026-08-02: ENG-019 walls + player-placed blockers close-out; next exact item ENG-001)
 
 ## Current Status
 
@@ -304,10 +304,27 @@ Owner of last update: Codex (2026-08-02: ENG-011 armor + damage types close-out;
   conditional simulation and balance reviewers passed, and the simulation low finding was resolved.
   Final metrics: `sim=422 ms`, `kill=63 ms`, `goal-field=10743500 ns`, `spatial-index=6.4719 ms`.
 
+## ENG-019 Close-out (2026-08-02)
+
+- DONE: The 1x1 wall MVP is content-defined and localized with validated cost, health, footprint,
+  visual reference, and sell-refund metadata. Render-free place/remove commands perform atomic
+  resource and occupancy updates, reject prospective all-spawn path blocks, rebuild routing for
+  same-tick movement, expose immutable snapshot health, and persist through `SandboxSaveCodec` v12
+  with v1-v11 migration and pending building-command restoration.
+- DECISIONS: No ADR. The MVP is intentionally 1x1. Approved balance is 2 bolt cost, 20 HP, and a
+  50% sell refund. Tower cost validation remains non-negative for compatibility; wall cost
+  validation is strictly positive, and zero-cost wall content returns a structured validation error.
+- VERIFICATION: Final runner 9/9 passed. Replay hashes are `e4892bcc18f9d8dc`,
+  `a763da4ac32b15b4`, and `3f02607020d48668`. Save-compat includes the v12 wall fixture and the
+  v1-v11 migration matrix. Benchmark: GoalField 64x64 / 3,844 reachable tiles / 11,813,800 ns
+  rebuild; spatial index 1,024 enemies / 16 towers / 16 queries / 16 shots / 5.201 ms; canonical
+  and kill scenarios 35 ticks / 431 ms and 79 ms. Android evidence is assembleDebug only; no
+  device, emulator, visual-golden, or frame-budget claim is made.
+
 ## Next Exact Action
 
-Run `/me --feature --next` for ENG-019 (walls + player-placed blockers), the next remaining
-TD-depth item with demand 2. No implementation blocker remains.
+Run `/me --feature --next` for ENG-001 (A* point-to-point pathfinding for agents), the next
+backlog item in the deferred colony slice. No ENG-019 implementation blocker remains.
 
 ## Known Blockers
 

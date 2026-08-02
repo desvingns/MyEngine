@@ -81,7 +81,7 @@ object ContentPackLoader {
             errors = errors,
         )
         validateTerminalRules(maps, waves, endlessWave, errors)
-        validateLocalization(damageTypes, resources, towers, strings, errors)
+        validateLocalization(damageTypes, resources, towers, buildings, strings, errors)
 
         if (errors.isNotEmpty() || manifest == null) {
             return ContentLoadResult(null, errors)
@@ -349,11 +349,26 @@ object ContentPackLoader {
         return StatusEffectContent(id, kind, magnitude, durationTicks, stackingRule)
     }
 
-    private fun parseBuilding(id: String, fields: Map<String, String>, errors: MutableList<ContentValidationError>, file: String): BuildingContent =
-        BuildingContent(
+    private fun parseBuilding(id: String, fields: Map<String, String>, errors: MutableList<ContentValidationError>, file: String): BuildingContent? {
+        val width = fields.requiredPositiveInt(file, id, "footprintWidth", errors) ?: return null
+        val height = fields.requiredPositiveInt(file, id, "footprintHeight", errors) ?: return null
+        if (width != 1 || height != 1) {
+            errors += ContentValidationError(file, id, "footprint", "Only 1x1 wall footprints are supported.")
+            return null
+        }
+        return BuildingContent(
             id = id,
+            costResource = fields.required(file, id, "costResource", errors) ?: return null,
+            costAmount = fields.requiredPositiveInt(file, id, "costAmount", errors) ?: return null,
+            maxHealth = fields.requiredPositiveInt(file, id, "maxHealth", errors) ?: return null,
+            footprintWidth = width,
+            footprintHeight = height,
+            sellRefundRatio = fields.requiredDecimalInRange(file, id, "sellRefundRatio", BigDecimal.ZERO, BigDecimal.ONE, errors)
+                ?: return null,
+            displayKey = fields.required(file, id, "displayKey", errors) ?: return null,
             assetRef = parseVisualAssetRef(id, fields, errors, file),
         )
+    }
 
     /** Parses one optional sprite path or an atlas path/key pair under [fieldPrefix]. */
     private fun parseVisualAssetRef(
@@ -1154,6 +1169,14 @@ object ContentPackLoader {
         }
         buildings.values.forEach { building ->
             validateVisualAsset(root, packId, "buildings.properties", building.id, "", building.assetRef, errors)
+            if (!resources.containsKey(building.costResource)) {
+                errors += ContentValidationError(
+                    "buildings.properties",
+                    building.id,
+                    "costResource",
+                    "Unknown resource '${building.costResource}'.",
+                )
+            }
         }
         recipes.values.forEach {
             if (it.inputResource != null && !resources.containsKey(it.inputResource)) errors += ContentValidationError("recipes.properties", it.id, "inputResource", "Unknown resource '${it.inputResource}'.")
@@ -1438,6 +1461,7 @@ object ContentPackLoader {
         damageTypes: Map<String, DamageTypeContent>,
         resources: Map<String, ResourceContent>,
         towers: Map<String, TowerContent>,
+        buildings: Map<String, BuildingContent>,
         strings: Map<String, String>,
         errors: MutableList<ContentValidationError>,
     ) {
@@ -1464,6 +1488,11 @@ object ContentPackLoader {
                         "Missing localization key '${tier.displayKey}'.",
                     )
                 }
+            }
+        }
+        buildings.values.forEach { building ->
+            if (!strings.containsKey(building.displayKey)) {
+                errors += ContentValidationError("strings.properties", building.id, "displayKey", "Missing localization key '${building.displayKey}'.")
             }
         }
         HudStringKeys.required.forEach { key ->
