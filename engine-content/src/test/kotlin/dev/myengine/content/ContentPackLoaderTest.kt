@@ -11,6 +11,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 import kotlin.test.assertIs
+import kotlin.test.assertNull
 
 class ContentPackLoaderTest {
     @Test
@@ -25,6 +26,137 @@ class ContentPackLoaderTest {
         assertEquals(BigDecimal("0.5"), result.registry?.towers?.get("basic")?.sellRefundRatio)
         assertEquals(4, result.registry?.towers?.get("basic")?.upgradeTiers?.get(TowerUpgradeTier.key("main", 1))?.damage)
         assertTrue(result.registry?.buildings?.isEmpty() == true)
+    }
+
+    @Test
+    fun waveSpawnSelectionSupportsDefaultAllAndNamedIdsPreservingAuthoredOrder() {
+        val twoSpawnMap = listOf(
+            "entry" to MapCoordinate(0, 0),
+            "west" to MapCoordinate(4, 4),
+        )
+
+        val defaultRoot = createPack()
+        defaultRoot.resolve("maps.json").writeText(mapJson(spawns = twoSpawnMap))
+        val defaultResult = ContentPackLoader.load(defaultRoot)
+
+        assertTrue(defaultResult.isValid, defaultResult.errors.joinToString("\n"))
+        assertNull(defaultResult.registry!!.waves.getValue("wave1").spawnSelection)
+
+        val allRoot = createPack()
+        allRoot.resolve("maps.json").writeText(mapJson(spawns = twoSpawnMap))
+        allRoot.resolve("waves.properties").writeText(
+            allRoot.resolve("waves.properties").toFile().readText() +
+                "\nwave1.spawnSelection=all\n",
+        )
+        val allResult = ContentPackLoader.load(allRoot)
+
+        assertTrue(allResult.isValid, allResult.errors.joinToString("\n"))
+        assertNull(allResult.registry!!.waves.getValue("wave1").spawnSelection)
+
+        val namedRoot = createPack()
+        namedRoot.resolve("maps.json").writeText(mapJson(spawns = twoSpawnMap))
+        namedRoot.resolve("waves.properties").writeText(
+            namedRoot.resolve("waves.properties").toFile().readText() +
+                "\nwave1.spawnSelection=entry|west\n",
+        )
+        val namedResult = ContentPackLoader.load(namedRoot)
+
+        assertTrue(namedResult.isValid, namedResult.errors.joinToString("\n"))
+        assertEquals(
+            listOf("entry", "west"),
+            namedResult.registry!!.waves.getValue("wave1").spawnSelection,
+        )
+    }
+
+    @Test
+    fun waveSpawnSelectionRejectsBlankDuplicateMixedAndUnknownIds() {
+        val invalidSelections = listOf(
+            "wave1.spawnSelection=" to "cannot be blank",
+            "wave1.spawnSelection=entry|" to "cannot be blank",
+            "wave1.spawnSelection=entry|west|entry" to "duplicate ids",
+            "wave1.spawnSelection=all|entry" to "either 'all' or a named spawn id list",
+            "wave1.spawnSelection=missing" to "Unknown spawn 'missing'",
+        )
+
+        invalidSelections.forEach { (field, message) ->
+            val root = createPack()
+            root.resolve("maps.json").writeText(
+                mapJson(
+                    spawns = listOf(
+                        "entry" to MapCoordinate(0, 0),
+                        "west" to MapCoordinate(4, 4),
+                    ),
+                ),
+            )
+            root.resolve("waves.properties").writeText(
+                root.resolve("waves.properties").toFile().readText() + "\n$field\n",
+            )
+
+            val result = ContentPackLoader.load(root)
+
+            assertFalse(result.isValid, "Expected invalid selection '$field' to be rejected.")
+            assertTrue(
+                result.errors.any {
+                    it.file == "waves.properties" && it.id == "wave1" &&
+                        it.field == "spawnSelection" && it.message.contains(message)
+                },
+                "$field:\n${result.errors.joinToString("\n")}",
+            )
+        }
+    }
+
+    @Test
+    fun mapSpawnIdsRejectExactAllAndPipeDelimiterButKeepMixedCaseNames() {
+        val reserved = createPack()
+        reserved.resolve("maps.json").writeText(
+            mapJson(spawns = listOf("all" to MapCoordinate(0, 0))),
+        )
+
+        val reservedResult = ContentPackLoader.load(reserved)
+
+        assertFalse(reservedResult.isValid)
+        assertTrue(
+            reservedResult.errors.any {
+                it.file == "maps.json" && it.id == "test-map" &&
+                    it.field == "spawns[0].id" && it.message.contains("reserved")
+            },
+            reservedResult.errors.joinToString("\n"),
+        )
+
+        val delimiter = createPack()
+        delimiter.resolve("maps.json").writeText(
+            mapJson(spawns = listOf("north|west" to MapCoordinate(0, 0))),
+        )
+
+        val delimiterResult = ContentPackLoader.load(delimiter)
+
+        assertFalse(delimiterResult.isValid)
+        assertTrue(
+            delimiterResult.errors.any {
+                it.file == "maps.json" && it.id == "test-map" &&
+                    it.field == "spawns[0].id" && it.message.contains("delimiter")
+            },
+            delimiterResult.errors.joinToString("\n"),
+        )
+
+        val mixedCase = createPack()
+        mixedCase.resolve("maps.json").writeText(
+            mapJson(spawns = listOf("All" to MapCoordinate(0, 0))),
+        )
+        mixedCase.resolve("waves.properties").writeText(
+            mixedCase.resolve("waves.properties").toFile().readText() +
+                "\nwave1.spawnSelection=All\n",
+        )
+
+        val mixedCaseResult = ContentPackLoader.load(mixedCase)
+
+        assertTrue(mixedCaseResult.isValid, mixedCaseResult.errors.joinToString("\n"))
+        val mixedCaseRegistry = mixedCaseResult.registry!!
+        assertEquals(
+            listOf("All"),
+            mixedCaseRegistry.waves.getValue("wave1").spawnSelection,
+        )
+        assertTrue(mixedCaseRegistry.maps.getValue("test-map").spawns.containsKey("All"))
     }
 
     @Test
@@ -866,8 +998,12 @@ class ContentPackLoaderTest {
         spawnY: Int = 0,
         floorTile: String = "floor",
         terminalRules: String? = null,
+        spawns: List<Pair<String, MapCoordinate>> = listOf("entry" to MapCoordinate(spawnX, spawnY)),
     ): String {
         val rows = terrainRows.joinToString(",\n") { "        \"$it\"" }
+        val spawnEntries = spawns.joinToString(",\n") { (id, position) ->
+            "                    { \"id\": \"$id\", \"x\": ${position.x}, \"y\": ${position.y} }"
+        }
         val terminalRulesField = terminalRules?.let { ",\n                  \"terminalRules\": $it" }.orEmpty()
         return """
             {
@@ -886,7 +1022,7 @@ class ContentPackLoaderTest {
                     "R": { "tile": "resource", "resource": { "id": "bolt", "amount": 9 } }
                   },
                   "spawns": [
-                    { "id": "entry", "x": $spawnX, "y": $spawnY }
+            $spawnEntries
                   ],
                   "core": { "x": 2, "y": 2 }$terminalRulesField
                 }

@@ -147,6 +147,7 @@ class DefenseRuntime(private val pathfinder: GridPathfinder = GridPathfinder()) 
         core: TilePosition,
         goalField: GoalField? = null,
         eventSink: MutableList<GameplayEvent>? = null,
+        spawnRoutes: Map<String, TilePosition> = emptyMap(),
     ): DefenseState {
         var nextState = state
         registry.waves.values
@@ -164,6 +165,7 @@ class DefenseRuntime(private val pathfinder: GridPathfinder = GridPathfinder()) 
                     goalField = goalField,
                     tick = tick,
                     eventSink = eventSink,
+                    spawnRoutes = spawnRoutes,
                 )
             }
         return nextState
@@ -185,21 +187,46 @@ class DefenseRuntime(private val pathfinder: GridPathfinder = GridPathfinder()) 
         goalField: GoalField? = null,
         tick: Tick = Tick(0),
         eventSink: MutableList<GameplayEvent>? = null,
+        spawnRoutes: Map<String, TilePosition> = emptyMap(),
     ): DefenseState {
         if (wave.id in state.spawnedWaveIds) return state
         var nextState = state
         var enemyOrdinal = 0
-        wave.spawns.forEach { spawnDef ->
-            val enemy = registry.requireEnemy(spawnDef.enemyId)
-            repeat(spawnDef.count) {
-                val modifier = waveModifierAt(wave.modifiers, enemyOrdinal)
-                spawnEnemy(enemy, modifier, world, entities, spawn, core, goalField)
-                enemyOrdinal += 1
+        routedSpawnsFor(wave, spawn, spawnRoutes).forEach { (_, route) ->
+            wave.spawns.forEach { spawnDef ->
+                val enemy = registry.requireEnemy(spawnDef.enemyId)
+                repeat(spawnDef.count) {
+                    val modifier = waveModifierAt(wave.modifiers, enemyOrdinal)
+                    spawnEnemy(enemy, modifier, world, entities, route, core, goalField)
+                    enemyOrdinal += 1
+                }
+                nextState = nextState.record(DefenseMetrics(enemiesSpawned = spawnDef.count))
             }
-            nextState = nextState.record(DefenseMetrics(enemiesSpawned = spawnDef.count))
         }
         eventSink?.add(GameplayEvent(tick = tick, type = GameplayEventType.WAVE_START, contentId = wave.id))
         return nextState.copy(spawnedWaveIds = nextState.spawnedWaveIds + wave.id)
+    }
+
+    /**
+     * Resolves a wave's named selection into deterministic routes. A legacy caller that does not
+     * provide named routes still gets the original single [defaultSpawn] behavior.
+     */
+    private fun routedSpawnsFor(
+        wave: WaveContent,
+        defaultSpawn: TilePosition,
+        spawnRoutes: Map<String, TilePosition>,
+    ): List<Pair<String, TilePosition>> {
+        val availableRoutes = if (spawnRoutes.isEmpty()) {
+            sortedMapOf("" to defaultSpawn)
+        } else {
+            spawnRoutes.toSortedMap()
+        }
+        val selectedIds = wave.spawnSelection ?: availableRoutes.keys.toList()
+        require(selectedIds.isNotEmpty()) { "Wave '${wave.id}' must select at least one spawn route." }
+        return selectedIds.sorted().map { spawnId ->
+            spawnId to (availableRoutes[spawnId]
+                ?: error("Wave '${wave.id}' selects unknown spawn route '$spawnId'."))
+        }
     }
 
     private fun waveModifierAt(modifiers: List<WaveModifier>, enemyOrdinal: Int): WaveModifier? {

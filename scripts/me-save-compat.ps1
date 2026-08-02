@@ -7,10 +7,11 @@ try {
         --tests "dev.myengine.games.sandbox.SandboxGoalFieldTest.midRerouteSaveRestoreReachesTheSameStableHash" `
         --tests "dev.myengine.games.sandbox.SandboxSessionLifecycleTest.legacyV6EnemyRouteIsDiscardedAndGoalFieldMigrationIsReplayStable" `
         --tests "dev.myengine.games.sandbox.SandboxSessionLifecycleTest.futureSaveVersionIsRejected" `
-        --tests "dev.myengine.games.sandbox.SandboxSaveMigrationMatrixTest"
+        --tests "dev.myengine.games.sandbox.SandboxSaveMigrationMatrixTest" `
+        --tests "dev.myengine.games.sandbox.SandboxMultiSpawnTest"
     $exitCode = $LASTEXITCODE
     $status = if ($exitCode -eq 0) { "pass" } else { "fail" }
-    @{ status = $status; matrix = $status; command = "games:sandbox:test mid-reroute, legacy-v6-route, future-version, migration-matrix"; exit_code = $exitCode } | ConvertTo-Json -Compress
+    @{ status = $status; matrix = $status; command = "games:sandbox:test mid-reroute, legacy-v6-route, future-version, migration-matrix, multi-spawn"; exit_code = $exitCode } | ConvertTo-Json -Compress
 } finally {
     Pop-Location
 }

@@ -1,6 +1,6 @@
 # MyEngine Content Properties Schema
 
-Status: Phase 06 accepted; DX-008 hybrid format accepted; ENG-016, ENG-028, and ENG-009 fields documented
+Status: Phase 06 accepted; DX-008 hybrid format accepted; ENG-016, ENG-028, ENG-009, and ENG-007 fields documented
 Last updated: 2026-08-02
 
 Content packs use the DX-008 hybrid format defined by
@@ -136,6 +136,10 @@ only validates opaque metadata; sprite decoding remains platform-owned.
 
 - `startTick`: non-negative int
 - `spawns`: comma-separated `enemyId:count`
+- `spawnSelection`: optional `all` (default) or a pipe-delimited list of named map spawn ids,
+  for example `entry-north|entry-west`; ids are trimmed, must be non-blank and unique, and
+  `all` cannot be mixed with named ids. In `waves.properties`, the concrete key is for example
+  `wave-1.spawnSelection=entry-north|entry-west`.
 - `modifier.<index>.healthPercent`: optional positive percentage from `1` through `10000`
 - `modifier.<index>.speedPercent`: optional positive percentage from `1` through `10000`
 - `modifier.<index>.count`: positive number of consecutive enemies covered by this modifier
@@ -150,6 +154,16 @@ partial, non-positive, or unknown-resource values are rejected during content va
 Wave modifier indexes must be contiguous from `0`. Modifiers cover enemies in numeric-index order
 and within each wave spawn entry's authored order; once all declared counts are covered, remaining
 enemies use the unmodified effective enemy stats. Enemy scaling is applied before the wave modifier.
+
+Map spawn ids must be non-blank, must not equal the exact reserved token `all`, and must not
+contain the `|` delimiter. The exact token `all` is the only whole-value spelling for selecting
+every spawn; other spellings are ordinary named ids when authored in the map.
+
+When `spawnSelection` is omitted or `all`, the wave uses every named spawn in the selected map.
+When a named list is present, the loader requires every id to exist in every map in the pack and
+retains the map's existing per-spawn reachability validation. At runtime, selected routes are
+processed in sorted spawn-id order; within each route, authored `spawns` order and instance index
+are preserved. The same routing applies to scheduled, early-called, and incident-triggered waves.
 
 ### Incidents
 

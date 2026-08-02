@@ -37,6 +37,7 @@ class SandboxIncidentEffectInterpreter(
         goalField: GoalField,
         tick: Tick,
         eventSink: MutableList<GameplayEvent>,
+        spawnRoutes: Map<String, TilePosition> = emptyMap(),
     ): IncidentEffectApplication {
         val effects = selection.effects.toList()
         val resourceTotals = effects.filterIsInstance<IncidentEffectDescriptor.ResourceEvent>()
@@ -98,6 +99,7 @@ class SandboxIncidentEffectInterpreter(
                 goalField = goalField,
                 tick = tick,
                 eventSink = eventSink,
+                spawnRoutes = spawnRoutes,
             )
         }
         var nextInventory = state.inventory

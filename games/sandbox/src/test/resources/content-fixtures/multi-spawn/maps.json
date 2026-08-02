@@ -1,0 +1,28 @@
+{
+  "maps": [
+    {
+      "id": "multi-spawn-fixture-map",
+      "width": 7,
+      "height": 7,
+      "terrainRows": [
+        ".......",
+        ".......",
+        ".......",
+        "...C...",
+        ".......",
+        ".......",
+        "......."
+      ],
+      "terrainMapping": {
+        ".": { "tile": "floor" },
+        "C": { "tile": "core" }
+      },
+      "spawns": [
+        { "id": "alpha", "x": 0, "y": 0 },
+        { "id": "zulu", "x": 6, "y": 6 }
+      ],
+      "core": { "x": 3, "y": 3 },
+      "terminalRules": { "winCondition": "no_win" }
+    }
+  ]
+}

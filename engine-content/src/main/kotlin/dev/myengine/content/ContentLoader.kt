@@ -71,6 +71,7 @@ object ContentPackLoader {
             resources = resources,
             effects = effects,
             sounds = sounds,
+            maps = maps,
             errors = errors,
         )
         validateTerminalRules(maps, waves, errors)
@@ -377,13 +378,54 @@ object ContentPackLoader {
                 }
             }
             ?: return null
+        val spawnSelection = parseWaveSpawnSelection(id, fields, errors, file)
+        if (!spawnSelection.valid) return null
         return WaveContent(
             id = id,
             startTick = fields.requiredNonNegativeLong(file, id, "startTick", errors) ?: return null,
             spawns = spawns,
             earlyCallBonus = parseWaveEarlyCallBonus(id, fields, errors, file),
             modifiers = parseWaveModifiers(id, fields, errors, file),
+            spawnSelection = spawnSelection.ids,
         )
+    }
+
+    private data class ParsedWaveSpawnSelection(
+        val ids: List<String>?,
+        val valid: Boolean,
+    )
+
+    /** Parses the optional `all` or pipe-delimited named spawn list. */
+    private fun parseWaveSpawnSelection(
+        id: String,
+        fields: Map<String, String>,
+        errors: MutableList<ContentValidationError>,
+        file: String,
+    ): ParsedWaveSpawnSelection {
+        val raw = fields["spawnSelection"] ?: return ParsedWaveSpawnSelection(null, true)
+        val value = raw.trim()
+        if (value == "all") return ParsedWaveSpawnSelection(null, true)
+
+        val ids = value.split("|", ignoreCase = false, limit = Int.MAX_VALUE).map(String::trim)
+        if (ids.any(String::isBlank)) {
+            errors += ContentValidationError(file, id, "spawnSelection", "Spawn selection ids cannot be blank.")
+            return ParsedWaveSpawnSelection(null, false)
+        }
+        if (ids.any { it == "all" }) {
+            errors += ContentValidationError(file, id, "spawnSelection", "Use either 'all' or a named spawn id list, not both.")
+            return ParsedWaveSpawnSelection(null, false)
+        }
+        val duplicates = ids.groupingBy { it }.eachCount().filterValues { it > 1 }.keys
+        if (duplicates.isNotEmpty()) {
+            errors += ContentValidationError(
+                file,
+                id,
+                "spawnSelection",
+                "Spawn selection contains duplicate ids: ${duplicates.sorted().joinToString(", ")}.",
+            )
+            return ParsedWaveSpawnSelection(null, false)
+        }
+        return ParsedWaveSpawnSelection(ids, true)
     }
 
     private fun parseWaveModifiers(
@@ -735,6 +777,24 @@ object ContentPackLoader {
                 return@forEachIndexed
             }
             val spawnId = objectValue.requiredString("id", file, id, "spawns[$index].id", errors) ?: return@forEachIndexed
+            if (spawnId == "all") {
+                errors += ContentValidationError(
+                    file,
+                    id,
+                    "spawns[$index].id",
+                    "Spawn id 'all' is reserved for wave spawnSelection.",
+                )
+                return@forEachIndexed
+            }
+            if ('|' in spawnId) {
+                errors += ContentValidationError(
+                    file,
+                    id,
+                    "spawns[$index].id",
+                    "Spawn ids cannot contain the '|' delimiter used by wave spawnSelection.",
+                )
+                return@forEachIndexed
+            }
             val coordinate = parseCoordinate(objectValue, file, id, "spawns[$index]", errors) ?: return@forEachIndexed
             if (spawns.put(spawnId, MapSpawn(spawnId, coordinate)) != null) {
                 errors += ContentValidationError(file, id, "spawns[$index].id", "Duplicate named spawn '$spawnId'.")
@@ -918,6 +978,7 @@ object ContentPackLoader {
         resources: Map<String, ResourceContent>,
         effects: Map<String, StatusEffectContent>,
         sounds: Map<GameplayEventType, SoundRef>,
+        maps: Map<String, MapContent>,
         errors: MutableList<ContentValidationError>,
     ) {
         tiles.values.forEach { tile ->
@@ -949,6 +1010,29 @@ object ContentPackLoader {
             if (!resources.containsKey(it.outputResource)) errors += ContentValidationError("recipes.properties", it.id, "outputResource", "Unknown resource '${it.outputResource}'.")
         }
         waves.values.forEach { wave ->
+            wave.spawnSelection?.let { selectedSpawnIds ->
+                if (maps.isEmpty()) {
+                    errors += ContentValidationError(
+                        "waves.properties",
+                        wave.id,
+                        "spawnSelection",
+                        "Named spawn selection requires at least one map definition.",
+                    )
+                } else {
+                    maps.toSortedMap().forEach { (mapId, map) ->
+                        selectedSpawnIds.forEach { spawnId ->
+                            if (spawnId !in map.spawns) {
+                                errors += ContentValidationError(
+                                    "waves.properties",
+                                    wave.id,
+                                    "spawnSelection",
+                                    "Unknown spawn '$spawnId' in map '$mapId'.",
+                                )
+                            }
+                        }
+                    }
+                }
+            }
             wave.earlyCallBonus?.let { bonus ->
                 if (!resources.containsKey(bonus.resourceId)) {
                     errors += ContentValidationError(

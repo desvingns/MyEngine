@@ -469,6 +469,69 @@ class DefenseRuntimeTest {
     }
 
     @Test
+    fun multiSpawnWaveSortsRoutesAndPreservesWaveSpawnAndInstanceOrderDeterministically() {
+        val base = testRegistry()
+        val firstEnemy = base.requireEnemy("scout").copy(id = "alpha")
+        val secondEnemy = base.requireEnemy("scout").copy(id = "omega")
+        val registry = base.copy(
+            enemies = mapOf(firstEnemy.id to firstEnemy, secondEnemy.id to secondEnemy),
+            waves = mapOf(
+                "multi" to WaveContent(
+                    id = "multi",
+                    startTick = 1,
+                    // The authored WaveSpawn order is omega x2, then alpha x1.
+                    spawns = listOf(WaveSpawn("omega", 2), WaveSpawn("alpha", 1)),
+                    // The authored route order is intentionally unsorted.
+                    spawnSelection = listOf("zulu", "alpha"),
+                ),
+            ),
+        )
+
+        fun runOnce(): Pair<List<Triple<Long, String, TilePosition>>, DefenseState> {
+            val world = TileWorld.filled(
+                WorldSize(4, 1),
+                mapOf("floor" to TerrainRule("floor", buildable = true, blocksMovement = false)),
+                "floor",
+            )
+            val entities = EntityStore()
+            val state = DefenseRuntime().spawnDueWaves(
+                tick = Tick(1),
+                state = DefenseState(coreHealth = 10),
+                registry = registry,
+                world = world,
+                entities = entities,
+                spawn = TilePosition(0, 0),
+                core = TilePosition(3, 0),
+                spawnRoutes = linkedMapOf(
+                    "zulu" to TilePosition(0, 0),
+                    "alpha" to TilePosition(2, 0),
+                ),
+            )
+            return entities.all().map { entity ->
+                Triple(entity.id.value, entity.type, requireNotNull(entity.position).tile)
+            } to state
+        }
+
+        val first = runOnce()
+        val second = runOnce()
+
+        assertEquals(first, second, "The same multi-spawn wave must replay identically.")
+        assertEquals(
+            listOf(
+                Triple(1L, "enemy:omega", TilePosition(2, 0)),
+                Triple(2L, "enemy:omega", TilePosition(2, 0)),
+                Triple(3L, "enemy:alpha", TilePosition(2, 0)),
+                Triple(4L, "enemy:omega", TilePosition(0, 0)),
+                Triple(5L, "enemy:omega", TilePosition(0, 0)),
+                Triple(6L, "enemy:alpha", TilePosition(0, 0)),
+            ),
+            first.first,
+        )
+        assertEquals(6, first.second.metrics.enemiesSpawned)
+        assertEquals(setOf("multi"), first.second.spawnedWaveIds)
+    }
+
+    @Test
     fun bossAndWaveScalingApplyInStableSpawnOrderAndPersistEffectiveRewardStats() {
         val base = testRegistry()
         val boss = base.enemies.getValue("scout").copy(

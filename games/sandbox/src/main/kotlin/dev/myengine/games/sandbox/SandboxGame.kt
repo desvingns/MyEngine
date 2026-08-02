@@ -179,7 +179,10 @@ class SandboxRuntime(
     private val producerSystem = ProducerSystem(state.registry.recipes)
     private val map = state.registry.requireMap(state.mapId)
     private val spawn = map.primarySpawn.position.let { TilePosition(it.x, it.y) }
-    private val spawns = map.spawns.values.map { TilePosition(it.position.x, it.position.y) }.sorted()
+    private val spawnRoutes: Map<String, TilePosition> = map.spawns.toSortedMap()
+        .mapValues { (_, mapSpawn) -> TilePosition(mapSpawn.position.x, mapSpawn.position.y) }
+        .toSortedMap()
+    private val spawns = spawnRoutes.values.toList()
     private val core = map.core.let { TilePosition(it.x, it.y) }
     /** Derived cache: rebuilt from authoritative world occupancy after placement and on restore. */
     private var goalField: GoalField = rebuildAfterWalkabilityChange()
@@ -240,6 +243,7 @@ class SandboxRuntime(
                 core,
                 goalField,
                 eventSink = scheduledWaveEvents,
+                spawnRoutes = spawnRoutes,
             )
             val statusEffectResult = defenseRuntime.updateStatusEffects(
                 registry = state.registry,
@@ -289,6 +293,7 @@ class SandboxRuntime(
                     goalField = goalField,
                     tick = state.tick,
                     eventSink = incidentWaveEvents,
+                    spawnRoutes = spawnRoutes,
                 )
                 if (application.applied) {
                     state.lastCommandOrError = "incident_applied:${selection.incidentId}"
@@ -520,6 +525,7 @@ class SandboxRuntime(
             goalField = goalField,
             tick = state.tick,
             eventSink = eventSink,
+            spawnRoutes = spawnRoutes,
         )
         val bonus = wave.earlyCallBonus
         if (bonus == null) {

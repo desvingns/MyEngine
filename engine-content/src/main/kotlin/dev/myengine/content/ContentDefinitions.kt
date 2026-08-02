@@ -216,6 +216,8 @@ data class WaveContent(
     val spawns: List<WaveSpawn>,
     val earlyCallBonus: WaveEarlyCallBonus? = null,
     val modifiers: List<WaveModifier> = emptyList(),
+    /** Null means that the wave uses every named spawn on the selected map. */
+    val spawnSelection: List<String>? = null,
 ) : ContentDefinition
 
 data class DifficultyContent(

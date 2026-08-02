@@ -1,6 +1,6 @@
 # MyEngine Handoff
 
-Last updated: 2026-08-02 (ENG-012 boss/elite enemies + wave modifiers close-out; next ENG-007)
+Last updated: 2026-08-02 (ENG-007 multiple spawn points + per-wave routing close-out; next ENG-018)
 Owner: Codex
 
 ## DONE
@@ -17,6 +17,12 @@ Owner: Codex
   coverage. Effective spawn state is persisted in `EnemyComponent`, bosses are marked in immutable
   snapshots/render primitives, balance reports use effective stats, and sandbox saves are v11 with
   v1-v10 migration fallback.
+
+- ENG-007 is done: optional `WaveContent.spawnSelection` supports default/all or pipe-separated
+  named spawn ids with cross-reference/reachability validation. Scheduled, early, and incident
+  waves route through deterministic sorted spawn-id -> authored `WaveSpawn` -> instance ordering;
+  reserved map spawn ids are guarded and a checked-in multi-spawn fixture covers the content gate.
+  `SandboxSaveCodec.SAVE_VERSION` remains 11.
 
 - PROC-003 is done: `Plane/15_domain_systems_sequencing.md` sequences the domain systems —
   flow-field/pathfinding already done via ENG-002 (MyTD FR-003/FR-009/FR-013), colony slice
@@ -596,8 +602,8 @@ Owner: Codex
 
 ## NEXT
 
-Run `/me --feature --next` for ENG-007 (enemy armor + damage types), the next item in the
-PROC-003-adopted chain after completed ENG-012; continue `ENG-018`. The earlier commit blocker is
+Run `/me --feature --next` for ENG-018, the recommended item after completed ENG-007. ENG-011
+(enemy armor + damage types) remains a separate backlog card. The earlier commit blocker is
 resolved: PROC-013 commit 5eaaa78 was pushed.
 
 ## BLOCKERS
@@ -1128,3 +1134,37 @@ resolved: PROC-013 commit 5eaaa78 was pushed.
   `goal-field=9947100 ns`.
 - The initial invalid `:android:test --tests` invocation was corrected to
   `:android:testDebugUnitTest --tests`; it is not a feature failure.
+
+## ENG-007 Close-out (2026-08-02)
+
+### DONE
+
+- Added optional `WaveContent.spawnSelection` with default/all or pipe-separated named spawn ids,
+  cross-reference/reachability validation, reserved map spawn-id guards, and a checked-in
+  multi-spawn fixture.
+- Scheduled, early, and incident waves use deterministic sorted spawn-id -> authored `WaveSpawn`
+  -> instance ordering. `SandboxSaveCodec.SAVE_VERSION` remains 11.
+
+### DECISIONS
+
+- No ADR: the additive content/runtime routing change preserves the existing save format and
+  deterministic replay contract.
+
+### NEXT
+
+- Run `/me --feature --next` for ENG-018. ENG-011 remains the separate armor + damage types card.
+
+### BLOCKERS
+
+- No ENG-007 implementation blocker remains. The only low finding is the pre-existing Gradle 10
+  deprecation warning; no device/emulator claim is made beyond `assembleDebug`.
+
+### VERIFICATION
+
+- Runner gates passed: full tests, projects, content validation (2 existing packs plus the checked-in
+  multi-spawn fixture), replay, save-compat v1-v11 matrix plus `SandboxMultiSpawnTest`, benchmark,
+  `:android:assembleDebug`, and `git diff --check`.
+- Replay hashes: canonical `e4892bcc18f9d8dc`, kill `a763da4ac32b15b4`.
+- Benchmark: `sim_ms=364`, `kill_sim_ms=87`, `goal_field_rebuild_ns=9048200`,
+  `spatial_index_1k_ms=5.7197`. Tester remediation focused tests: 59 passed; simulation,
+  save-compat, and verifier reviews passed.

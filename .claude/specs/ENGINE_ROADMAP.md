@@ -7,7 +7,7 @@ two or more games outranks single-game gaps of the same severity.
 Updated by: the `/me-spec` backlog bridge (new gaps / new demand) and `/me`
 close-out (status changes).
 
-Last updated: 2026-08-02 (ENG-029 close-out)
+Last updated: 2026-08-02 (ENG-007 close-out)
 
 ## Capabilities
 
@@ -29,7 +29,7 @@ Last updated: 2026-08-02 (ENG-029 close-out)
 | Android SurfaceView renderer + Choreographer fixed-tick loop | ENG-026 | mytd, vision:td, vision:rimworld-like, vision:mindustry-like | 4 | **done** (2026-07-16; 20 Hz Android-local Choreographer policy, immutable RenderFrame SurfaceView, command-queue-only input, pause/save/Bundle command-ID restoration; JVM/build/replay/save-compat gates pass, device/performance checks manual-pending) |
 | HUD snapshot data + UI command surface | ENG-027 | mytd, vision:td, vision:rimworld-like, vision:mindustry-like | 4 | **done** (2026-07-18; content-derived immutable HUD snapshot, Android build/select/upgrade panels through `InputAdapter`, deterministic per-tower damage/kills, save v6 metrics persistence; full gates pass, device/layout/performance checks manual-pending) |
 | Goal-field pathfinding + repath on world change (mazing) | ENG-002 | mytd, vision:td, vision:mindustry-like | 3 | **done** (2026-07-18; deterministic `GoalField`, prospective all-spawn placement rejection, same-tick reroute, v6-derived field/legacy canonicalization; replay/save/benchmark gates pass) |
-| Multiple spawn points + per-wave routing | ENG-007 | vision:td, vision:mindustry-like | 2 | backlog |
+| Multiple spawn points + per-wave routing | ENG-007 | vision:td, vision:mindustry-like | 2 | **done** (2026-08-02; optional validated wave spawn selection, deterministic scheduled/early/incident routing, multi-spawn fixture, replay/save coverage; `SAVE_VERSION` remains 11) |
 | Targeting priority modes | ENG-008 | mytd, vision:td | 2 | **done** (2026-07-18; pure deterministic first/last/nearest/strongest/weakest selector with entity-id tiebreak, content default + queued per-tower override, HUD projection, and save v7 migration) |
 | Splash damage + shot events | ENG-009 | mytd, vision:td, vision:mindustry-like | 3 | **done** (2026-07-28; stable entity-id-ordered Manhattan AoE, integer per-ring falloff, and transient immutable source/target/tick shot-hit events; save v8 and replay hashes unchanged) |
 | Status effects framework | ENG-010 | mytd, vision:td, vision:mindustry-like | 3 | **done** (2026-08-01; content-defined slow/DoT, deterministic lifecycle, movement/damage modifiers, save v9 migration, immutable snapshot tags, and stable slow replay coverage) |
@@ -113,7 +113,7 @@ Last updated: 2026-08-02 (ENG-029 close-out)
    (done 2026-07-21) -> ENG-028 (done 2026-07-28) -> ENG-009 (done 2026-07-28) -> ENG-020
    (done 2026-07-29). PROC-003 sequencing adopted 2026-07-29: ENG-010 -> ENG-016 (done 2026-08-02)
    -> PROC-007 (done 2026-08-02) -> ENG-021 (done 2026-08-02) -> ENG-029 (done 2026-08-02)
-   -> ENG-012 (done 2026-08-02) -> ENG-007 -> ENG-018. The next exact item is ENG-007. Colony slice (ENG-001 ->
+   -> ENG-012 (done 2026-08-02) -> ENG-007 (done 2026-08-02) -> ENG-018. The next exact item is ENG-018. Colony slice (ENG-001 ->
    ENG-003 -> ENG-031 -> ENG-004 -> ENG-032) deferred until a colony/MySD spec supplies named FRs
    (see Plane/15).
 4. DX-008 is done: use its hybrid-format ADR for ENG-017/ENG-028 schema work. Other high-leverage

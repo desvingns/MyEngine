@@ -45,7 +45,7 @@
    and `ENG-020` (spatial index + 1k-entity benchmark) are closed; `ENG-020` was accepted on
    2026-07-29. PROC-003 sequencing adopted 2026-07-29 (see Plane/15): ENG-010 -> ENG-016 ->
    PROC-007 -> ENG-021 -> ENG-029 -> ENG-012 -> ENG-007 -> ENG-018; ENG-010, ENG-016, PROC-007,
-   ENG-021, ENG-029, and ENG-012 are closed, and the next exact item is `ENG-007`.
+   ENG-021, ENG-029, ENG-012, and ENG-007 are closed, and the next exact item is `ENG-018`.
 4. Hardening gaps из `docs/HARDENING_AUDIT.md` закрывать по одному, с тестами и обновлением handoff.
 
 Новые крупные фазы добавлять только после того, как backlog specs перестанут быть достаточно
@@ -64,6 +64,7 @@
 | [x] | ENG-021 Save slots + autosave policy | [ENG-021](../.claude/specs/done/ENG-021-save-slots-autosave.md) | Named `slots/`, config-driven rotating `autosave/`, flushed temp + `ATOMIC_MOVE` only, metadata-only inspection, corruption-only fallback, codec v10 and Android Bundle path preserved | 2026-08-02 |
 | [x] | ENG-029 Audio event hooks | [ENG-029](../.claude/specs/done/ENG-029-audio-event-hooks.md) | Transient deterministic `GameplayEvent` snapshot feed, optional `sounds.properties` validation, Android `SoundPool` consumer, no save-version/hash change | 2026-08-02 |
 | [x] | ENG-012 Boss/elite enemies + wave modifiers | [ENG-012](../.claude/specs/done/ENG-012-boss-elites-wave-modifiers.md) | Data-defined ranks and stat scaling, indexed wave modifiers, deterministic effective spawn state, boss snapshot marker, save v11 migration, replay/save/balance coverage | 2026-08-02 |
+| [x] | ENG-007 Multiple spawn points + per-wave routing | [ENG-007](../.claude/specs/done/ENG-007-multi-spawn-wave-routing.md) | Optional validated wave spawn selection, deterministic scheduled/early/incident routing, reserved spawn-id guards, checked-in multi-spawn fixture, replay/save coverage; `SAVE_VERSION` remains 11 | 2026-08-02 |
 
 ## Глобальные инварианты
 
@@ -1346,4 +1347,29 @@
     render, save, and content boundary review passed. No device/emulator proof is claimed beyond the
     Android assemble gate.
 - Next:
-  - Run `/me --feature --next` for ENG-007 (enemy armor + damage types), then continue `ENG-018`.
+  - Run `/me --feature --next` for ENG-011 (enemy armor + damage types), then continue `ENG-018`.
+
+### 2026-08-02 - ENG-007 (multiple spawn points + per-wave routing)
+
+- DONE:
+  - `WaveContent.spawnSelection` is optional and supports default/all or pipe-separated named
+    spawn ids. Cross-reference/reachability validation, reserved map spawn-id guards, and a
+    checked-in multi-spawn fixture are in place.
+  - Scheduled, early, and incident waves route in deterministic sorted spawn-id -> authored
+    `WaveSpawn` -> instance order. `SandboxSaveCodec.SAVE_VERSION` remains 11.
+- DECISIONS:
+  - No ADR; the additive content/runtime change preserves the existing save format and replay
+    contract.
+- NEXT:
+  - Run `/me --feature --next` for ENG-018. ENG-011 remains the separate armor + damage types card.
+- BLOCKERS:
+  - No implementation blocker remains. Only the pre-existing Gradle 10 deprecation warning is
+    low-severity; no device/emulator claim is made beyond `assembleDebug`.
+- VERIFICATION:
+  - Full tests, projects, content validation (2 existing packs plus the checked-in multi-spawn
+    fixture), replay, save-compat v1-v11 matrix plus `SandboxMultiSpawnTest`, benchmark,
+    `:android:assembleDebug`, and `git diff --check` passed.
+  - Replay: canonical `e4892bcc18f9d8dc`, kill `a763da4ac32b15b4`.
+  - Benchmark: `sim_ms=364`, `kill_sim_ms=87`, `goal_field_rebuild_ns=9048200`,
+    `spatial_index_1k_ms=5.7197`; tester remediation focused tests: 59 passed; simulation,
+    save-compat, and verifier reviews passed.

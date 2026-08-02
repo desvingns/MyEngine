@@ -398,6 +398,18 @@ by: claude
   assemble, focused tests, and `git diff --check` passed.
 - No plugin version bump; no ADR.
 
+## 2026-08-02 - MyEngine ENG-007 documentation close-out
+
+- Owner: Codex
+- Change type: none (documentation-only close-out; no agent/skill/adapter/pipeline contract change)
+- Summary: moved the accepted ENG-007 card to `done/`, synchronized the roadmap, state, handoff,
+  Plane README, and digest with multiple spawn points + per-wave routing, and corrected stale
+  references that assigned enemy armor + damage types to ENG-007; that capability is ENG-011.
+- Verification: recorded the accepted runner gates, canonical replay hashes, benchmark metrics,
+  59 focused remediation tests, and simulation/save-compat/verifier review passes. `SAVE_VERSION`
+  remains 11; no ADR was needed.
+- No plugin, skill, or adapter version bump; no production code, tests, or scripts were edited.
+
 ## 2026-08-02 - MyEngine ENG-016 documentation close-out
 
 - Owner: Codex
