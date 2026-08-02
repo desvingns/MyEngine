@@ -25,6 +25,14 @@ fun main(args: Array<String>) {
             DevtoolReports.contentReport(root).toJson()
         }
         "content-report-all", "content-validate-all" -> DevtoolReports.contentReportAll().toJson()
+        "endless-scaling", "endless-wave-scaling" -> {
+            val pathArg = args.getOrNull(1)
+            val root = pathArg?.let { DevtoolReports.repoRoot().resolve(it) }
+                ?: dev.myengine.games.sandbox.SandboxGame.contentRoot()
+            val waveCount = args.getOrNull(2)?.toIntOrNull() ?: 10
+            val seed = args.getOrNull(3)?.toLongOrNull() ?: 7L
+            DevtoolReports.endlessWaveScalingReport(root, waveCount, seed).toJson()
+        }
         "replay-inspect" -> DevtoolReports.replayInspect()
         else -> buildJson("error" to "unknown_command", "command" to command)
     }

@@ -2,6 +2,8 @@ package dev.myengine.defense
 
 import dev.myengine.ai.GoalField
 import dev.myengine.content.ContentPackLoader
+import dev.myengine.content.EndlessWaveComposition
+import dev.myengine.content.EndlessWaveContent
 import dev.myengine.content.StatusEffectContent
 import dev.myengine.content.StatusEffectKind
 import dev.myengine.content.StatusEffectStackingRule
@@ -9,6 +11,7 @@ import dev.myengine.content.WaveContent
 import dev.myengine.content.WaveModifier
 import dev.myengine.content.WaveSpawn
 import dev.myengine.core.Tick
+import dev.myengine.core.SeededRandom
 import dev.myengine.core.HitEvent
 import dev.myengine.core.ShotEvent
 import dev.myengine.entities.Entity
@@ -51,6 +54,48 @@ class DefenseRuntimeTest {
         assertEquals(1, state.metrics.enemiesSpawned)
         assertEquals(1, state.metrics.enemiesLeaked)
         assertEquals(2, state.coreHealth)
+    }
+
+    @Test
+    fun endlessWavesConsumeSuppliedRngAndApplyContentScaling() {
+        val base = testRegistry()
+        val registry = base.copy(
+            waves = emptyMap(),
+            endlessWave = EndlessWaveContent(
+                startTick = 1,
+                intervalTicks = 1,
+                compositionCycle = listOf(EndlessWaveComposition(listOf(WaveSpawn("scout", 2)))),
+                countGrowthPercent = 200,
+                healthGrowthPercent = 200,
+                rewardGrowthPercent = 200,
+            ),
+        )
+        val terrain = mapOf("floor" to TerrainRule("floor", buildable = true, blocksMovement = false))
+        val world = TileWorld.filled(WorldSize(3, 1), terrain, "floor")
+        val entities = EntityStore()
+        val random = SeededRandom(19L)
+        val runtime = DefenseRuntime()
+
+        var state = runtime.spawnDueWaves(
+            Tick(1), DefenseState(coreHealth = 3), registry, world, entities,
+            TilePosition(0, 0), TilePosition(2, 0), random = random,
+        )
+
+        assertEquals(setOf("endless-wave-1"), state.spawnedWaveIds)
+        assertEquals(2, state.metrics.enemiesSpawned)
+        assertTrue(entities.byTag("enemy").all { it.health?.max == 2 })
+        val cursorAfterFirst = random.snapshot()
+
+        state = runtime.spawnDueWaves(
+            Tick(2), state, registry, world, entities,
+            TilePosition(0, 0), TilePosition(2, 0), random = random,
+        )
+
+        assertEquals(setOf("endless-wave-1", "endless-wave-2"), state.spawnedWaveIds)
+        assertEquals(6, state.metrics.enemiesSpawned)
+        assertTrue(entities.byTag("enemy").count { it.health?.max == 4 } == 4)
+        assertTrue(entities.byTag("enemy").count { it.enemy?.rewardAmount == 2 } == 4)
+        assertTrue(random.snapshot() != cursorAfterFirst, "each generated wave must advance the supplied RNG")
     }
 
     @Test

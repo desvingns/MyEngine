@@ -2,6 +2,7 @@ package dev.myengine.games.sandbox
 
 import dev.myengine.content.ContentPackLoader
 import dev.myengine.content.ContentRegistry
+import dev.myengine.content.EndlessWaveGenerator
 import dev.myengine.content.IncidentEffectDescriptor
 import dev.myengine.content.MapContent
 import dev.myengine.content.MapWinCondition
@@ -244,7 +245,9 @@ class SandboxRuntime(
                 goalField,
                 eventSink = scheduledWaveEvents,
                 spawnRoutes = spawnRoutes,
+                random = simulationRandom,
             )
+            state.randomCursor = simulationRandom.snapshot()
             val statusEffectResult = defenseRuntime.updateStatusEffects(
                 registry = state.registry,
                 entities = state.entities,
@@ -500,7 +503,7 @@ class SandboxRuntime(
         @Suppress("UNUSED_PARAMETER") command: CallWaveEarlyCommand,
         eventSink: MutableList<GameplayEvent>,
     ) {
-        val wave = nextUnspawnedWave()
+        val wave = nextUnspawnedWave(consumeRandom = true)
         if (wave == null) {
             state.lastCommandOrError = "no_upcoming_wave"
             return
@@ -527,6 +530,7 @@ class SandboxRuntime(
             eventSink = eventSink,
             spawnRoutes = spawnRoutes,
         )
+        state.randomCursor = simulationRandom.snapshot()
         val bonus = wave.earlyCallBonus
         if (bonus == null) {
             state.lastCommandOrError = "wave_called:${wave.id}"
@@ -544,9 +548,28 @@ class SandboxRuntime(
     }
 
     /** One deterministic next-wave projection shared by command behavior and HUD preview. */
-    private fun nextUnspawnedWave(): WaveContent? = state.registry.waves.values
-        .filter { it.id !in state.defense.spawnedWaveIds }
-        .minWithOrNull(compareBy({ it.startTick }, { it.id }))
+    private fun nextUnspawnedWave(consumeRandom: Boolean = false): WaveContent? {
+        val finite = state.registry.waves.values
+            .filter { it.id !in state.defense.spawnedWaveIds }
+            .minWithOrNull(compareBy<WaveContent> { it.startTick }.thenBy { it.id })
+        val endlessCandidate = state.registry.endlessWave?.let { config ->
+            var waveNumber = 1
+            while (EndlessWaveGenerator.idFor(waveNumber) in state.defense.spawnedWaveIds) {
+                if (waveNumber == Int.MAX_VALUE) return@let null
+                waveNumber += 1
+            }
+            Triple(config, waveNumber, EndlessWaveGenerator.startTickFor(config, waveNumber))
+        }
+        val finiteWins = finite != null && (
+            endlessCandidate == null ||
+                finite.startTick < endlessCandidate.third ||
+                (finite.startTick == endlessCandidate.third && finite.id < EndlessWaveGenerator.idFor(endlessCandidate.second))
+            )
+        if (finiteWins) return finite
+        val (config, waveNumber, _) = endlessCandidate ?: return finite
+        val random = if (consumeRandom) simulationRandom else SeededRandom.fromSnapshot(simulationRandom.snapshot())
+        return EndlessWaveGenerator.generate(config, waveNumber, random)
+    }
 
     private fun buildTower(command: BuildTowerCommand, eventSink: MutableList<GameplayEvent>) {
         val tower = state.registry.towers[command.towerId]

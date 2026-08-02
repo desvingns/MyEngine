@@ -3,12 +3,15 @@ package dev.myengine.devtools
 import dev.myengine.ai.GoalField
 import dev.myengine.content.ContentPackLoader
 import dev.myengine.content.ContentRegistry
+import dev.myengine.content.ContentValidationError
+import dev.myengine.content.EndlessWaveGenerator
 import dev.myengine.content.EffectiveEnemyStats
 import dev.myengine.content.EnemyContent
 import dev.myengine.content.WaveModifier
 import dev.myengine.content.WaveContent
 import dev.myengine.content.effectiveStats
 import dev.myengine.core.Tick
+import dev.myengine.core.SeededRandom
 import dev.myengine.defense.DefenseRuntime
 import dev.myengine.entities.Entity
 import dev.myengine.entities.EntityStore
@@ -116,6 +119,47 @@ data class AggregateContentReport(val results: List<PackValidation>) {
                 "\"errors\":[${pv.report.errors.joinToString(",") { "\"${escape(it)}\"" }}]}"
         }
         return "{\"valid\":$valid,\"pack_count\":${results.size},\"packs\":[$items]}"
+    }
+}
+
+data class EndlessWaveScalingRow(
+    val waveNumber: Int,
+    val waveId: String,
+    val startTick: Long,
+    val composition: Map<String, Int>,
+    val enemyCount: Long,
+    val totalHealth: Long,
+    val totalReward: Long,
+)
+
+data class EndlessWaveScalingReport(
+    val packId: String?,
+    val valid: Boolean,
+    val waveCount: Int,
+    val seed: Long,
+    val rows: List<EndlessWaveScalingRow>,
+    val errors: List<String>,
+) {
+    fun toJson(): String {
+        val rowJson = rows.joinToString(",") { row ->
+            val composition = row.composition.toSortedMap().entries.joinToString(",") { (enemyId, count) ->
+                "\"${escape(enemyId)}\":$count"
+            }
+            "{\"wave_number\":${row.waveNumber}," +
+                "\"wave_id\":\"${escape(row.waveId)}\"," +
+                "\"start_tick\":${row.startTick}," +
+                "\"composition\":{$composition}," +
+                "\"enemy_count\":${row.enemyCount}," +
+                "\"total_health\":${row.totalHealth}," +
+                "\"total_reward\":${row.totalReward}}"
+        }
+        val errorJson = errors.joinToString(",") { "\"${escape(it)}\"" }
+        return "{\"pack_id\":${packId.jsonValue()}," +
+            "\"valid\":$valid," +
+            "\"wave_count\":$waveCount," +
+            "\"seed\":$seed," +
+            "\"rows\":[$rowJson]," +
+            "\"errors\":[$errorJson]}"
     }
 }
 
@@ -259,6 +303,70 @@ object DevtoolReports {
                 // Sort on the emitted forward-slash key so ordering is stable across OSes.
                 .sortedBy { it.root },
         )
+
+    /** Emits a deterministic, machine-readable curve for an endless pack without mutating a runtime RNG. */
+    fun endlessWaveScalingReport(
+        root: Path = SandboxGame.contentRoot(),
+        waveCount: Int = 10,
+        seed: Long = 7L,
+    ): EndlessWaveScalingReport {
+        require(waveCount > 0) { "Endless scaling report requires a positive wave count." }
+        val load = ContentPackLoader.load(root)
+        val registry = load.registry
+        val config = registry?.endlessWave
+        if (!load.isValid || registry == null || config == null) {
+            val errors = if (load.errors.isNotEmpty()) {
+                load.errors.map(ContentValidationError::toString)
+            } else {
+                listOf("Content pack does not declare endless.properties.")
+            }
+            return EndlessWaveScalingReport(
+                packId = registry?.manifest?.id,
+                valid = false,
+                waveCount = waveCount,
+                seed = seed,
+                rows = emptyList(),
+                errors = errors,
+            )
+        }
+        val random = SeededRandom(seed)
+        val rows = (1..waveCount).map { waveNumber ->
+            val wave = EndlessWaveGenerator.generate(config, waveNumber, random)
+            val composition = linkedMapOf<String, Int>()
+            var enemyCount = 0L
+            var totalHealth = 0L
+            var totalReward = 0L
+            wave.spawns.forEach { spawn ->
+                composition[spawn.enemyId] = saturatedAdd(composition[spawn.enemyId]?.toLong() ?: 0L, spawn.count.toLong())
+                    .coerceAtMost(Int.MAX_VALUE.toLong()).toInt()
+                val enemy = registry.requireEnemy(spawn.enemyId)
+                val stats = enemy.effectiveStats(
+                    waveHealthPercent = wave.healthScalePercent,
+                    waveRewardPercent = wave.rewardScalePercent,
+                )
+                enemyCount = saturatedAdd(enemyCount, spawn.count.toLong())
+                totalHealth = saturatedAdd(totalHealth, saturatedMultiply(stats.health.toLong(), spawn.count.toLong()))
+                totalReward = saturatedAdd(totalReward, saturatedMultiply(stats.rewardAmount.toLong(), spawn.count.toLong()))
+            }
+            EndlessWaveScalingRow(
+                waveNumber = waveNumber,
+                waveId = wave.id,
+                startTick = wave.startTick,
+                composition = composition.toSortedMap(),
+                enemyCount = enemyCount,
+                totalHealth = totalHealth,
+                totalReward = totalReward,
+            )
+        }
+        return EndlessWaveScalingReport(
+            packId = registry.manifest.id,
+            valid = true,
+            waveCount = waveCount,
+            seed = seed,
+            rows = rows,
+            errors = emptyList(),
+        )
+    }
 
     /** Canonical (no-kill) scenario report; its hash is the long-standing baseline. */
     fun runSandboxScenario(): HeadlessScenarioReport =
@@ -570,6 +678,15 @@ object DevtoolReports {
         "save_bytes" to result.saveText.length,
         "enemies_killed" to result.metrics.enemiesKilled,
     )
+}
+
+private fun saturatedAdd(left: Long, right: Long): Long =
+    if (right > 0L && left > Long.MAX_VALUE - right) Long.MAX_VALUE else left + right
+
+private fun saturatedMultiply(left: Long, right: Long): Long = when {
+    left <= 0L || right <= 0L -> 0L
+    left > Long.MAX_VALUE / right -> Long.MAX_VALUE
+    else -> left * right
 }
 
 fun buildJson(vararg values: Pair<String, Any?>): String =

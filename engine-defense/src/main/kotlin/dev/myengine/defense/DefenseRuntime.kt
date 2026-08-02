@@ -5,7 +5,9 @@ import dev.myengine.ai.GridPathfinder
 import dev.myengine.ai.PathRequest
 import dev.myengine.ai.PathResult
 import dev.myengine.content.ContentRegistry
+import dev.myengine.content.EndlessWaveGenerator
 import dev.myengine.content.EnemyContent
+import dev.myengine.content.EndlessWaveContent
 import dev.myengine.content.WaveModifier
 import dev.myengine.content.effectiveStats
 import dev.myengine.content.StatusEffectKind
@@ -13,6 +15,7 @@ import dev.myengine.content.StatusEffectStackingRule
 import dev.myengine.content.TowerContent
 import dev.myengine.content.WaveContent
 import dev.myengine.core.Tick
+import dev.myengine.core.SeededRandom
 import dev.myengine.core.CombatEvents
 import dev.myengine.core.GameplayEvent
 import dev.myengine.core.GameplayEventType
@@ -40,11 +43,11 @@ data class DefenseMetrics(
     val towerShots: Int = 0,
 ) {
     fun plus(other: DefenseMetrics): DefenseMetrics = DefenseMetrics(
-        enemiesSpawned = enemiesSpawned + other.enemiesSpawned,
-        enemiesKilled = enemiesKilled + other.enemiesKilled,
-        enemiesLeaked = enemiesLeaked + other.enemiesLeaked,
-        coreDamage = coreDamage + other.coreDamage,
-        towerShots = towerShots + other.towerShots,
+        enemiesSpawned = saturatedAdd(enemiesSpawned, other.enemiesSpawned),
+        enemiesKilled = saturatedAdd(enemiesKilled, other.enemiesKilled),
+        enemiesLeaked = saturatedAdd(enemiesLeaked, other.enemiesLeaked),
+        coreDamage = saturatedAdd(coreDamage, other.coreDamage),
+        towerShots = saturatedAdd(towerShots, other.towerShots),
     )
 }
 
@@ -53,8 +56,8 @@ data class TowerDefenseMetrics(
     val kills: Int = 0,
 ) {
     fun plus(other: TowerDefenseMetrics): TowerDefenseMetrics = TowerDefenseMetrics(
-        actualDamage = actualDamage + other.actualDamage,
-        kills = kills + other.kills,
+        actualDamage = saturatedAdd(actualDamage, other.actualDamage),
+        kills = saturatedAdd(kills, other.kills),
     )
 }
 
@@ -148,11 +151,38 @@ class DefenseRuntime(private val pathfinder: GridPathfinder = GridPathfinder()) 
         goalField: GoalField? = null,
         eventSink: MutableList<GameplayEvent>? = null,
         spawnRoutes: Map<String, TilePosition> = emptyMap(),
+        random: SeededRandom? = null,
     ): DefenseState {
         var nextState = state
-        registry.waves.values
+        val dueWaves = registry.waves.values
             .filter { it.startTick <= tick.value && it.id !in state.spawnedWaveIds }
-            .sortedBy { it.id }
+            .toMutableList()
+        registry.endlessWave?.let { config ->
+            val maxWaveNumber = maxEndlessWaveNumberDue(config, tick.value)
+            if (maxWaveNumber > 0) {
+                val generatorRandom = requireNotNull(random) {
+                    "Endless wave spawning requires the simulation RNG stream."
+                }
+                for (waveNumber in 1..maxWaveNumber) {
+                    val waveId = EndlessWaveGenerator.idFor(waveNumber)
+                    if (waveId !in state.spawnedWaveIds) {
+                        dueWaves += EndlessWaveGenerator.generate(config, waveNumber, generatorRandom)
+                    }
+                }
+            }
+        }
+        dueWaves
+            // Preserve the pre-existing authored finite-wave id order; generated endless ids
+            // use numeric order so wave-10 cannot precede wave-2 lexicographically.
+            .sortedWith(compareBy<WaveContent> { it.id.startsWith("endless-wave-") }
+                .thenBy { wave ->
+                    if (wave.id.startsWith("endless-wave-")) {
+                        wave.id.substringAfter("endless-wave-").toIntOrNull() ?: Int.MAX_VALUE
+                    } else {
+                        0
+                    }
+                }
+                .thenBy { it.id })
             .forEach { wave ->
                 nextState = spawnWave(
                     wave = wave,
@@ -197,7 +227,17 @@ class DefenseRuntime(private val pathfinder: GridPathfinder = GridPathfinder()) 
                 val enemy = registry.requireEnemy(spawnDef.enemyId)
                 repeat(spawnDef.count) {
                     val modifier = waveModifierAt(wave.modifiers, enemyOrdinal)
-                    spawnEnemy(enemy, modifier, world, entities, route, core, goalField)
+                    spawnEnemy(
+                        enemy = enemy,
+                        waveModifier = modifier,
+                        waveHealthPercent = wave.healthScalePercent,
+                        waveRewardPercent = wave.rewardScalePercent,
+                        world = world,
+                        entities = entities,
+                        spawn = route,
+                        core = core,
+                        goalField = goalField,
+                    )
                     enemyOrdinal += 1
                 }
                 nextState = nextState.record(DefenseMetrics(enemiesSpawned = spawnDef.count))
@@ -272,8 +312,10 @@ class DefenseRuntime(private val pathfinder: GridPathfinder = GridPathfinder()) 
                         val enemyId = current.type.substringAfter("enemy:")
                         (current.enemy?.takeIf { it.enemyId == enemyId } ?: registry.enemies[enemyId]?.toEnemyComponent())?.let { enemyDefinition ->
                             if (enemyDefinition.rewardAmount > 0) {
-                                rewards[enemyDefinition.rewardResource] =
-                                    (rewards[enemyDefinition.rewardResource] ?: 0) + enemyDefinition.rewardAmount
+                                rewards[enemyDefinition.rewardResource] = saturatedAdd(
+                                    rewards[enemyDefinition.rewardResource] ?: 0,
+                                    enemyDefinition.rewardAmount,
+                                )
                             }
                         }
                         entities.markRemove(entity.id)
@@ -438,7 +480,10 @@ class DefenseRuntime(private val pathfinder: GridPathfinder = GridPathfinder()) 
                     val enemyId = damagedTarget.type.substringAfter("enemy:")
                     val enemy = damagedTarget.enemy?.takeIf { it.enemyId == enemyId } ?: registry.enemies[enemyId]?.toEnemyComponent()
                     if (enemy != null && enemy.rewardAmount > 0) {
-                        rewards[enemy.rewardResource] = (rewards[enemy.rewardResource] ?: 0) + enemy.rewardAmount
+                        rewards[enemy.rewardResource] = saturatedAdd(
+                            rewards[enemy.rewardResource] ?: 0,
+                            enemy.rewardAmount,
+                        )
                     }
                 }
             }
@@ -568,6 +613,8 @@ class DefenseRuntime(private val pathfinder: GridPathfinder = GridPathfinder()) 
     private fun spawnEnemy(
         enemy: EnemyContent,
         waveModifier: WaveModifier?,
+        waveHealthPercent: Long,
+        waveRewardPercent: Long,
         world: TileWorld,
         entities: EntityStore,
         spawn: TilePosition,
@@ -583,7 +630,11 @@ class DefenseRuntime(private val pathfinder: GridPathfinder = GridPathfinder()) 
             }
             MovementComponent(path = path, pathIndex = 0)
         }
-        val stats = enemy.effectiveStats(waveModifier)
+        val stats = enemy.effectiveStats(
+            waveModifier = waveModifier,
+            waveHealthPercent = waveHealthPercent,
+            waveRewardPercent = waveRewardPercent,
+        )
         val enemyComponent = EnemyComponent(
             enemyId = enemy.id,
             speedTilesPerTick = stats.speedTilesPerTick,
@@ -595,7 +646,8 @@ class DefenseRuntime(private val pathfinder: GridPathfinder = GridPathfinder()) 
         ).takeIf {
             enemy.isElite || enemy.isBoss ||
                 enemy.healthScalePercent != 100 || enemy.speedScalePercent != 100 ||
-                enemy.rewardScalePercent != 100 || waveModifier != null
+                enemy.rewardScalePercent != 100 || waveModifier != null ||
+                waveHealthPercent != 100L || waveRewardPercent != 100L
         }
         entities.create("enemy:${enemy.id}", setOf("enemy")) { id ->
             Entity(
@@ -610,6 +662,18 @@ class DefenseRuntime(private val pathfinder: GridPathfinder = GridPathfinder()) 
         }
     }
 }
+
+private fun maxEndlessWaveNumberDue(config: EndlessWaveContent, tick: Long): Int {
+    if (tick < config.startTick) return 0
+    val count = ((tick - config.startTick) / config.intervalTicks) + 1L
+    return count.coerceAtMost(Int.MAX_VALUE.toLong()).toInt()
+}
+
+private fun saturatedAdd(left: Int, right: Int): Int =
+    (left.toLong() + right.toLong()).coerceAtMost(Int.MAX_VALUE.toLong()).toInt()
+
+private fun saturatedAdd(left: Long, right: Long): Long =
+    if (right > 0L && left > Long.MAX_VALUE - right) Long.MAX_VALUE else left + right
 
 private fun EnemyContent.toEnemyComponent(): EnemyComponent = EnemyComponent(
     enemyId = id,

@@ -916,6 +916,60 @@ class ContentPackLoaderTest {
     }
 
     @Test
+    fun endlessPropertiesLoadContentDefinedScheduleAndRequireNoWin() {
+        val root = createPack()
+        root.resolve("waves.properties").writeText("")
+        root.resolve("maps.json").writeText(mapJson(terminalRules = """{ "winCondition": "no_win" }"""))
+        root.resolve("endless.properties").writeText(
+            """
+            startTick=3
+            intervalTicks=4
+            compositionCycle=scout:2;scout:1
+            countGrowthPercent=125
+            healthGrowthPercent=110
+            rewardGrowthPercent=105
+            """.trimIndent(),
+        )
+
+        val result = ContentPackLoader.load(root)
+
+        assertTrue(result.isValid, result.errors.joinToString("\n"))
+        val endless = result.registry!!.endlessWave
+        assertEquals(3L, endless?.startTick)
+        assertEquals(4L, endless?.intervalTicks)
+        assertEquals(2, endless?.compositionCycle?.size)
+        assertEquals(125, endless?.countGrowthPercent)
+    }
+
+    @Test
+    fun endlessPropertiesRejectFiniteWinCondition() {
+        val root = createPack()
+        root.resolve("waves.properties").writeText("")
+        root.resolve("maps.json").writeText(mapJson())
+        root.resolve("endless.properties").writeText(
+            """
+            startTick=3
+            intervalTicks=4
+            compositionCycle=scout:2
+            countGrowthPercent=125
+            healthGrowthPercent=110
+            rewardGrowthPercent=105
+            """.trimIndent(),
+        )
+
+        val result = ContentPackLoader.load(root)
+
+        assertFalse(result.isValid)
+        assertTrue(
+            result.errors.any {
+                it.file == "maps.json" && it.field == "terminalRules.winCondition" &&
+                    it.message.contains("requires no_win")
+            },
+            result.errors.joinToString("\n"),
+        )
+    }
+
+    @Test
     fun terminalRulesRejectInvalidLeakBudgetsAndMalformedValues() {
         listOf(
             Triple("""{ "leakBudget": 0 }""", "terminalRules.leakBudget", "positive"),

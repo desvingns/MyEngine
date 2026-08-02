@@ -189,6 +189,7 @@ data class WaveModifier(
     val healthPercent: Int,
     val speedPercent: Int,
     val count: Int,
+    val rewardPercent: Int = 100,
 ) {
     init {
         require(healthPercent > 0) { "Wave health percentage must be positive." }
@@ -196,6 +197,8 @@ data class WaveModifier(
         require(healthPercent <= 10_000) { "Wave health percentage cannot exceed 10000." }
         require(speedPercent <= 10_000) { "Wave speed percentage cannot exceed 10000." }
         require(count > 0) { "Wave modifier count must be positive." }
+        require(rewardPercent > 0) { "Wave reward percentage must be positive." }
+        require(rewardPercent <= 10_000) { "Wave reward percentage cannot exceed 10000." }
     }
 }
 
@@ -218,7 +221,45 @@ data class WaveContent(
     val modifiers: List<WaveModifier> = emptyList(),
     /** Null means that the wave uses every named spawn on the selected map. */
     val spawnSelection: List<String>? = null,
+    /** Additional population scaling materialized for generated waves; finite waves keep 100. */
+    val healthScalePercent: Long = 100L,
+    /** Additional reward scaling materialized for generated waves; finite waves keep 100. */
+    val rewardScalePercent: Long = 100L,
 ) : ContentDefinition
+
+data class EndlessWaveComposition(
+    val spawns: List<WaveSpawn>,
+) {
+    init {
+        require(spawns.isNotEmpty()) { "Endless wave composition cannot be empty." }
+        require(spawns.all { it.enemyId.isNotBlank() && it.count > 0 }) {
+            "Endless wave composition entries must have a non-blank enemy id and positive count."
+        }
+    }
+}
+
+/** Optional pack-owned schedule for waves generated after the finite schedule. */
+data class EndlessWaveContent(
+    val startTick: Long,
+    val intervalTicks: Long,
+    val compositionCycle: List<EndlessWaveComposition>,
+    val countGrowthPercent: Int,
+    val healthGrowthPercent: Int,
+    val rewardGrowthPercent: Int,
+    val spawnSelection: List<String>? = null,
+) {
+    init {
+        require(startTick >= 0) { "Endless wave start tick cannot be negative." }
+        require(intervalTicks > 0) { "Endless wave interval must be positive." }
+        require(compositionCycle.isNotEmpty()) { "Endless wave composition cycle cannot be empty." }
+        require(countGrowthPercent in 1..10_000) { "Endless count growth must be between 1 and 10000 percent." }
+        require(healthGrowthPercent in 1..10_000) { "Endless health growth must be between 1 and 10000 percent." }
+        require(rewardGrowthPercent in 1..10_000) { "Endless reward growth must be between 1 and 10000 percent." }
+        require(spawnSelection == null || spawnSelection.isNotEmpty()) {
+            "Endless spawn selection cannot be empty when declared."
+        }
+    }
+}
 
 data class DifficultyContent(
     override val id: String,
@@ -388,7 +429,10 @@ data class ContentRegistry(
     val resolvedDifficultyId: String? = null,
     val effects: Map<String, StatusEffectContent> = emptyMap(),
     val sounds: Map<GameplayEventType, SoundRef> = emptyMap(),
+    val endlessWave: EndlessWaveContent? = null,
 ) {
+    /** Alias kept for callers that refer to the optional pack feature as simply `endless`. */
+    val endless: EndlessWaveContent? get() = endlessWave
     fun requireTile(id: String): TileContent = tiles[id] ?: error("Unknown tile '$id'.")
     fun requireResource(id: String): ResourceContent = resources[id] ?: error("Unknown resource '$id'.")
     fun requireTower(id: String): TowerContent = towers[id] ?: error("Unknown tower '$id'.")
@@ -431,6 +475,15 @@ data class ContentRegistry(
                     },
                 )
             },
+            endlessWave = endlessWave?.copy(
+                compositionCycle = endlessWave.compositionCycle.map { composition ->
+                    composition.copy(
+                        spawns = composition.spawns.map { spawn ->
+                            spawn.copy(count = DifficultyScaling.scalePopulation(spawn.count, difficulty.countMult))
+                        },
+                    )
+                },
+            ),
             resolvedDifficultyId = id,
         )
     }

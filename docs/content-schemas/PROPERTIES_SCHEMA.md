@@ -165,6 +165,30 @@ retains the map's existing per-spawn reachability validation. At runtime, select
 processed in sorted spawn-id order; within each route, authored `spawns` order and instance index
 are preserved. The same routing applies to scheduled, early-called, and incident-triggered waves.
 
+### Endless waves
+
+An optional `endless.properties` file adds generated waves without replacing finite `waves.properties`
+definitions. It is valid only when every map declares `terminalRules.winCondition=no_win` (the
+`endless` alias is accepted and normalized to `no_win`). The required fields are:
+
+- `startTick`: non-negative first generated-wave tick
+- `intervalTicks`: positive tick interval between generated waves
+- `compositionCycle`: semicolon-separated compositions; each composition is a pipe- or
+  comma-separated list of `enemyId:positiveCount` entries, for example
+  `drift:3;drift:2|scout:1`
+- `countGrowthPercent`, `healthGrowthPercent`, `rewardGrowthPercent`: positive integer percentages
+  from `1` through `10000`, applied once per generated-wave step
+- `spawnSelection`: optional `all` or pipe-delimited named map spawn ids, with the same validation
+  and deterministic route ordering as finite waves
+
+Generated wave ids are `endless-wave-N`. Composition selection consumes the shared simulation RNG
+stream; it never creates a fresh stream. Count growth uses integer floor semantics, health uses
+integer floor semantics, and rewards use deterministic half-up rounding with saturation at the
+representable maximum. Effective generated enemy state is retained for save/replay continuation;
+the sandbox save version remains unchanged. The devtools command
+`endless-scaling [pack-path] [wave-count] [seed]` emits a deterministic JSON scaling table for
+headless balance tooling.
+
 ### Incidents
 
 `incidents.properties` is optional. A pack without this file, or with no incident definitions,

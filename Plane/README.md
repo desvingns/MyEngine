@@ -1373,3 +1373,16 @@
   - Benchmark: `sim_ms=364`, `kill_sim_ms=87`, `goal_field_rebuild_ns=9048200`,
     `spatial_index_1k_ms=5.7197`; tester remediation focused tests: 59 passed; simulation,
     save-compat, and verifier reviews passed.
+### 2026-08-02 - ENG-018 (endless wave generation)
+
+- Status: Done / accepted
+- Result: Added validated `endless.properties` composition cycles, interval scheduling, content-defined
+  count/health/reward growth, shared-RNG deterministic generation, `NO_WIN` enforcement, and the
+  `endless-scaling` machine-readable devtools report.
+- Verification: Full `gradlew.bat test`, `projects`, content validation, replay, save-compat matrix,
+  benchmark, focused generator/loader/defense/sandbox/devtools tests, and `git diff --check` passed.
+- Decisions: No ADR; the additive feature keeps the Android-free simulation boundary and
+  `SandboxSaveCodec.SAVE_VERSION=11`.
+- Limitations: Conditional simulation reviewer and final verifier worker threads timed out; local
+  boundary review plus the complete runner gate set passed. No device/emulator claim was made.
+- Next: Run `/me --feature --next` for ENG-011 (enemy armor + damage types).

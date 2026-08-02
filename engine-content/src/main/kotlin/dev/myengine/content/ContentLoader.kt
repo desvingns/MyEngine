@@ -45,6 +45,7 @@ object ContentPackLoader {
         val buildings = parseOptionalDefinitions(root, "buildings.properties", errors, ::parseBuilding)
         val recipes = parseDefinitions(root, "recipes.properties", errors, ::parseRecipe)
         val waves = parseDefinitions(root, "waves.properties", errors, ::parseWave)
+        val endlessWave = parseEndlessWave(root, errors)
         val incidents = parseOptionalDefinitions(root, "incidents.properties", errors, ::parseIncident)
         val difficulties = parseOptionalDefinitions(root, "difficulties.properties", errors, ::parseDifficulty)
         val effects = parseOptionalDefinitions(root, "effects.properties", errors, ::parseStatusEffect)
@@ -72,9 +73,10 @@ object ContentPackLoader {
             effects = effects,
             sounds = sounds,
             maps = maps,
+            endlessWave = endlessWave,
             errors = errors,
         )
-        validateTerminalRules(maps, waves, errors)
+        validateTerminalRules(maps, waves, endlessWave, errors)
         validateLocalization(resources, towers, strings, errors)
 
         if (errors.isNotEmpty() || manifest == null) {
@@ -97,6 +99,7 @@ object ContentPackLoader {
                 maps = maps,
                 effects = effects,
                 sounds = sounds,
+                endlessWave = endlessWave,
             ),
             errors = emptyList(),
         )
@@ -388,6 +391,73 @@ object ContentPackLoader {
             modifiers = parseWaveModifiers(id, fields, errors, file),
             spawnSelection = spawnSelection.ids,
         )
+    }
+
+    private fun parseEndlessWave(root: Path, errors: MutableList<ContentValidationError>): EndlessWaveContent? {
+        val path = root.resolve("endless.properties")
+        if (!Files.exists(path)) return null
+        val props = readProperties(path, errors) ?: return null
+        val file = path.fileName.toString()
+        val fields = props.entries.associate { it.key.toString() to it.value.toString() }
+        val spawnSelection = parseWaveSpawnSelection("endless", fields, errors, file)
+        if (!spawnSelection.valid) return null
+        val compositions = parseEndlessCompositions(fields, errors, file) ?: return null
+        val startTick = fields.requiredNonNegativeLong(file, "endless", "startTick", errors) ?: return null
+        val intervalTicks = fields.requiredPositiveLong(file, "endless", "intervalTicks", errors) ?: return null
+        val countGrowth = fields.requiredPositivePercent(file, "endless", "countGrowthPercent", errors) ?: return null
+        val healthGrowth = fields.requiredPositivePercent(file, "endless", "healthGrowthPercent", errors) ?: return null
+        val rewardGrowth = fields.requiredPositivePercent(file, "endless", "rewardGrowthPercent", errors) ?: return null
+        return EndlessWaveContent(
+            startTick = startTick,
+            intervalTicks = intervalTicks,
+            compositionCycle = compositions,
+            countGrowthPercent = countGrowth,
+            healthGrowthPercent = healthGrowth,
+            rewardGrowthPercent = rewardGrowth,
+            spawnSelection = spawnSelection.ids,
+        )
+    }
+
+    private fun parseEndlessCompositions(
+        fields: Map<String, String>,
+        errors: MutableList<ContentValidationError>,
+        file: String,
+    ): List<EndlessWaveComposition>? {
+        val rawCycle = fields["compositionCycle"]?.takeIf { it.isNotBlank() }
+        val values = if (rawCycle != null) {
+            rawCycle.split(';').map(String::trim).filter(String::isNotBlank)
+        } else {
+            val cycleFields = fields.keys.filter { it.startsWith("cycle.") }
+            val indexes = cycleFields.mapNotNull { it.substringAfter("cycle.").toIntOrNull() }.distinct().sorted()
+            if (indexes.isEmpty()) {
+                errors += ContentValidationError(file, "endless", "compositionCycle", "Required field is missing.")
+                return null
+            }
+            if (indexes != (0 until indexes.size).toList()) {
+                errors += ContentValidationError(file, "endless", "cycle", "Cycle indexes must be contiguous from 0.")
+                return null
+            }
+            indexes.map { index -> fields["cycle.$index"].orEmpty() }
+        }
+        if (values.isEmpty()) {
+            errors += ContentValidationError(file, "endless", "compositionCycle", "Composition cycle cannot be empty.")
+            return null
+        }
+        val parsed = values.mapIndexedNotNull { index, value ->
+            val tokens = value.split('|', ',').map(String::trim).filter(String::isNotBlank)
+            val spawns = tokens.mapNotNull { token ->
+                val parts = token.split(":")
+                val count = parts.getOrNull(1)?.toIntOrNull()
+                if (parts.size != 2 || parts[0].isBlank() || count == null || count <= 0) {
+                    errors += ContentValidationError(file, "endless", "compositionCycle[$index]", "Expected enemyId:positiveCount entries.")
+                    null
+                } else {
+                    WaveSpawn(parts[0], count)
+                }
+            }
+            if (spawns.isEmpty()) null else EndlessWaveComposition(spawns)
+        }
+        return parsed.takeIf { it.size == values.size }
     }
 
     private data class ParsedWaveSpawnSelection(
@@ -979,6 +1049,7 @@ object ContentPackLoader {
         effects: Map<String, StatusEffectContent>,
         sounds: Map<GameplayEventType, SoundRef>,
         maps: Map<String, MapContent>,
+        endlessWave: EndlessWaveContent?,
         errors: MutableList<ContentValidationError>,
     ) {
         tiles.values.forEach { tile ->
@@ -1046,6 +1117,43 @@ object ContentPackLoader {
             wave.spawns.forEach { spawn ->
                 if (!enemies.containsKey(spawn.enemyId)) errors += ContentValidationError("waves.properties", wave.id, "spawns", "Unknown enemy '${spawn.enemyId}'.")
                 if (spawn.count <= 0) errors += ContentValidationError("waves.properties", wave.id, "spawns", "Spawn count must be positive.")
+            }
+        }
+        endlessWave?.let { endless ->
+            endless.spawnSelection?.let { selectedSpawnIds ->
+                if (maps.isEmpty()) {
+                    errors += ContentValidationError(
+                        "endless.properties",
+                        "endless",
+                        "spawnSelection",
+                        "Named spawn selection requires at least one map definition.",
+                    )
+                } else {
+                    maps.toSortedMap().forEach { (mapId, map) ->
+                        selectedSpawnIds.forEach { spawnId ->
+                            if (spawnId !in map.spawns) {
+                                errors += ContentValidationError(
+                                    "endless.properties",
+                                    "endless",
+                                    "spawnSelection",
+                                    "Unknown spawn '$spawnId' in map '$mapId'.",
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+            endless.compositionCycle.forEachIndexed { cycleIndex, composition ->
+                composition.spawns.forEach { spawn ->
+                    if (!enemies.containsKey(spawn.enemyId)) {
+                        errors += ContentValidationError(
+                            "endless.properties",
+                            "endless",
+                            "compositionCycle[$cycleIndex]",
+                            "Unknown enemy '${spawn.enemyId}'.",
+                        )
+                    }
+                }
             }
         }
         incidents.values.forEach { incident ->
@@ -1208,8 +1316,31 @@ object ContentPackLoader {
     private fun validateTerminalRules(
         maps: Map<String, MapContent>,
         waves: Map<String, WaveContent>,
+        endlessWave: EndlessWaveContent?,
         errors: MutableList<ContentValidationError>,
     ) {
+        if (endlessWave != null) {
+            if (maps.isEmpty()) {
+                errors += ContentValidationError(
+                    file = "maps.json",
+                    id = "pack",
+                    field = "terminalRules.winCondition",
+                    message = "Endless wave content requires at least one map with no_win terminal rules.",
+                )
+            }
+            maps.values
+                .filter { it.terminalRules.winCondition != MapWinCondition.NO_WIN }
+                .sortedBy { it.id }
+                .forEach { map ->
+                    errors += ContentValidationError(
+                        file = "maps.json",
+                        id = map.id,
+                        field = "terminalRules.winCondition",
+                        message = "Endless wave content requires no_win terminal rules.",
+                    )
+                }
+            return
+        }
         if (waves.isNotEmpty()) return
         maps.values
             .filter { it.terminalRules.winCondition == MapWinCondition.FINITE_WAVES }
@@ -1304,6 +1435,11 @@ object ContentPackLoader {
     private fun Map<String, String>.requiredNonNegativeLong(file: String, id: String, field: String, errors: MutableList<ContentValidationError>): Long? {
         val value = required(file, id, field, errors)?.toLongOrNull() ?: return errors.addAndNull(file, id, field, "Expected integer.")
         return if (value >= 0) value else errors.addAndNull(file, id, field, "Expected non-negative integer.")
+    }
+
+    private fun Map<String, String>.requiredPositiveLong(file: String, id: String, field: String, errors: MutableList<ContentValidationError>): Long? {
+        val value = required(file, id, field, errors)?.toLongOrNull() ?: return errors.addAndNull(file, id, field, "Expected integer.")
+        return if (value > 0) value else errors.addAndNull(file, id, field, "Expected positive integer.")
     }
 
     private fun Map<String, String>.requiredPositivePercent(

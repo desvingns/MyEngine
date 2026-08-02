@@ -1,6 +1,6 @@
 # MyEngine Handoff
 
-Last updated: 2026-08-02 (ENG-007 multiple spawn points + per-wave routing close-out; next ENG-018)
+Last updated: 2026-08-02 (ENG-018 endless wave generation close-out; next ENG-011)
 Owner: Codex
 
 ## DONE
@@ -602,8 +602,7 @@ Owner: Codex
 
 ## NEXT
 
-Run `/me --feature --next` for ENG-018, the recommended item after completed ENG-007. ENG-011
-(enemy armor + damage types) remains a separate backlog card. The earlier commit blocker is
+Run `/me --feature --next` for ENG-011, the separate enemy armor + damage types backlog card. The earlier commit blocker is
 resolved: PROC-013 commit 5eaaa78 was pushed.
 
 ## BLOCKERS
@@ -1168,3 +1167,34 @@ resolved: PROC-013 commit 5eaaa78 was pushed.
 - Benchmark: `sim_ms=364`, `kill_sim_ms=87`, `goal_field_rebuild_ns=9048200`,
   `spatial_index_1k_ms=5.7197`. Tester remediation focused tests: 59 passed; simulation,
   save-compat, and verifier reviews passed.
+## ENG-018 Close-out (2026-08-02)
+
+### DONE
+
+- Added `endless.properties` parsing/validation for composition cycles, interval, spawn selection,
+  and content-defined count/health/reward growth.
+- Added deterministic `EndlessWaveGenerator` using the shared simulation RNG and stable generated
+  ids, integrated scheduled/early sandbox spawning, effective enemy state, and `NO_WIN` semantics.
+- Added `endless-scaling` / `endless-wave-scaling` devtools JSON report and focused tests across
+  content, defense, sandbox save/replay, and devtools.
+
+### DECISIONS
+
+- No ADR; no save version bump or Android dependency. `SandboxSaveCodec.SAVE_VERSION` remains 11.
+- Existing finite-wave ordering and canonical replay hashes remain unchanged.
+
+### NEXT
+
+- Run `/me --feature --next` for ENG-011 (enemy armor + damage types).
+
+### BLOCKERS
+
+- No implementation blocker. The conditional simulation reviewer and final verifier worker threads
+  timed out; local boundary review and full runner evidence cover the feature. No device/emulator
+  proof is claimed.
+
+### VERIFICATION
+
+- `gradlew.bat test`, `gradlew.bat projects`, content validation, replay, save-compat matrix,
+  benchmark, focused tests, and `git diff --check` passed.
+- Replay hashes: canonical `e4892bcc18f9d8dc`, kill `a763da4ac32b15b4`.

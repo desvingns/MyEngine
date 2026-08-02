@@ -52,6 +52,41 @@ class DevtoolReportsTest {
     }
 
     @Test
+    fun endlessScalingReportIsDeterministicAndMachineReadable() {
+        val root = Files.createTempDirectory("myengine-endless-scaling")
+        copyFlatPack(SandboxGame.contentRoot(), root)
+        Files.copy(SandboxGame.contentRoot().resolve("maps.json"), root.resolve("maps.json"), REPLACE_EXISTING)
+        Files.writeString(
+            root.resolve("maps.json"),
+            Files.readString(root.resolve("maps.json")).replace("finite_waves", "no_win"),
+        )
+        Files.writeString(
+            root.resolve("endless.properties"),
+            """
+            startTick=3
+            intervalTicks=4
+            compositionCycle=drift:2
+            countGrowthPercent=125
+            healthGrowthPercent=110
+            rewardGrowthPercent=105
+            """.trimIndent(),
+        )
+
+        val first = DevtoolReports.endlessWaveScalingReport(root, waveCount = 3, seed = 11L)
+        val second = DevtoolReports.endlessWaveScalingReport(root, waveCount = 3, seed = 11L)
+        val parsed = Json.parseToJsonElement(first.toJson()).jsonObject
+
+        assertTrue(first.valid, first.errors.joinToString("\n"))
+        assertEquals(first, second)
+        assertEquals("sandbox", first.packId)
+        assertEquals(3, first.rows.size)
+        assertEquals(3, parsed.getValue("wave_count").jsonPrimitive.content.toInt())
+        assertEquals(3, parsed.getValue("rows").jsonArray.size)
+        assertTrue(first.rows.zipWithNext().all { (left, right) -> right.startTick > left.startTick })
+        assertTrue(first.rows.zipWithNext().all { (left, right) -> right.totalHealth >= left.totalHealth })
+    }
+
+    @Test
     fun replayInspectReportsBothScenarios() {
         val json = DevtoolReports.replayInspect()
 

@@ -398,6 +398,21 @@ by: claude
   assemble, focused tests, and `git diff --check` passed.
 - No plugin version bump; no ADR.
 
+## 2026-08-02 - MyEngine ENG-018 feature run
+
+- Owner: Codex
+- Change type: normal feature run; no agent/skill/adapter/pipeline contract change.
+- Summary: `/me --feature --next` selected ENG-018 and added data-defined endless waves, shared-RNG
+  generation, no-win validation, effective generated enemy state, and deterministic scaling-table
+  devtools output.
+- Pipeline: selfcheck, scout, architect, and runner contracts passed. Developer returned partial
+  after a timeout; bounded integration was completed locally. Tester, conditional simulation
+  reviewer, final verifier, and docs workers timed out; focused tests, local boundary review, full
+  gates, and docs close-out were completed locally. No malformed JSON was recorded.
+- Verification: full tests/projects/content/replay/save-compat/benchmark/diff-check passed; replay
+  hashes remain `e4892bcc18f9d8dc` / `a763da4ac32b15b4`.
+- No plugin version bump; no ADR.
+
 ## 2026-08-02 - MyEngine ENG-007 documentation close-out
 
 - Owner: Codex
