@@ -1,8 +1,8 @@
 # MyEngine State
 
-Last updated: 2026-08-02 (ENG-019 close-out)
-Active phase: Phase 00-14 complete; Signal Garden SG-001..005 complete; MyTD MTD-001..005 complete; DX-008, ENG-002, ENG-005, ENG-007, ENG-008, ENG-009, ENG-010, ENG-011, ENG-012, ENG-013, ENG-014, ENG-015, ENG-016, ENG-018, ENG-019, ENG-020, ENG-021, ENG-026, ENG-027, ENG-028, ENG-029, ENG-030, PROC-002, PROC-003, PROC-007, and PROC-013 complete; pipeline at v0.2.0; next exact item ENG-001
-Owner of last update: Codex (2026-08-02: ENG-019 walls + player-placed blockers close-out; next exact item ENG-001)
+Last updated: 2026-08-02 (ENG-001 close-out)
+Active phase: Phase 00-14 complete; Signal Garden SG-001..005 complete; MyTD MTD-001..005 complete; DX-008, ENG-001, ENG-002, ENG-005, ENG-007, ENG-008, ENG-009, ENG-010, ENG-011, ENG-012, ENG-013, ENG-014, ENG-015, ENG-016, ENG-018, ENG-019, ENG-020, ENG-021, ENG-026, ENG-027, ENG-028, ENG-029, ENG-030, PROC-002, PROC-003, PROC-007, and PROC-013 complete; pipeline at v0.2.0; next exact item ENG-003
+Owner of last update: Codex (2026-08-02: ENG-001 A* + agent path-planning close-out; next exact item ENG-003)
 
 ## Current Status
 
@@ -284,6 +284,11 @@ Owner of last update: Codex (2026-08-02: ENG-019 walls + player-placed blockers 
   amended by owner decision: `vision:*` demand tags count as demand where no named game FR exists
   yet. Roadmap demand tags were corrected: `mytd` removed from ENG-012 (2->1), ENG-021 (4->3),
   ENG-022 (2->1), and ENG-029 (4->3) as unbacked by the MyTD spec bundle.
+- MyEngine ENG-001 is complete: `engine-world` provides deterministic 4-neighbor uniform-cost
+  integer A* with stable open-set/neighbor/predecessor ordering and boundary handling; `engine-ai`
+  preserves the `PathRequest`/`PathResult` API through A* and adds deterministic `AgentPathPlanner`
+  repaths for valid stored `MovementComponent` paths. Full Movement/job tick integration remains
+  intentionally deferred to ENG-003/ENG-004; wave enemies remain on ENG-002 `GoalField`.
 
 ## ENG-011 Close-out (2026-08-02)
 
@@ -321,13 +326,40 @@ Owner of last update: Codex (2026-08-02: ENG-019 walls + player-placed blockers 
   and kill scenarios 35 ticks / 431 ms and 79 ms. Android evidence is assembleDebug only; no
   device, emulator, visual-golden, or frame-budget claim is made.
 
+## ENG-001 Close-out (2026-08-02)
+
+- DONE: Added `engine-world` `AStarPathfinder` for deterministic 4-neighbor uniform integer-cost
+  A* with `(f, row-major tile index)` open-set ordering, stable neighbor order, first predecessor
+  on equal `g`, bounds/blocked/no-path handling, and optional occupied-start support. `engine-ai`
+  `GridPathfinder` preserves the `PathRequest`/`PathResult` API while delegating to A*, and
+  `AgentPathPlanner` keeps valid stored `MovementComponent` paths and deterministically repaths
+  after route/world changes. Focused tests cover `pathIndex > 0` and occupied starts.
+- DECISIONS: No ADR. This is an Android-free engine/vision capability; no save, content, render,
+  Android, dependency, or game-bundle traceability change was made. Full Movement/job tick
+  integration is intentionally deferred to ENG-003/ENG-004, and wave enemies remain on ENG-002's
+  `GoalField`.
+- NEXT: Run `/me --feature --next` for ENG-003 (JobBoard wired into tick), the next colony-slice
+  item after ENG-001.
+- BLOCKERS: No ENG-001 implementation blocker. The stored-path planner is not yet wired into a
+  full Movement/job tick system; that integration is the planned ENG-003/ENG-004 scope. Colony
+  demand remains vision-only until the recorded MySD Gate 1 or authored-game-spec trigger.
+- VERIFICATION: `AStarPathfindingTest` and `AgentPathPlannerTest` pass; full `.\gradlew.bat test`,
+  `.\gradlew.bat projects`, content-validate, sim-replay, save-compat, benchmark, and
+  `git diff --check` pass. Replay hashes: `e4892bcc18f9d8dc`, `a763da4ac32b15b4`,
+  `3f02607020d48668`. Benchmark: canonical 413 ms, kill 102 ms, GoalField rebuild 13099400 ns,
+  spatial index 6.3748 ms. Final verifier passed with no findings and all boundary checks true;
+  simulation-reviewer tie/equal-g and `pathIndex` findings were remediated.
+
 ## Next Exact Action
 
-Run `/me --feature --next` for ENG-001 (A* point-to-point pathfinding for agents), the next
-backlog item in the deferred colony slice. No ENG-019 implementation blocker remains.
+Run `/me --feature --next` for ENG-003 (JobBoard wired into tick), the next item in the deferred
+colony slice. No ENG-001 implementation blocker remains.
 
 ## Known Blockers
 
+- ENG-001 has no implementation blocker. Full Movement/job tick integration is intentionally
+  deferred to ENG-003/ENG-004; wave enemies continue to use the ENG-002 `GoalField`. Colony demand
+  remains vision-only until MySD Gate 1 or an authored colony game spec supplies named FRs.
 - ENG-011 has no implementation blocker. No device/emulator evidence is claimed; existing manual
   Android/device and performance follow-ups remain unchanged.
 - RESOLVED (2026-07-29): the pre-existing unrelated dirty `.ai/retro/retro-2026-07-28.md` commit

@@ -1,6 +1,6 @@
 # MyEngine Handoff
 
-Last updated: 2026-08-02 (ENG-019 walls + player-placed blockers close-out; next ENG-001)
+Last updated: 2026-08-02 (ENG-001 A* + agent path-planning close-out; next ENG-003)
 Owner: Codex
 
 ## DONE
@@ -20,6 +20,13 @@ Owner: Codex
   16 shots at 5.201 ms. Canonical and kill scenarios ran 35 ticks at 431 ms and 79 ms. Android
   evidence is assembleDebug only; no device/emulator or frame-budget claim is made. No ADR was
   needed.
+
+- ENG-001 is done: `engine-world` now provides deterministic 4-neighbor uniform integer-cost A*
+  with stable open-set/neighbor/predecessor ordering, bounds/blocked/no-path handling, and
+  optional occupied-start support. `engine-ai` keeps the `PathRequest`/`PathResult` API through
+  A* and adds deterministic `AgentPathPlanner` repaths for valid stored `MovementComponent` paths.
+  Full Movement/job tick integration is intentionally deferred to ENG-003/ENG-004; wave enemies
+  remain on ENG-002 `GoalField`.
 
 - ENG-029 is done: the latest completed snapshot tick exposes a deterministic transient immutable
   `GameplayEvent` feed for shot, hit, death, wave-start, build, and sell events. Optional
@@ -444,6 +451,10 @@ Owner: Codex
 
 ## DECISIONS
 
+- ENG-001 needs no ADR: it is an Android-free engine/vision capability with no save, content,
+  render, Android, dependency, or game-bundle traceability change. The planner is deliberately
+  reusable but not yet wired into a full Movement/job tick system; that belongs to ENG-003/ENG-004.
+
 - ENG-029 needs no ADR: simulation remains Android/audio-free and the SoundPool adapter owns audio
   decoding/playback and presentation state. No plugin/skill or canonical agent-contract changed.
 
@@ -625,12 +636,15 @@ Owner: Codex
 
 ## NEXT
 
-Run `/me --feature --next` for ENG-001 (A* point-to-point pathfinding for agents), the next
-backlog item in the deferred colony slice. The earlier commit blocker is resolved: PROC-013 commit
-5eaaa78 was pushed.
+Run `/me --feature --next` for ENG-003 (JobBoard wired into tick), the next item in the deferred
+colony slice. ENG-001 is closed; the earlier commit blocker is resolved: PROC-013 commit 5eaaa78
+was pushed.
 
 ## BLOCKERS
 
+- ENG-001 has no implementation blocker. Full Movement/job tick integration is intentionally
+  deferred to ENG-003/ENG-004, and wave enemies remain on the ENG-002 `GoalField`. Colony demand
+  remains vision-only until MySD Gate 1 or an authored colony game spec supplies named FRs.
 - RESOLVED (2026-07-29): the pre-existing unrelated dirty `.ai/retro/retro-2026-07-28.md` commit
   blocker is cleared; PROC-013 commit 5eaaa78 was pushed.
 - ENG-029 has no implementation blocker. No real device/emulator SoundPool playback, volume/mute,
@@ -758,6 +772,13 @@ backlog item in the deferred colony slice. The earlier commit blocker is resolve
 
 ## VERIFICATION
 
+- ENG-001: focused `AStarPathfindingTest` and `AgentPathPlannerTest` pass; full
+  `.\gradlew.bat test`, `.\gradlew.bat projects`, content validation, replay, save-compat,
+  benchmark, and `git diff --check` pass. Replay hashes are `e4892bcc18f9d8dc`,
+  `a763da4ac32b15b4`, and `3f02607020d48668`. Benchmark: canonical 413 ms, kill 102 ms,
+  GoalField rebuild 13099400 ns, spatial index 6.3748 ms. Final verifier passed with no findings
+  and all boundary checks true; tie/equal-g and `pathIndex` review findings were remediated.
+
 - ENG-011 (2026-08-02): focused ENG-011 suite passed 24 tests after the `Int.MAX_VALUE` boundary
   test; full `test`, `projects`, content validation, replay, save-compat, benchmark,
   `:android:assembleDebug`, and `git diff --check` -> pass. Conditional simulation and balance
@@ -778,6 +799,36 @@ backlog item in the deferred colony slice. The earlier commit blocker is resolve
 - PROC-013 (2026-07-29): developer, tester, runner, and verifier passes are recorded; 23 card
   migrations, board checker, selfcheck wiring, checker/selfcheck exit semantics, and no-ADR scope
   were verified. `git diff --check` is required for this docs close-out.
+
+## ENG-001 Close-out (2026-08-02)
+
+### DONE
+
+- Added deterministic `engine-world` A* and `engine-ai` `AgentPathPlanner`; preserved the
+  `GridPathfinder` request/result API and covered occupied starts, `pathIndex > 0`, tie/equal-g,
+  route/world changes, bounds, blocked cells, and no-path behavior.
+
+### DECISIONS
+
+- No ADR, save/content/render/Android/dependency changes, or game-bundle traceability update.
+- Wave enemies stay on ENG-002 `GoalField`; full Movement/job tick integration is deferred to
+  ENG-003/ENG-004.
+
+### NEXT
+
+- Run `/me --feature --next` for ENG-003 (JobBoard wired into tick).
+
+### BLOCKERS
+
+- No implementation blocker. The missing full Movement/job tick wiring is an intentional boundary,
+  not an ENG-001 defect; colony demand remains vision-only pending its recorded re-entry trigger.
+
+### VERIFICATION
+
+- Focused A* and planner tests, full `test`, `projects`, content-validate, sim-replay, save-compat,
+  benchmark, and diff-check passed. Replay hashes: `e4892bcc18f9d8dc` /
+  `a763da4ac32b15b4` / `3f02607020d48668`. Metrics: 413 ms / 102 ms / 13099400 ns / 6.3748 ms.
+- Final verifier: pass, no findings, all boundary checks true.
 - ENG-020 (2026-07-29): focused engine-defense tests (14), focused engine-devtools tests (16), full
   `.\gradlew.bat test`, `.\gradlew.bat projects` with explicit Android Studio `JAVA_HOME`, content
   validation (2 packs), replay, save-compat, benchmark, and `git diff --check` -> pass. Replay

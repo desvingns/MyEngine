@@ -45,9 +45,9 @@
    and `ENG-020` (spatial index + 1k-entity benchmark) are closed; `ENG-020` was accepted on
    2026-07-29. PROC-003 sequencing adopted 2026-07-29 (see Plane/15): ENG-010 -> ENG-016 ->
    PROC-007 -> ENG-021 -> ENG-029 -> ENG-012 -> ENG-007 -> ENG-018 (done 2026-08-02)
-   -> ENG-011 (done 2026-08-02) -> ENG-019 (done 2026-08-02) -> ENG-001; ENG-010, ENG-016,
-   PROC-007, ENG-021, ENG-029, ENG-012, ENG-007, ENG-018, ENG-011, and ENG-019 are closed, and
-   the next exact item is `ENG-001`.
+   -> ENG-011 (done 2026-08-02) -> ENG-019 (done 2026-08-02) -> ENG-001 (done 2026-08-02)
+   -> ENG-003 (next exact item); ENG-010, ENG-016, PROC-007, ENG-021, ENG-029, ENG-012, ENG-007,
+   ENG-018, ENG-011, ENG-019, and ENG-001 are closed.
 4. Hardening gaps из `docs/HARDENING_AUDIT.md` закрывать по одному, с тестами и обновлением handoff.
 
 Новые крупные фазы добавлять только после того, как backlog specs перестанут быть достаточно
@@ -70,6 +70,7 @@
 | [x] | ENG-018 Endless wave generation | [ENG-018](../.claude/specs/done/ENG-018-endless-wave-generation.md) | Validated endless schedule, shared-RNG deterministic generation, count/health/reward growth, no-win validation, and scaling report; `SAVE_VERSION` remains 11 | 2026-08-02 |
 | [x] | ENG-011 Enemy armor + damage types | [ENG-011](../.claude/specs/done/ENG-011-armor-damage-types.md) | Option A typed damage content, 0..100 resistances, bidirectional validation, Long/final-floor direct+splash formula, effective-DPS matrix, resist replay hash, and `SAVE_VERSION=11` preserved | 2026-08-02 |
 | [x] | ENG-019 Walls + player-placed blockers | [ENG-019](../.claude/specs/done/ENG-019-walls-blocking-buildings.md) | Validated 1x1 wall content, atomic place/remove commands with path rejection and refund, immutable snapshot health, save v12 with v1-v11 migration, forced-corridor replay, and full gates | 2026-08-02 |
+| [x] | ENG-001 A* point-to-point pathfinding for agents | [ENG-001](../.claude/specs/done/ENG-001-astar-agent-pathfinding.md) | Deterministic 4-neighbor integer-cost A*, stable tie ordering, API-preserving GridPathfinder delegation, and deterministic AgentPathPlanner repaths; Movement/job tick wiring deferred to ENG-003/ENG-004 | 2026-08-02 |
 
 ## Глобальные инварианты
 
@@ -1409,3 +1410,23 @@
   `goal-field=10743500 ns`, `spatial-index=6.4719 ms`.
 - Blockers: no implementation blocker; no device/emulator evidence is claimed.
 - Next: Run `/me --feature --next` for ENG-001 (A* point-to-point pathfinding for agents).
+
+### 2026-08-02 - ENG-001 (A* point-to-point pathfinding for agents)
+
+- Status: Done / accepted; documentation close-out completed
+- Owner: Codex
+- DONE: Added deterministic `engine-world` 4-neighbor uniform integer-cost A* with stable
+  `(f, row-major tile index)` open-set ordering, stable neighbors, first predecessor on equal `g`,
+  bounds/blocked/no-path handling, and optional occupied-start support. `engine-ai` preserves the
+  `PathRequest`/`PathResult` API through A* and adds `AgentPathPlanner` for valid stored paths and
+  deterministic repaths after route/world changes. Wave enemies remain on ENG-002 `GoalField`.
+- DECISIONS: No ADR. No save/content/render/Android/dependency changes and no game-bundle
+  traceability update. Full Movement/job tick integration is intentionally deferred to ENG-003/ENG-004.
+- NEXT: Run `/me --feature --next` for ENG-003 (JobBoard wired into tick).
+- BLOCKERS: No implementation blocker. The missing full Movement/job tick wiring is intentional;
+  colony demand remains vision-only pending the recorded MySD Gate 1 or authored-game-spec trigger.
+- VERIFICATION: Focused A* and planner tests, full `test`, `projects`, content validation,
+  sim-replay, save-compat, benchmark, and `git diff --check` passed. Replay hashes:
+  `e4892bcc18f9d8dc`, `a763da4ac32b15b4`, `3f02607020d48668`. Benchmark: canonical 413 ms,
+  kill 102 ms, GoalField rebuild 13099400 ns, spatial index 6.3748 ms. Final verifier passed with
+  no findings and all boundary checks true; tie/equal-g and `pathIndex` findings were remediated.
