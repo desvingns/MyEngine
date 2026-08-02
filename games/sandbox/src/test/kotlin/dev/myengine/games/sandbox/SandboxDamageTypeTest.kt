@@ -33,7 +33,7 @@ class SandboxDamageTypeTest {
     }
 
     @Test
-    fun typedV11SaveRoundtripPreservesHashAndNextTickReplay() {
+    fun typedV13SaveRoundtripPreservesHashAndNextTickReplay() {
         val registry = typedRegistry(resistance = 50)
 
         fun newRuntime(): SandboxRuntime = SandboxGame.createRuntime(registry, seed = 7L)
@@ -48,9 +48,9 @@ class SandboxDamageTypeTest {
         val save = SandboxSaveCodec.encode(paused.state, seed = 7L)
         val decoded = SandboxSaveCodec.decode(save, registry)
 
-        assertEquals(12, SandboxSaveCodec.SAVE_VERSION)
+        assertEquals(13, SandboxSaveCodec.SAVE_VERSION)
         assertEquals(paused.state.stableHash(), decoded.stableHash())
-        // The static damage type is derived again from the loaded registry, not added to v11 state.
+        // The static damage type is derived again from the loaded registry, not added to v13 state.
         assertNull(decoded.entities.byTag("tower").single().attack?.damageTypeId)
 
         val restored = SandboxRuntime(decoded, seed = 7L)

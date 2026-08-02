@@ -1,6 +1,6 @@
 # MyEngine Handoff
 
-Last updated: 2026-08-02 (ENG-001 A* + agent path-planning close-out; next ENG-003)
+Last updated: 2026-08-02 (ENG-003 job execution close-out; next ENG-031)
 Owner: Codex
 
 ## DONE
@@ -25,8 +25,15 @@ Owner: Codex
   with stable open-set/neighbor/predecessor ordering, bounds/blocked/no-path handling, and
   optional occupied-start support. `engine-ai` keeps the `PathRequest`/`PathResult` API through
   A* and adds deterministic `AgentPathPlanner` repaths for valid stored `MovementComponent` paths.
-  Full Movement/job tick integration is intentionally deferred to ENG-003/ENG-004; wave enemies
-  remain on ENG-002 `GoalField`.
+  ENG-003 now provides the full JobBoard/job-actor tick integration; the first worker hauling MVP
+  remains ENG-004. Wave enemies remain on ENG-002 `GoalField`.
+
+- ENG-003 is done: the Android-free `JobExecutionSystem` is wired into the sandbox fixed-tick
+  pipeline. Positioned `JobActorComponent` entities claim jobs in deterministic worker/entity and
+  priority/job-id order; `CLAIMED -> IN_PROGRESS -> DONE/FAILED` lifecycle, pathfinding movement,
+  work ticks, typed `resource_delta` completion effects, invalid-target/no-path release, reservation
+  guards, and same-tick reclaim prevention are covered. `SandboxSaveCodec` v13 persists JobBoard,
+  in-flight jobs, actor assignment/progress, and effects with v12 migration to empty job state.
 
 - ENG-029 is done: the latest completed snapshot tick exposes a deterministic transient immutable
   `GameplayEvent` feed for shot, hit, death, wave-start, build, and sell events. Optional
@@ -455,6 +462,11 @@ Owner: Codex
   render, Android, dependency, or game-bundle traceability change. The planner is deliberately
   reusable but not yet wired into a full Movement/job tick system; that belongs to ENG-003/ENG-004.
 
+- ENG-003 needs no ADR, game-bundle traceability update, or plugin/skill/pipeline contract change.
+  Approved defaults remain authoritative: every positioned `JobActorComponent` is eligible for all
+  job types, one work tick is processed per simulation tick, in-world `TilePosition` is the target
+  check, and invalid/no-path jobs return to `OPEN` after deterministic release.
+
 - ENG-029 needs no ADR: simulation remains Android/audio-free and the SoundPool adapter owns audio
   decoding/playback and presentation state. No plugin/skill or canonical agent-contract changed.
 
@@ -636,15 +648,19 @@ Owner: Codex
 
 ## NEXT
 
-Run `/me --feature --next` for ENG-003 (JobBoard wired into tick), the next item in the deferred
-colony slice. ENG-001 is closed; the earlier commit blocker is resolved: PROC-013 commit 5eaaa78
-was pushed.
+Run `/me --feature --next` for ENG-031 (stockpile zones + designations), the next item in the
+deferred colony slice. ENG-003 is closed; the earlier commit blocker is resolved: PROC-013 commit
+5eaaa78 was pushed.
 
 ## BLOCKERS
 
 - ENG-001 has no implementation blocker. Full Movement/job tick integration is intentionally
   deferred to ENG-003/ENG-004, and wave enemies remain on the ENG-002 `GoalField`. Colony demand
   remains vision-only until MySD Gate 1 or an authored colony game spec supplies named FRs.
+- ENG-003 has no implementation blocker. Non-blocking follow-ups: add the two-worker replay to
+  `DevtoolReports.replayInspect`; invoke `SandboxJobExecutionTest` separately from
+  `scripts/me-save-compat.ps1`; and add a job-heavy benchmark for large worker/job counts and
+  invalidated paths.
 - RESOLVED (2026-07-29): the pre-existing unrelated dirty `.ai/retro/retro-2026-07-28.md` commit
   blocker is cleared; PROC-013 commit 5eaaa78 was pushed.
 - ENG-029 has no implementation blocker. No real device/emulator SoundPool playback, volume/mute,
@@ -771,6 +787,12 @@ was pushed.
   (unit add/drop + capacity-bound `step` telemetry) without shipping capacities in default content.
 
 ## VERIFICATION
+
+- ENG-003: selfcheck, full `test`, `projects`, content validation, replay, save-compat, benchmark,
+  `:android:assembleDebug`, and `git diff --check` passed. Focused `JobExecutionSystemTest` and
+  `SandboxJobExecutionTest` passed. Replay hashes: `e4892bcc18f9d8dc`, `a763da4ac32b15b4`, and
+  `3f02607020d48668`. Final benchmark: simulation 430 ms, kill 76 ms, spatial index 6.6127 ms.
+  Final verifier passed with all boundary checks true.
 
 - ENG-001: focused `AStarPathfindingTest` and `AgentPathPlannerTest` pass; full
   `.\gradlew.bat test`, `.\gradlew.bat projects`, content validation, replay, save-compat,

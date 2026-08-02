@@ -157,9 +157,14 @@ data class AttackComponent(
 
 data class JobActorComponent(
     val assignedJobId: String? = null,
+    val workTicks: Int = 0,
 ) {
+    init {
+        require(workTicks >= 0) { "Completed job work ticks cannot be negative." }
+    }
+
     fun appendHash(hash: StableHash) {
-        hash.add(assignedJobId ?: "")
+        hash.add(assignedJobId ?: "").add(workTicks)
     }
 }
 

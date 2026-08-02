@@ -76,6 +76,16 @@ class SandboxSaveMigrationMatrixTest {
         )
     }
 
+    @Test
+    fun v12MigrationCreatesEmptyJobsAndUnassignedLegacyEntities() {
+        val registry = SandboxGame.loadRegistry()
+
+        val state = SandboxSaveCodec.decode(fixture(12), registry)
+
+        assertTrue(state.jobBoard.all().isEmpty())
+        assertTrue(state.entities.all().all { it.jobActor == null })
+    }
+
     private fun fixture(version: Int): String =
         requireNotNull(javaClass.getResourceAsStream("/save-fixtures/v$version.properties")) {
             "Missing checked-in save migration fixture v$version."

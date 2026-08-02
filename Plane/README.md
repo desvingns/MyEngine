@@ -46,8 +46,8 @@
    2026-07-29. PROC-003 sequencing adopted 2026-07-29 (see Plane/15): ENG-010 -> ENG-016 ->
    PROC-007 -> ENG-021 -> ENG-029 -> ENG-012 -> ENG-007 -> ENG-018 (done 2026-08-02)
    -> ENG-011 (done 2026-08-02) -> ENG-019 (done 2026-08-02) -> ENG-001 (done 2026-08-02)
-   -> ENG-003 (next exact item); ENG-010, ENG-016, PROC-007, ENG-021, ENG-029, ENG-012, ENG-007,
-   ENG-018, ENG-011, ENG-019, and ENG-001 are closed.
+   -> ENG-003 (done 2026-08-02) -> ENG-031 (next exact item); ENG-010, ENG-016, PROC-007,
+   ENG-021, ENG-029, ENG-012, ENG-007, ENG-018, ENG-011, ENG-019, ENG-001, and ENG-003 are closed.
 4. Hardening gaps из `docs/HARDENING_AUDIT.md` закрывать по одному, с тестами и обновлением handoff.
 
 Новые крупные фазы добавлять только после того, как backlog specs перестанут быть достаточно
@@ -70,7 +70,8 @@
 | [x] | ENG-018 Endless wave generation | [ENG-018](../.claude/specs/done/ENG-018-endless-wave-generation.md) | Validated endless schedule, shared-RNG deterministic generation, count/health/reward growth, no-win validation, and scaling report; `SAVE_VERSION` remains 11 | 2026-08-02 |
 | [x] | ENG-011 Enemy armor + damage types | [ENG-011](../.claude/specs/done/ENG-011-armor-damage-types.md) | Option A typed damage content, 0..100 resistances, bidirectional validation, Long/final-floor direct+splash formula, effective-DPS matrix, resist replay hash, and `SAVE_VERSION=11` preserved | 2026-08-02 |
 | [x] | ENG-019 Walls + player-placed blockers | [ENG-019](../.claude/specs/done/ENG-019-walls-blocking-buildings.md) | Validated 1x1 wall content, atomic place/remove commands with path rejection and refund, immutable snapshot health, save v12 with v1-v11 migration, forced-corridor replay, and full gates | 2026-08-02 |
-| [x] | ENG-001 A* point-to-point pathfinding for agents | [ENG-001](../.claude/specs/done/ENG-001-astar-agent-pathfinding.md) | Deterministic 4-neighbor integer-cost A*, stable tie ordering, API-preserving GridPathfinder delegation, and deterministic AgentPathPlanner repaths; Movement/job tick wiring deferred to ENG-003/ENG-004 | 2026-08-02 |
+| [x] | ENG-001 A* point-to-point pathfinding for agents | [ENG-001](../.claude/specs/done/ENG-001-astar-agent-pathfinding.md) | Deterministic 4-neighbor integer-cost A*, stable tie ordering, API-preserving GridPathfinder delegation, and deterministic AgentPathPlanner repaths; JobBoard/job-actor tick wiring is delivered by ENG-003, with hauling MVP remaining in ENG-004 | 2026-08-02 |
+| [x] | ENG-003 Job execution system | [ENG-003](../.claude/specs/done/ENG-003-job-execution-loop.md) | Post-Phase-14/Phase-15 feature close-out: deterministic v13 JobBoard tick execution, lifecycle, pathfinding movement, work ticks, typed resource-delta effects, release semantics, save migration, and replay/full-gate verification | 2026-08-02 |
 
 ## Глобальные инварианты
 
@@ -1430,3 +1431,29 @@
   `e4892bcc18f9d8dc`, `a763da4ac32b15b4`, `3f02607020d48668`. Benchmark: canonical 413 ms,
   kill 102 ms, GoalField rebuild 13099400 ns, spatial index 6.3748 ms. Final verifier passed with
   no findings and all boundary checks true; tie/equal-g and `pathIndex` findings were remediated.
+
+### 2026-08-02 - ENG-003 (JobBoard wired into tick)
+
+- Status: Done / accepted; post-Phase-14/Phase-15 feature close-out. No new phase was created.
+- Owner: Codex
+- DONE: Wired the Android-free `JobExecutionSystem` into the sandbox fixed-tick pipeline. Positioned
+  `JobActorComponent` entities claim jobs in deterministic worker/entity and priority/job-id order;
+  lifecycle advances through `CLAIMED -> IN_PROGRESS -> DONE/FAILED`; pathfinding movement, work
+  ticks, typed `resource_delta` completion effects, invalid-target/no-path release, reservation
+  guards, and same-tick reclaim prevention are covered. `SandboxSaveCodec` v13 persists JobBoard,
+  in-flight jobs, actor assignment/progress, and effects with v12 migration to empty job state.
+- DECISIONS: No ADR, no game-bundle traceability update, and no plugin/skill/pipeline contract
+  change. Approved defaults remain: every positioned `JobActorComponent` is eligible for all job
+  types, one work tick per simulation tick, in-world `TilePosition` validation, and deterministic
+  release to `OPEN` for invalid/no-path jobs.
+- NEXT: Run `/me --feature --next` for ENG-031 (stockpile zones + designations). Colony demand
+  remains vision-only pending MySD Gate 1 or an authored colony spec with named FRs.
+- BLOCKERS: No implementation blocker. Non-blocking follow-ups are: two-worker replay is not in
+  `DevtoolReports.replayInspect`; `scripts/me-save-compat.ps1` does not separately invoke
+  `SandboxJobExecutionTest`; and no job-heavy benchmark covers large worker/job counts or
+  invalidated paths.
+- VERIFICATION: Selfcheck, full test/projects/content validation/replay/save-compat/benchmark,
+  `:android:assembleDebug`, and `git diff --check` passed. Focused `JobExecutionSystemTest` and
+  `SandboxJobExecutionTest` passed. Replay hashes: `e4892bcc18f9d8dc`, `a763da4ac32b15b4`,
+  `3f02607020d48668`. Final benchmark: simulation 430 ms, kill 76 ms, spatial index 6.6127 ms.
+  Final verifier passed with all boundary checks true.

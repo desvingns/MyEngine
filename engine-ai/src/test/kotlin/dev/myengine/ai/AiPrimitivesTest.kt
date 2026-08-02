@@ -8,6 +8,7 @@ import dev.myengine.world.WorldSize
 import dev.myengine.world.WorldTile
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertIs
 import kotlin.test.assertNull
 
@@ -62,5 +63,40 @@ class AiPrimitivesTest {
 
         assertEquals("a", board.assignNext(EntityId(1))?.job?.id)
         assertNull(board.assignNext(EntityId(2))?.takeIf { it.job.id == "a" })
+    }
+
+    @Test
+    fun claimAcceptsNullOrOwnReservationAndRejectsForeignReservation() {
+        val actor = EntityId(1)
+        val otherActor = EntityId(2)
+        val board = JobBoard(
+            listOf(
+                Job("free", "haul", TilePosition(0, 0), priority = 1),
+                Job(
+                    "own",
+                    "build",
+                    TilePosition(1, 0),
+                    priority = 1,
+                    reservedBy = actor,
+                ),
+                Job(
+                    "foreign",
+                    "mine",
+                    TilePosition(2, 0),
+                    priority = 1,
+                    reservedBy = otherActor,
+                ),
+            ),
+        )
+
+        assertEquals(actor, board.claim("free", actor).reservedBy)
+        assertEquals(actor, board.claim("own", actor).reservedBy)
+
+        assertFailsWith<IllegalArgumentException> {
+            board.claim("foreign", actor)
+        }
+        assertEquals(JobStatus.OPEN, board.get("foreign")?.status)
+        assertEquals(otherActor, board.get("foreign")?.reservedBy)
+        assertNull(board.get("foreign")?.assignedTo)
     }
 }

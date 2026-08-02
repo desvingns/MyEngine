@@ -1,8 +1,8 @@
 # MyEngine State
 
-Last updated: 2026-08-02 (ENG-001 close-out)
-Active phase: Phase 00-14 complete; Signal Garden SG-001..005 complete; MyTD MTD-001..005 complete; DX-008, ENG-001, ENG-002, ENG-005, ENG-007, ENG-008, ENG-009, ENG-010, ENG-011, ENG-012, ENG-013, ENG-014, ENG-015, ENG-016, ENG-018, ENG-019, ENG-020, ENG-021, ENG-026, ENG-027, ENG-028, ENG-029, ENG-030, PROC-002, PROC-003, PROC-007, and PROC-013 complete; pipeline at v0.2.0; next exact item ENG-003
-Owner of last update: Codex (2026-08-02: ENG-001 A* + agent path-planning close-out; next exact item ENG-003)
+Last updated: 2026-08-02 (ENG-003 close-out)
+Active phase: Phase 00-14 complete; Phase 15 sequencing adopted; Signal Garden SG-001..005 complete; MyTD MTD-001..005 complete; DX-008, ENG-001, ENG-002, ENG-003, ENG-005, ENG-007, ENG-008, ENG-009, ENG-010, ENG-011, ENG-012, ENG-013, ENG-014, ENG-015, ENG-016, ENG-018, ENG-019, ENG-020, ENG-021, ENG-026, ENG-027, ENG-028, ENG-029, ENG-030, PROC-002, PROC-003, PROC-007, and PROC-013 complete; pipeline at v0.2.0; next exact item ENG-031
+Owner of last update: Codex (2026-08-02: ENG-003 job execution close-out; next exact item ENG-031)
 
 ## Current Status
 
@@ -287,8 +287,9 @@ Owner of last update: Codex (2026-08-02: ENG-001 A* + agent path-planning close-
 - MyEngine ENG-001 is complete: `engine-world` provides deterministic 4-neighbor uniform-cost
   integer A* with stable open-set/neighbor/predecessor ordering and boundary handling; `engine-ai`
   preserves the `PathRequest`/`PathResult` API through A* and adds deterministic `AgentPathPlanner`
-  repaths for valid stored `MovementComponent` paths. Full Movement/job tick integration remains
-  intentionally deferred to ENG-003/ENG-004; wave enemies remain on ENG-002 `GoalField`.
+  repaths for valid stored `MovementComponent` paths. ENG-003 now provides the full JobBoard/job-
+  actor tick integration; the first worker hauling MVP remains ENG-004. Wave enemies remain on
+  ENG-002 `GoalField`.
 
 ## ENG-011 Close-out (2026-08-02)
 
@@ -350,16 +351,44 @@ Owner of last update: Codex (2026-08-02: ENG-001 A* + agent path-planning close-
   spatial index 6.3748 ms. Final verifier passed with no findings and all boundary checks true;
   simulation-reviewer tie/equal-g and `pathIndex` findings were remediated.
 
+## ENG-003 Close-out (2026-08-02)
+
+- DONE: Wired the Android-free `JobExecutionSystem` into the sandbox fixed-tick pipeline. Positioned
+  `JobActorComponent` entities claim jobs in deterministic worker/entity and priority/job-id order;
+  lifecycle advances through `CLAIMED -> IN_PROGRESS -> DONE/FAILED`; pathfinding movement, work
+  ticks, typed `resource_delta` completion effects, invalid-target release, reservation guards, and
+  same-tick reclaim prevention are covered. `SandboxSaveCodec` v13 persists the JobBoard, in-flight
+  jobs, actor assignment/progress, and effects, with v12 migration to empty job state.
+- DECISIONS: No ADR, game-bundle traceability update, or plugin/skill/pipeline contract change.
+  Approved defaults remain: every positioned `JobActorComponent` is eligible for all job types, one
+  work tick is processed per simulation tick, in-world `TilePosition` is the target check, and
+  invalid/no-path jobs return to `OPEN` after deterministic release.
+- NEXT: Run `/me --feature --next` for ENG-031 (stockpile zones + designations). Colony demand remains
+  vision-only pending MySD Gate 1 or an authored colony spec with named FRs.
+- BLOCKERS: No implementation blocker. Three explicitly non-blocking follow-ups remain: the
+  two-worker replay is not in `DevtoolReports.replayInspect`; `scripts/me-save-compat.ps1` does not
+  separately invoke `SandboxJobExecutionTest`; and no job-heavy benchmark covers large worker/job
+  counts or invalidated paths.
+- VERIFICATION: Selfcheck, full test/projects/content/replay/save-compat/benchmark, Android assemble,
+  and `git diff --check` passed; focused `JobExecutionSystemTest` and `SandboxJobExecutionTest`
+  passed. Replay hashes: `e4892bcc18f9d8dc`, `a763da4ac32b15b4`, `3f02607020d48668`. Final benchmark:
+  simulation 430 ms, kill 76 ms, spatial index 6.6127 ms. Verifier passed with all boundary checks
+  true.
+
 ## Next Exact Action
 
-Run `/me --feature --next` for ENG-003 (JobBoard wired into tick), the next item in the deferred
-colony slice. No ENG-001 implementation blocker remains.
+Run `/me --feature --next` for ENG-031 (stockpile zones + designations), the next item in the deferred
+colony slice. ENG-003 has no implementation blocker.
 
 ## Known Blockers
 
 - ENG-001 has no implementation blocker. Full Movement/job tick integration is intentionally
   deferred to ENG-003/ENG-004; wave enemies continue to use the ENG-002 `GoalField`. Colony demand
   remains vision-only until MySD Gate 1 or an authored colony game spec supplies named FRs.
+- ENG-003 has no implementation blocker. Non-blocking follow-ups are limited to adding the two-worker
+  replay to `DevtoolReports.replayInspect`, invoking `SandboxJobExecutionTest` from
+  `scripts/me-save-compat.ps1`, and adding a job-heavy benchmark for large worker/job counts and
+  invalidated paths.
 - ENG-011 has no implementation blocker. No device/emulator evidence is claimed; existing manual
   Android/device and performance follow-ups remain unchanged.
 - RESOLVED (2026-07-29): the pre-existing unrelated dirty `.ai/retro/retro-2026-07-28.md` commit
