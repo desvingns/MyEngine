@@ -12,6 +12,8 @@ import dev.myengine.content.TowerContent
 import dev.myengine.content.WaveContent
 import dev.myengine.core.Tick
 import dev.myengine.core.CombatEvents
+import dev.myengine.core.GameplayEvent
+import dev.myengine.core.GameplayEventType
 import dev.myengine.core.HitEvent
 import dev.myengine.core.ShotEvent
 import dev.myengine.entities.AttackComponent
@@ -86,6 +88,7 @@ data class TowerUpdateResult(
 data class StatusEffectUpdateResult(
     val metrics: DefenseMetrics = DefenseMetrics(),
     val rewards: Map<String, Int> = emptyMap(),
+    val events: List<GameplayEvent> = emptyList(),
 )
 
 class DefenseRuntime(private val pathfinder: GridPathfinder = GridPathfinder()) {
@@ -140,13 +143,25 @@ class DefenseRuntime(private val pathfinder: GridPathfinder = GridPathfinder()) 
         spawn: TilePosition,
         core: TilePosition,
         goalField: GoalField? = null,
+        eventSink: MutableList<GameplayEvent>? = null,
     ): DefenseState {
         var nextState = state
         registry.waves.values
             .filter { it.startTick <= tick.value && it.id !in state.spawnedWaveIds }
             .sortedBy { it.id }
             .forEach { wave ->
-                nextState = spawnWave(wave, nextState, registry, world, entities, spawn, core, goalField)
+                nextState = spawnWave(
+                    wave = wave,
+                    state = nextState,
+                    registry = registry,
+                    world = world,
+                    entities = entities,
+                    spawn = spawn,
+                    core = core,
+                    goalField = goalField,
+                    tick = tick,
+                    eventSink = eventSink,
+                )
             }
         return nextState
     }
@@ -165,6 +180,8 @@ class DefenseRuntime(private val pathfinder: GridPathfinder = GridPathfinder()) 
         spawn: TilePosition,
         core: TilePosition,
         goalField: GoalField? = null,
+        tick: Tick = Tick(0),
+        eventSink: MutableList<GameplayEvent>? = null,
     ): DefenseState {
         if (wave.id in state.spawnedWaveIds) return state
         var nextState = state
@@ -175,6 +192,7 @@ class DefenseRuntime(private val pathfinder: GridPathfinder = GridPathfinder()) 
             }
             nextState = nextState.record(DefenseMetrics(enemiesSpawned = spawnDef.count))
         }
+        eventSink?.add(GameplayEvent(tick = tick, type = GameplayEventType.WAVE_START, contentId = wave.id))
         return nextState.copy(spawnedWaveIds = nextState.spawnedWaveIds + wave.id)
     }
 
@@ -186,9 +204,11 @@ class DefenseRuntime(private val pathfinder: GridPathfinder = GridPathfinder()) 
     fun updateStatusEffects(
         registry: ContentRegistry,
         entities: EntityStore,
+        tick: Tick = Tick(0),
     ): StatusEffectUpdateResult {
         var metrics = DefenseMetrics()
         val rewards = mutableMapOf<String, Int>()
+        val events = mutableListOf<GameplayEvent>()
         entities.all().sortedBy { it.id.value }.forEach { entity ->
             if (entity.statusEffects.isEmpty()) return@forEach
             var current = entities.get(entity.id) ?: return@forEach
@@ -215,6 +235,12 @@ class DefenseRuntime(private val pathfinder: GridPathfinder = GridPathfinder()) 
                             }
                         }
                         entities.markRemove(entity.id)
+                        events += GameplayEvent(
+                            tick = tick,
+                            type = GameplayEventType.DEATH,
+                            targetEntityId = entity.id.value,
+                            contentId = enemyId,
+                        )
                     }
                     if (actualDamage < 0) error("Status effect damage cannot be negative.")
                 }
@@ -227,7 +253,11 @@ class DefenseRuntime(private val pathfinder: GridPathfinder = GridPathfinder()) 
             }
         }
         entities.flushRemovals()
-        return StatusEffectUpdateResult(metrics, rewards.toSortedMap())
+        return StatusEffectUpdateResult(
+            metrics = metrics,
+            rewards = rewards.toSortedMap(),
+            events = Collections.unmodifiableList(events.toList()),
+        )
     }
 
     /** Applies one content-defined effect after the current tower damage phase. */
@@ -271,6 +301,7 @@ class DefenseRuntime(private val pathfinder: GridPathfinder = GridPathfinder()) 
         val towerMetrics = mutableMapOf<Long, TowerDefenseMetrics>()
         val shots = mutableListOf<ShotEvent>()
         val hits = mutableListOf<HitEvent>()
+        val gameplayEvents = mutableListOf<GameplayEvent>()
         val pendingEffects = mutableListOf<PendingStatusEffect>()
         // This cache is intentionally scoped to one deterministic tower-update pass. It is
         // rebuilt before any tower can change health, and query results resolve ids through the
@@ -308,6 +339,13 @@ class DefenseRuntime(private val pathfinder: GridPathfinder = GridPathfinder()) 
 
             metrics = metrics.plus(DefenseMetrics(towerShots = 1))
             shots += ShotEvent(towerEntity.id.value, target.id.value, tick)
+            gameplayEvents += GameplayEvent(
+                tick = tick,
+                type = GameplayEventType.SHOT,
+                sourceEntityId = towerEntity.id.value,
+                targetEntityId = target.id.value,
+                contentId = towerComponent.towerId,
+            )
             val targetPosition = target.position?.tile ?: return@forEach
             val towerContent = registry.requireTower(towerComponent.towerId)
             val targets = splashTargets(
@@ -335,11 +373,25 @@ class DefenseRuntime(private val pathfinder: GridPathfinder = GridPathfinder()) 
                 )
                 towerMetrics[towerEntity.id.value] = (towerMetrics[towerEntity.id.value] ?: TowerDefenseMetrics()).plus(towerDelta)
                 hits += HitEvent(towerEntity.id.value, damagedTarget.id.value, tick)
+                gameplayEvents += GameplayEvent(
+                    tick = tick,
+                    type = GameplayEventType.HIT,
+                    sourceEntityId = towerEntity.id.value,
+                    targetEntityId = damagedTarget.id.value,
+                    contentId = towerComponent.towerId,
+                )
                 // Persist even terminal damage until the final flush so subsequent towers observe the
                 // dead health and cannot double-count damage, kills, or content rewards.
                 entities.update(damagedTarget.id) { it.copy(health = damaged) }
                 if (!damaged.isAlive()) {
                     entities.markRemove(damagedTarget.id)
+                    gameplayEvents += GameplayEvent(
+                        tick = tick,
+                        type = GameplayEventType.DEATH,
+                        sourceEntityId = towerEntity.id.value,
+                        targetEntityId = damagedTarget.id.value,
+                        contentId = damagedTarget.type.substringAfter("enemy:"),
+                    )
                     metrics = metrics.plus(DefenseMetrics(enemiesKilled = 1))
                     val enemyId = damagedTarget.type.substringAfter("enemy:")
                     val enemy = registry.enemies[enemyId]
@@ -368,6 +420,7 @@ class DefenseRuntime(private val pathfinder: GridPathfinder = GridPathfinder()) 
             events = CombatEvents(
                 shots = Collections.unmodifiableList(shots.toList()),
                 hits = Collections.unmodifiableList(hits.toList()),
+                gameplayEvents = Collections.unmodifiableList(gameplayEvents.toList()),
             ),
         )
     }

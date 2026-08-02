@@ -9,6 +9,7 @@ import kotlinx.serialization.json.intOrNull
 import java.nio.file.Files
 import java.nio.file.Path
 import java.math.BigDecimal
+import dev.myengine.core.GameplayEventType
 import dev.myengine.core.command.TargetingMode
 import java.util.ArrayDeque
 import java.util.Properties
@@ -47,6 +48,7 @@ object ContentPackLoader {
         val incidents = parseOptionalDefinitions(root, "incidents.properties", errors, ::parseIncident)
         val difficulties = parseOptionalDefinitions(root, "difficulties.properties", errors, ::parseDifficulty)
         val effects = parseOptionalDefinitions(root, "effects.properties", errors, ::parseStatusEffect)
+        val sounds = parseSounds(root, manifest?.id ?: "unknown-pack", errors)
         val strings = readProperties(root.resolve("strings.properties"), errors)?.entries
             ?.associate { it.key.toString() to it.value.toString() }
             ?: emptyMap()
@@ -68,6 +70,7 @@ object ContentPackLoader {
             incidents = incidents,
             resources = resources,
             effects = effects,
+            sounds = sounds,
             errors = errors,
         )
         validateTerminalRules(maps, waves, errors)
@@ -92,6 +95,7 @@ object ContentPackLoader {
                 difficulties = difficulties,
                 maps = maps,
                 effects = effects,
+                sounds = sounds,
             ),
             errors = emptyList(),
         )
@@ -870,6 +874,7 @@ object ContentPackLoader {
         incidents: Map<String, IncidentContent>,
         resources: Map<String, ResourceContent>,
         effects: Map<String, StatusEffectContent>,
+        sounds: Map<GameplayEventType, SoundRef>,
         errors: MutableList<ContentValidationError>,
     ) {
         tiles.values.forEach { tile ->
@@ -928,6 +933,84 @@ object ContentPackLoader {
                     is IncidentEffectDescriptor.Modifier -> Unit
                 }
             }
+        }
+        sounds.toSortedMap(compareBy { it.id }).forEach { (eventType, reference) ->
+            validateSoundRef(root, packId, eventType, reference, errors)
+        }
+    }
+
+    private fun parseSounds(
+        root: Path,
+        packId: String,
+        errors: MutableList<ContentValidationError>,
+    ): Map<GameplayEventType, SoundRef> {
+        val path = root.resolve("sounds.properties")
+        if (!Files.exists(path)) return emptyMap()
+        val props = readProperties(path, errors) ?: return emptyMap()
+        val sounds = linkedMapOf<GameplayEventType, SoundRef>()
+        props.entries
+            .map { it.key.toString() to it.value.toString() }
+            .sortedBy { it.first }
+            .forEach { (rawId, rawPath) ->
+                val eventType = GameplayEventType.fromId(rawId)
+                if (eventType == null) {
+                    errors += ContentValidationError(
+                        "sounds.properties",
+                        rawId,
+                        "eventId",
+                        "Unknown gameplay event id '$rawId'.",
+                    )
+                    return@forEach
+                }
+                if (eventType in sounds) {
+                    errors += ContentValidationError(
+                        "sounds.properties",
+                        rawId,
+                        "eventId",
+                        "Duplicate gameplay event id '$rawId' after hyphen/underscore normalization.",
+                    )
+                    return@forEach
+                }
+                val trimmedPath = rawPath.trim()
+                if (trimmedPath.isBlank()) {
+                    errors += ContentValidationError(
+                        "sounds.properties",
+                        eventType.id,
+                        "path",
+                        "Sound path is missing.",
+                    )
+                    return@forEach
+                }
+                sounds[eventType] = SoundRef(trimmedPath)
+            }
+        return sounds.toSortedMap(compareBy { it.id })
+    }
+
+    private fun validateSoundRef(
+        root: Path,
+        packId: String,
+        eventType: GameplayEventType,
+        reference: SoundRef,
+        errors: MutableList<ContentValidationError>,
+    ) {
+        val packRoot = root.toAbsolutePath().normalize()
+        val resolved = packRoot.resolve(reference.path).normalize()
+        if (!resolved.startsWith(packRoot)) {
+            errors += ContentValidationError(
+                "sounds.properties",
+                eventType.id,
+                "path",
+                "Pack '$packId' sound path '${reference.path}' escapes the content-pack root.",
+            )
+            return
+        }
+        if (!Files.isRegularFile(resolved)) {
+            errors += ContentValidationError(
+                "sounds.properties",
+                eventType.id,
+                "path",
+                "Pack '$packId' sound file '${reference.path}' does not exist.",
+            )
         }
     }
 

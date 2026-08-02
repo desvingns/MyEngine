@@ -7,7 +7,7 @@ two or more games outranks single-game gaps of the same severity.
 Updated by: the `/me-spec` backlog bridge (new gaps / new demand) and `/me`
 close-out (status changes).
 
-Last updated: 2026-08-02
+Last updated: 2026-08-02 (ENG-029 close-out)
 
 ## Capabilities
 
@@ -44,7 +44,7 @@ Last updated: 2026-08-02
 | Save slots + autosave policy | ENG-021 | vision:td, vision:rimworld-like, vision:mindustry-like | 3 | **done** (2026-08-02; named `slots/`, rotating `autosave/`, atomic writes, metadata-only inspection, corruption-only fallback, codec v10 and Android Bundle path preserved) |
 | Meta-progression store | ENG-022 | vision:td | 1 | backlog |
 | Sprite/atlas references in content schema | ENG-028 | mytd, vision:td, vision:rimworld-like, vision:mindustry-like | 4 | **done** (2026-07-28; validated opaque refs for tiles/towers/tower tiers/enemies/buildings, pack-relative file/atlas-key checks, deterministic palette fallback, desktop/Android consumers, and replay/save boundaries unchanged) |
-| Audio event hooks (snapshot event feed) | ENG-029 | vision:td, vision:rimworld-like, vision:mindustry-like | 3 | backlog |
+| Audio event hooks (snapshot event feed) | ENG-029 | vision:td, vision:rimworld-like, vision:mindustry-like | 3 | **done** (2026-08-02; transient deterministic `GameplayEvent` feed, optional `sounds.properties` file validation, Android `SoundPool` consumer, no save-version/hash change) |
 | Wave preview + early wave call | ENG-030 | mytd, vision:td | 2 | **done** (2026-07-21; typed early-call command, deterministic HUD composition/countdown, content-defined bonus validation, SAVE_VERSION v8 migration, replay/save/gate verification pass; balance review partial: current packs valid/no hardcoded bonus, schema gap closed in docs close-out, optional bonus unconfigured pending approved balance value) |
 | A* point-to-point pathfinding for agents | ENG-001 | vision:rimworld-like, vision:mindustry-like | 2 | backlog |
 | Job execution system (JobBoard wired into tick) | ENG-003 | vision:rimworld-like, vision:mindustry-like | 2 | backlog |
@@ -112,8 +112,9 @@ Last updated: 2026-08-02
 3. P1 opener: ENG-002 (done) -> ENG-013 (done) -> ENG-008 (done) -> ENG-015 (done) -> ENG-030
    (done 2026-07-21) -> ENG-028 (done 2026-07-28) -> ENG-009 (done 2026-07-28) -> ENG-020
    (done 2026-07-29). PROC-003 sequencing adopted 2026-07-29: ENG-010 -> ENG-016 (done 2026-08-02)
-   -> PROC-007 (done 2026-08-02) -> ENG-021 (done 2026-08-02) -> ENG-029 -> ENG-012 -> ENG-007 -> ENG-018. Colony slice (ENG-001 -> ENG-003
-   -> ENG-031 -> ENG-004 -> ENG-032) deferred until a colony/MySD spec supplies named FRs
+   -> PROC-007 (done 2026-08-02) -> ENG-021 (done 2026-08-02) -> ENG-029 (done 2026-08-02)
+   -> ENG-012 -> ENG-007 -> ENG-018. The next exact item is ENG-012. Colony slice (ENG-001 ->
+   ENG-003 -> ENG-031 -> ENG-004 -> ENG-032) deferred until a colony/MySD spec supplies named FRs
    (see Plane/15).
 4. DX-008 is done: use its hybrid-format ADR for ENG-017/ENG-028 schema work. Other high-leverage
    pipeline cards remain DX-002, DX-006, and DX-005.

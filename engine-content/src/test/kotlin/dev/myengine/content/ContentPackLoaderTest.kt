@@ -3,6 +3,8 @@ package dev.myengine.content
 import java.math.BigDecimal
 import dev.myengine.core.command.TargetingMode
 import java.nio.file.Files
+import java.nio.file.Path
+import java.nio.file.Paths
 import kotlin.io.path.writeText
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -23,6 +25,74 @@ class ContentPackLoaderTest {
         assertEquals(BigDecimal("0.5"), result.registry?.towers?.get("basic")?.sellRefundRatio)
         assertEquals(4, result.registry?.towers?.get("basic")?.upgradeTiers?.get(TowerUpgradeTier.key("main", 1))?.damage)
         assertTrue(result.registry?.buildings?.isEmpty() == true)
+    }
+
+    @Test
+    fun validSoundMappingsLoadWithNormalizedEventIdsAndRealPackFiles() {
+        val root = createPack()
+        Files.createDirectories(root.resolve("sounds"))
+        root.resolve("sounds/shot.wav").writeText("shot fixture")
+        root.resolve("sounds/wave.wav").writeText("wave fixture")
+        root.resolve("sounds.properties").writeText(
+            "shot=sounds/shot.wav\nwave_start=sounds/wave.wav\n",
+        )
+
+        val result = ContentPackLoader.load(root)
+
+        assertTrue(result.isValid, result.errors.joinToString("\n"))
+        assertEquals(
+            mapOf(
+                dev.myengine.core.GameplayEventType.SHOT to SoundRef("sounds/shot.wav"),
+                dev.myengine.core.GameplayEventType.WAVE_START to SoundRef("sounds/wave.wav"),
+            ),
+            result.registry!!.sounds,
+        )
+    }
+
+    @Test
+    fun soundMappingsRejectUnknownEventIdMissingFileAndPathEscape() {
+        val unknown = createPack()
+        unknown.resolve("sounds.properties").writeText("laser=sounds/laser.wav\n")
+        val unknownResult = ContentPackLoader.load(unknown)
+        assertFalse(unknownResult.isValid)
+        assertTrue(unknownResult.errors.any { it.file == "sounds.properties" && it.field == "eventId" && it.id == "laser" })
+
+        val missing = createPack()
+        missing.resolve("sounds.properties").writeText("shot=sounds/missing.wav\n")
+        val missingResult = ContentPackLoader.load(missing)
+        assertFalse(missingResult.isValid)
+        assertTrue(
+            missingResult.errors.any {
+                it.file == "sounds.properties" && it.field == "path" &&
+                    it.message.contains("does not exist")
+            },
+            missingResult.errors.joinToString("\n"),
+        )
+
+        val escaped = createPack()
+        escaped.resolve("sounds.properties").writeText("shot=../outside.wav\n")
+        val escapedResult = ContentPackLoader.load(escaped)
+        assertFalse(escapedResult.isValid)
+        assertTrue(
+            escapedResult.errors.any {
+                it.file == "sounds.properties" && it.field == "path" &&
+                    it.message.contains("escapes the content-pack root")
+            },
+            escapedResult.errors.joinToString("\n"),
+        )
+    }
+
+    @Test
+    fun currentContentPacksRemainValidWithOptionalSoundMappings() {
+        val roots = listOf(
+            currentPackRoot("games/sandbox/content/sandbox"),
+            currentPackRoot("games/signal-garden/content/signal-garden"),
+        )
+
+        roots.forEach { root ->
+            val result = ContentPackLoader.load(root)
+            assertTrue(result.isValid, "$root:\n${result.errors.joinToString("\n")}")
+        }
     }
 
     @Test
@@ -867,5 +937,13 @@ class ContentPackLoaderTest {
             hud.tier=Tier
             """.trimIndent(),
         )
+    }
+
+    private fun currentPackRoot(relativePath: String): Path {
+        val cwd = Paths.get("").toAbsolutePath()
+        return generateSequence(cwd) { it.parent }
+            .map { it.resolve(relativePath) }
+            .firstOrNull { Files.isDirectory(it) }
+            ?: error("Could not locate current content pack '$relativePath' from $cwd")
     }
 }

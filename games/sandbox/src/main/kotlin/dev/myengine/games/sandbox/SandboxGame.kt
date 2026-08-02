@@ -14,6 +14,7 @@ import dev.myengine.core.CommandQueue
 import dev.myengine.core.CombatEvents
 import dev.myengine.core.EngineCommand
 import dev.myengine.core.EngineInfo
+import dev.myengine.core.GameplayEvent
 import dev.myengine.core.HashableState
 import dev.myengine.core.RunState
 import dev.myengine.core.RunStatus
@@ -73,6 +74,7 @@ import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
 import java.util.Properties
+import java.util.Collections
 
 data class SandboxDescriptor(
     val id: String = "sandbox",
@@ -221,8 +223,11 @@ class SandboxRuntime(
             if (state.run.isTerminal) return
             state.tick = state.tick.next()
             advanceIncidentModifiers()
+            val commandEvents = mutableListOf<GameplayEvent>()
+            val scheduledWaveEvents = mutableListOf<GameplayEvent>()
+            val incidentWaveEvents = mutableListOf<GameplayEvent>()
             val commands = commandQueue.drainFor(state.tick)
-            commands.forEach(::applyCommand)
+            commands.forEach { applyCommand(it, commandEvents) }
             updateProduction()
             state.defense = defenseRuntime.spawnDueWaves(
                 state.tick,
@@ -233,8 +238,13 @@ class SandboxRuntime(
                 spawn,
                 core,
                 goalField,
+                eventSink = scheduledWaveEvents,
             )
-            val statusEffectResult = defenseRuntime.updateStatusEffects(state.registry, state.entities)
+            val statusEffectResult = defenseRuntime.updateStatusEffects(
+                registry = state.registry,
+                entities = state.entities,
+                tick = state.tick,
+            )
             state.defense = state.defense.record(statusEffectResult.metrics)
             val statusEffectDeposit = depositRewards(state.inventory, statusEffectResult.rewards)
             state.inventory = statusEffectDeposit.inventory
@@ -243,7 +253,6 @@ class SandboxRuntime(
                     .joinToString(",", prefix = "reward_dropped:") { "${it.key}:${it.value}" }
             }
             val towerResult = defenseRuntime.updateTowers(state.registry, state.entities, goalField, state.tick)
-            combatEvents = towerResult.events
             state.defense = state.defense.record(towerResult.metrics).recordTowerMetrics(towerResult.towerMetrics)
             val deposit = depositRewards(state.inventory, towerResult.rewards)
             state.inventory = deposit.inventory
@@ -255,7 +264,16 @@ class SandboxRuntime(
             }
             state.defense = defenseRuntime.updateEnemies(state.registry, state.defense, state.entities, goalField)
             evaluateTerminalState()
-            if (state.run.isTerminal) return
+            if (state.run.isTerminal) {
+                combatEvents = aggregateGameplayEvents(
+                    commandEvents,
+                    scheduledWaveEvents,
+                    statusEffectResult.events,
+                    towerResult.events,
+                    incidentWaveEvents,
+                )
+                return
+            }
             val directorBefore = state.incidentState
             val randomBefore = simulationRandom.snapshot()
             val selection = incidentDirector.select(state.tick.value, state.defense.metrics.enemiesSpawned)
@@ -268,6 +286,8 @@ class SandboxRuntime(
                     spawn = spawn,
                     core = core,
                     goalField = goalField,
+                    tick = state.tick,
+                    eventSink = incidentWaveEvents,
                 )
                 if (application.applied) {
                     state.lastCommandOrError = "incident_applied:${selection.incidentId}"
@@ -279,7 +299,35 @@ class SandboxRuntime(
                     state.lastCommandOrError = "incident_rejected:${application.reason}"
                 }
             }
+            combatEvents = aggregateGameplayEvents(
+                commandEvents,
+                scheduledWaveEvents,
+                statusEffectResult.events,
+                towerResult.events,
+                incidentWaveEvents,
+            )
         }
+    }
+
+    private fun aggregateGameplayEvents(
+        commandEvents: List<GameplayEvent>,
+        scheduledWaveEvents: List<GameplayEvent>,
+        statusEvents: List<GameplayEvent>,
+        towerEvents: CombatEvents,
+        incidentWaveEvents: List<GameplayEvent>,
+    ): CombatEvents {
+        val ordered = buildList {
+            addAll(commandEvents)
+            addAll(scheduledWaveEvents.sortedWith(compareBy<GameplayEvent> { it.contentId.orEmpty() }.thenBy { it.type.id }))
+            addAll(statusEvents)
+            addAll(towerEvents.gameplayEvents)
+            addAll(incidentWaveEvents.sortedWith(compareBy<GameplayEvent> { it.contentId.orEmpty() }.thenBy { it.type.id }))
+        }.mapIndexed { ordinal, event -> event.copy(ordinal = ordinal) }
+        return CombatEvents(
+            shots = towerEvents.shots,
+            hits = towerEvents.hits,
+            gameplayEvents = Collections.unmodifiableList(ordered),
+        )
     }
 
     private fun advanceIncidentModifiers() {
@@ -423,13 +471,13 @@ class SandboxRuntime(
         )
     }
 
-    private fun applyCommand(command: EngineCommand) {
+    private fun applyCommand(command: EngineCommand, eventSink: MutableList<GameplayEvent>) {
         when (command) {
-            is BuildTowerCommand -> buildTower(command)
+            is BuildTowerCommand -> buildTower(command, eventSink)
             is UpgradeTowerCommand -> upgradeTower(command)
-            is SellTowerCommand -> sellTower(command)
+            is SellTowerCommand -> sellTower(command, eventSink)
             is SetTowerTargetingModeCommand -> setTowerTargetingMode(command)
-            is CallWaveEarlyCommand -> callWaveEarly(command)
+            is CallWaveEarlyCommand -> callWaveEarly(command, eventSink)
             else -> state.lastCommandOrError = "ignored:${command.type}"
         }
     }
@@ -441,7 +489,10 @@ class SandboxRuntime(
      * A wave whose scheduled boundary has already arrived is also a no-op: only a genuinely early
      * call (`state.tick < wave.startTick`) is allowed to grant its early-call bonus.
      */
-    private fun callWaveEarly(@Suppress("UNUSED_PARAMETER") command: CallWaveEarlyCommand) {
+    private fun callWaveEarly(
+        @Suppress("UNUSED_PARAMETER") command: CallWaveEarlyCommand,
+        eventSink: MutableList<GameplayEvent>,
+    ) {
         val wave = nextUnspawnedWave()
         if (wave == null) {
             state.lastCommandOrError = "no_upcoming_wave"
@@ -465,6 +516,8 @@ class SandboxRuntime(
             spawn = spawn,
             core = core,
             goalField = goalField,
+            tick = state.tick,
+            eventSink = eventSink,
         )
         val bonus = wave.earlyCallBonus
         if (bonus == null) {
@@ -487,7 +540,7 @@ class SandboxRuntime(
         .filter { it.id !in state.defense.spawnedWaveIds }
         .minWithOrNull(compareBy({ it.startTick }, { it.id }))
 
-    private fun buildTower(command: BuildTowerCommand) {
+    private fun buildTower(command: BuildTowerCommand, eventSink: MutableList<GameplayEvent>) {
         val tower = state.registry.towers[command.towerId]
         if (tower == null) {
             state.lastCommandOrError = "unknown_tower:${command.towerId}"
@@ -516,6 +569,13 @@ class SandboxRuntime(
                 goalField = rebuildAfterWalkabilityChange()
                 state.inventory = state.inventory.remove(tower.costResource, tower.costAmount)
                 state.lastCommandOrError = "placed:${result.entityId.value}"
+                eventSink += GameplayEvent(
+                    tick = state.tick,
+                    type = dev.myengine.core.GameplayEventType.BUILD,
+                    sourceEntityId = command.actorId,
+                    targetEntityId = result.entityId.value,
+                    contentId = command.towerId,
+                )
             }
             is TowerPlacementResult.Rejected -> state.lastCommandOrError = result.reason
         }
@@ -563,7 +623,7 @@ class SandboxRuntime(
         state.lastCommandOrError = "upgraded:${command.towerEntityId}:${tier.branch}:${tier.tier}"
     }
 
-    private fun sellTower(command: SellTowerCommand) {
+    private fun sellTower(command: SellTowerCommand, eventSink: MutableList<GameplayEvent>) {
         val entityId = EntityId(command.towerEntityId)
         val entity = state.entities.get(entityId)
         val towerComponent = entity?.tower
@@ -602,6 +662,13 @@ class SandboxRuntime(
         goalField = rebuildAfterWalkabilityChange()
         state.inventory = refundedInventory
         state.lastCommandOrError = "sold:${command.towerEntityId}"
+        eventSink += GameplayEvent(
+            tick = state.tick,
+            type = dev.myengine.core.GameplayEventType.SELL,
+            sourceEntityId = command.actorId,
+            targetEntityId = command.towerEntityId,
+            contentId = tower.id,
+        )
     }
 
     private fun setTowerTargetingMode(command: SetTowerTargetingModeCommand) {

@@ -2,6 +2,7 @@ package dev.myengine.games.sandbox
 
 import dev.myengine.ai.GoalField
 import dev.myengine.content.IncidentEffectDescriptor
+import dev.myengine.core.GameplayEvent
 import dev.myengine.core.Tick
 import dev.myengine.defense.DefenseRuntime
 import dev.myengine.storyteller.IncidentSelection
@@ -34,6 +35,8 @@ class SandboxIncidentEffectInterpreter(
         spawn: TilePosition,
         core: TilePosition,
         goalField: GoalField,
+        tick: Tick,
+        eventSink: MutableList<GameplayEvent>,
     ): IncidentEffectApplication {
         val effects = selection.effects.toList()
         val resourceTotals = effects.filterIsInstance<IncidentEffectDescriptor.ResourceEvent>()
@@ -93,6 +96,8 @@ class SandboxIncidentEffectInterpreter(
                 spawn = spawn,
                 core = core,
                 goalField = goalField,
+                tick = tick,
+                eventSink = eventSink,
             )
         }
         var nextInventory = state.inventory

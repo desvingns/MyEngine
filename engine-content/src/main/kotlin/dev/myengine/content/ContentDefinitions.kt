@@ -1,6 +1,7 @@
 package dev.myengine.content
 
 import java.math.BigDecimal
+import dev.myengine.core.GameplayEventType
 import dev.myengine.core.command.TargetingMode
 
 data class ContentPackManifest(
@@ -28,6 +29,15 @@ data class VisualAssetRef(
     init {
         require(path.isNotBlank()) { "Visual asset path cannot be blank." }
         require(atlasKey == null || atlasKey.isNotBlank()) { "Atlas key cannot be blank." }
+    }
+}
+
+/** Opaque pack-relative audio reference resolved only by a platform presentation consumer. */
+data class SoundRef(
+    val path: String,
+) {
+    init {
+        require(path.isNotBlank()) { "Sound path cannot be blank." }
     }
 }
 
@@ -347,6 +357,7 @@ data class ContentRegistry(
     val maps: Map<String, MapContent> = emptyMap(),
     val resolvedDifficultyId: String? = null,
     val effects: Map<String, StatusEffectContent> = emptyMap(),
+    val sounds: Map<GameplayEventType, SoundRef> = emptyMap(),
 ) {
     fun requireTile(id: String): TileContent = tiles[id] ?: error("Unknown tile '$id'.")
     fun requireResource(id: String): ResourceContent = resources[id] ?: error("Unknown resource '$id'.")

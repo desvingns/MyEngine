@@ -1,9 +1,16 @@
 # MyEngine Handoff
 
-Last updated: 2026-08-02 (ENG-021 save slots + autosave close-out; next ENG-029)
+Last updated: 2026-08-02 (ENG-029 audio event hooks close-out; next ENG-012)
 Owner: Codex
 
 ## DONE
+
+- ENG-029 is done: the latest completed snapshot tick exposes a deterministic transient immutable
+  `GameplayEvent` feed for shot, hit, death, wave-start, build, and sell events. Optional
+  `sounds.properties` maps normalized event ids to pack-relative files with validation, and Android
+  `SoundPoolPresentationConsumer` consumes the feed with presentation-only volume/mute state.
+  `SandboxSaveCodec.SAVE_VERSION` remains 10; events do not enter authoritative saves or stable
+  hashes.
 
 - PROC-003 is done: `Plane/15_domain_systems_sequencing.md` sequences the domain systems —
   flow-field/pathfinding already done via ENG-002 (MyTD FR-003/FR-009/FR-013), colony slice
@@ -402,6 +409,9 @@ Owner: Codex
 
 ## DECISIONS
 
+- ENG-029 needs no ADR: simulation remains Android/audio-free and the SoundPool adapter owns audio
+  decoding/playback and presentation state. No plugin/skill or canonical agent-contract changed.
+
 - PROC-003 sequencing adopted 2026-07-29 (human-approved): ENG-010 -> ENG-016 -> PROC-007 ->
   ENG-021 -> ENG-029 -> ENG-012 -> ENG-007 -> ENG-018. Unique successor to ENG-020 is ENG-010
   (status effects framework), the only remaining backlog card backed by a named game FR
@@ -580,14 +590,19 @@ Owner: Codex
 
 ## NEXT
 
-Run `/me --feature --next` for ENG-021 (save slots + autosave policy), the next item in the
-PROC-003-adopted chain after completed PROC-007. The earlier commit blocker is resolved:
-PROC-013 commit 5eaaa78 was pushed.
+Run `/me --feature --next` for ENG-012 (boss/elite enemies + wave modifiers), the next item in the
+PROC-003-adopted chain after completed ENG-029; continue `ENG-007 -> ENG-018`. The earlier commit
+blocker is resolved: PROC-013 commit 5eaaa78 was pushed.
 
 ## BLOCKERS
 
 - RESOLVED (2026-07-29): the pre-existing unrelated dirty `.ai/retro/retro-2026-07-28.md` commit
   blocker is cleared; PROC-013 commit 5eaaa78 was pushed.
+- ENG-029 has no implementation blocker. No real device/emulator SoundPool playback, volume/mute,
+  or frame-metrics evidence was available. The Android reviewer contract was unavailable; local
+  Android/content/simulation boundary and gate evidence passed. The initial invalid
+  `:android:test --tests` invocation was corrected to `:android:testDebugUnitTest --tests` and is
+  not a feature failure.
 - MySD ENG-036 is specified but intentionally not started until the MySD evidence/spec gates choose
   the implementation order. PROC-015 is a backlog process change, not an implemented adapter.
 
@@ -701,6 +716,12 @@ PROC-013 commit 5eaaa78 was pushed.
   (unit add/drop + capacity-bound `step` telemetry) without shipping capacities in default content.
 
 ## VERIFICATION
+
+- ENG-029 (2026-08-02): selfcheck, 160 focused core/content/sandbox/Android tests, full
+  `.\gradlew.bat test`, `.\gradlew.bat projects`, content validation (2 packs), replay,
+  save-compat v10 matrix, benchmark, `:android:assembleDebug`, and `git diff --check` -> pass.
+  Replay hashes: canonical `e4892bcc18f9d8dc`, kill `a763da4ac32b15b4`. Benchmark:
+  `sim=412 ms`, `kill=83 ms`, `spatial-index-1k=5.62 ms`, `goal-field=9947100 ns`.
 
 - PROC-003 (2026-07-29): documentation-only close-out; no engine code, tests, or gates applicable.
   New `Plane/15_domain_systems_sequencing.md`; PROC-003 card at `.claude/specs/done/` with the
@@ -1060,3 +1081,41 @@ PROC-013 commit 5eaaa78 was pushed.
 - Replay hashes: canonical `e4892bcc18f9d8dc`, kill `a763da4ac32b15b4`.
 - Benchmark: `sim=473 ms`, `kill=87 ms`, `spatial-index-1k=6.6675 ms`,
   `goal-field rebuild=10459200 ns`.
+
+## ENG-029 Close-out (2026-08-02)
+
+### DONE
+
+- Added the transient immutable `GameplayEvent` feed on the latest completed snapshot tick for
+  shot, hit, death, wave-start, build, and sell events, with deterministic tick/ordinal ordering.
+- Added optional `sounds.properties` event-id -> pack-relative file mappings with normalized-id,
+  duplicate, blank-path, root-containment, and regular-file validation.
+- Added the Android `SoundPoolPresentationConsumer` with cursor deduplication and presentation-only
+  volume/mute state. `SandboxSaveCodec.SAVE_VERSION` remains 10; events are excluded from saves and
+  stable hashes.
+
+### DECISIONS
+
+- No ADR: simulation remains Android/audio-free; the Android presentation consumer owns audio
+  decoding/playback. No plugin/skill or canonical agent-contract changed.
+
+### NEXT
+
+- Run `/me --feature --next` for ENG-012, then continue `ENG-007 -> ENG-018`.
+
+### BLOCKERS
+
+- No ENG-029 implementation blocker remains. No real device/emulator SoundPool playback, volume/
+  mute, or frame-metrics evidence was available. The Android reviewer contract was unavailable;
+  local boundary and gate evidence passed.
+
+### VERIFICATION
+
+- Selfcheck, 160 focused core/content/sandbox/Android tests, full `.\gradlew.bat test`,
+  `.\gradlew.bat projects`, content validation (2 packs), replay, save-compat v10 matrix,
+  benchmark, `:android:assembleDebug`, and `git diff --check` passed.
+- Replay hashes: canonical `e4892bcc18f9d8dc`, kill `a763da4ac32b15b4`.
+- Benchmark: `sim=412 ms`, `kill=83 ms`, `spatial-index-1k=5.62 ms`,
+  `goal-field=9947100 ns`.
+- The initial invalid `:android:test --tests` invocation was corrected to
+  `:android:testDebugUnitTest --tests`; it is not a feature failure.

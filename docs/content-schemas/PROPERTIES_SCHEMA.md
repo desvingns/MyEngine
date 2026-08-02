@@ -182,6 +182,26 @@ and effect syntax are reported as `ContentValidationError` diagnostics with the
 `incidents.properties` file, incident id, and field path (for example `effects[0]`); unknown waves
 and resources are reported at the corresponding indexed effect path.
 
+### Sounds
+
+`sounds.properties` is optional. A pack without it remains valid and has no sound mapping. Each
+entry maps a gameplay event id to a pack-relative audio file path:
+
+```properties
+shot=sounds/shot.wav
+wave_start=sounds/wave-start.wav
+```
+
+Supported event ids are `shot`, `hit`, `death`, `wave-start`, `build`, and `sell`. Event ids are
+trimmed, case-insensitive, and accept `_` as an alias for `-`; the normalized id is the stable
+`GameplayEventType` id. Values are opaque references for platform presentation consumers; the
+content loader does not decode audio.
+
+Validation rejects unknown event ids, duplicate ids after normalization, blank paths, paths that
+escape the content-pack root, and paths that do not resolve to an existing regular file. Valid
+references remain pack-relative so Android asset consumers can resolve them without adding an
+audio dependency to simulation.
+
 ### Strings
 
 Arbitrary localization keys map to display strings. In addition to resource, tower, and tower-tier

@@ -1,8 +1,8 @@
 # MyEngine State
 
-Last updated: 2026-08-02
-Active phase: Phase 00-14 complete; Signal Garden SG-001..005 complete; MyTD MTD-001..005 complete; DX-008, ENG-002, ENG-005, ENG-008, ENG-009, ENG-010, ENG-013, ENG-014, ENG-015, ENG-016, ENG-020, ENG-021, ENG-026, ENG-027, ENG-028, ENG-030, PROC-002, PROC-003, PROC-007, and PROC-013 complete; pipeline at v0.2.0; next exact item ENG-029
-Owner of last update: Codex (2026-08-02: ENG-021 save slots + autosave close-out; adopted chain continues ENG-029 -> ENG-012 -> ENG-007 -> ENG-018)
+Last updated: 2026-08-02 (ENG-029 close-out)
+Active phase: Phase 00-14 complete; Signal Garden SG-001..005 complete; MyTD MTD-001..005 complete; DX-008, ENG-002, ENG-005, ENG-008, ENG-009, ENG-010, ENG-013, ENG-014, ENG-015, ENG-016, ENG-020, ENG-021, ENG-026, ENG-027, ENG-028, ENG-029, ENG-030, PROC-002, PROC-003, PROC-007, and PROC-013 complete; pipeline at v0.2.0; next exact item ENG-012
+Owner of last update: Codex (2026-08-02: ENG-029 audio event hooks close-out; adopted chain continues ENG-012 -> ENG-007 -> ENG-018)
 
 ## Current Status
 
@@ -29,6 +29,12 @@ Owner of last update: Codex (2026-08-02: ENG-021 save slots + autosave close-out
   non-atomic fallback; metadata is readable without a full load; corruption-only fallback selects
   the latest good autosave. `SandboxSaveCodec.SAVE_VERSION` remains 10 and the Android Bundle
   lifecycle path is unchanged. No ADR was needed.
+- ENG-029 is complete: the latest completed snapshot tick exposes a transient immutable
+  `GameplayEvent` feed for shot, hit, death, wave-start, build, and sell events with deterministic
+  tick/ordinal ordering. Optional `sounds.properties` maps event ids to pack-relative files with
+  validation; Android `SoundPool` consumes the feed with presentation-only volume/mute state.
+  Events do not enter authoritative saves or stable hashes; `SandboxSaveCodec.SAVE_VERSION` remains
+  10. No ADR was needed.
 - MySD foundation filed ENG-036 for an Android-free reusable runtime/session extraction and
   PROC-015 for a reference-game state-graph/mechanic-claim bridge. Probable gameplay gaps and
   `mysd` demand remain deliberately uncarded until Luna evidence passes Gate 1.
@@ -272,9 +278,9 @@ Owner of last update: Codex (2026-08-02: ENG-021 save slots + autosave close-out
 
 ## Next Exact Action
 
-Run `/me --feature --next` for ENG-029 (audio event hooks), the next item in the PROC-003-adopted
-chain after completed ENG-021. The PROC-013 commit 5eaaa78 was pushed, so the earlier retro-file
-commit blocker is resolved.
+Run `/me --feature --next` for ENG-012 (boss/elite enemies + wave modifiers), the next item in the
+PROC-003-adopted chain after completed ENG-029; continue `ENG-007 -> ENG-018`. The PROC-013 commit
+5eaaa78 was pushed, so the earlier retro-file commit blocker is resolved.
 
 ## Known Blockers
 
@@ -289,6 +295,11 @@ commit blocker is resolved.
   Conditional domain reviewer agents could not be spawned in this run because the agent-thread limit
   was reached; a local read-only boundary review passed, but reviewer-agent evidence should be
   refreshed when capacity is available.
+- ENG-029 non-blocking manual limitations: no real device/emulator SoundPool playback, volume/mute,
+  or frame-metrics evidence was available. The Android reviewer contract was unavailable; local
+  Android/content/simulation boundary and gate evidence passed. The initial invalid
+  `:android:test --tests` invocation was corrected to `:android:testDebugUnitTest --tests` and is
+  not a feature failure.
 - ENG-009 intentionally ships no splash balance values. Future game packs must choose them through
   an approved balance change; there is no engine blocker from this feature.
 - ENG-020 has one low, non-blocking test-coverage follow-up: seeded differential tests do not yet
@@ -409,6 +420,14 @@ commit blocker is resolved.
   `spatial-index-1k` benchmark reports 1024 concurrent enemies, 16 towers, 16 queries, and
   `5.3045 ms`. `me-simulation-reviewer` and `me-verifier` -> pass; all boundary checks are true.
   The low `me-tester` end-to-end parity follow-up is recorded above.
+- ENG-029 (2026-08-02): selfcheck -> pass; focused core/content/sandbox/Android tests (160 tests) ->
+  pass; full `.\gradlew.bat test` and `.\gradlew.bat projects` -> pass; content validation
+  (2 packs) -> pass; replay -> pass with canonical `e4892bcc18f9d8dc` and kill
+  `a763da4ac32b15b4`; save-compat v10 matrix -> pass; benchmark -> pass with `sim=412 ms`,
+  `kill=83 ms`, `spatial-index-1k=5.62 ms`, `goal-field=9947100 ns`; `:android:assembleDebug` ->
+  pass; `git diff --check` -> pass. The initial invalid `:android:test --tests` invocation was
+  corrected to `:android:testDebugUnitTest --tests` and is not a feature failure. The Android
+  reviewer contract was unavailable; local boundary/gate evidence passed. No `SAVE_VERSION` bump.
 - ENG-009 (2026-07-28): full `.\gradlew.bat test` and `.\gradlew.bat projects`, content validation
   (2 packs), replay, save-compat, benchmark, and `:android:assembleDebug` -> pass. Replay hashes
   remain canonical `12a65fd2b87593cf` and kill `bb37eefc1903cc77`; benchmark is canonical `324 ms`,
@@ -826,5 +845,36 @@ Environment used:
   - Full tests, projects, content validation, replay, save-compat matrix, benchmark, Android
     assemble, focused `SandboxSaveSlotsTest`, and `git diff --check` all passed.
   - Replay hashes: canonical `e4892bcc18f9d8dc`, kill `a763da4ac32b15b4`.
-  - Benchmark: `sim=473 ms`, `kill=87 ms`, `spatial-index-1k=6.6675 ms`,
+- Benchmark: `sim=473 ms`, `kill=87 ms`, `spatial-index-1k=6.6675 ms`,
     `goal-field rebuild=10459200 ns`.
+
+## ENG-029 Close-out (2026-08-02)
+
+- DONE:
+  - Accepted the transient immutable `GameplayEvent` feed on the latest completed snapshot tick
+    for `shot`, `hit`, `death`, `wave-start`, `build`, and `sell`, with deterministic tick/ordinal
+    ordering and no authoritative-state ownership.
+  - Accepted optional `sounds.properties` event-id -> pack-relative file mappings with validation
+    for normalized ids, duplicates, blank paths, root escapes, and missing/non-regular files.
+  - Accepted the Android `SoundPool` presentation consumer with cursor deduplication and
+    presentation-only volume/mute state. `SandboxSaveCodec.SAVE_VERSION` remains 10; events do not
+    affect saves or stable hashes.
+- DECISIONS:
+  - No ADR and no plugin/skill or canonical agent-contract change. The simulation remains
+    Android/audio-free; audio decoding and playback stay in the Android presentation boundary.
+- NEXT:
+  - Run `/me --feature --next` for ENG-012 (boss/elite enemies + wave modifiers), then continue
+    `ENG-007 -> ENG-018`.
+- BLOCKERS:
+  - No ENG-029 implementation blocker remains. No real device/emulator SoundPool playback,
+    volume/mute, or frame-metrics evidence was available. The Android reviewer contract was
+    unavailable; local boundary and gate evidence passed.
+- VERIFICATION:
+  - Selfcheck, 160 focused core/content/sandbox/Android tests, full `.\gradlew.bat test`,
+    `.\gradlew.bat projects`, content validation (2 packs), replay, save-compat v10 matrix,
+    benchmark, `:android:assembleDebug`, and `git diff --check` passed.
+  - Replay hashes: canonical `e4892bcc18f9d8dc`, kill `a763da4ac32b15b4`.
+  - Benchmark: `sim=412 ms`, `kill=83 ms`, `spatial-index-1k=5.62 ms`,
+    `goal-field=9947100 ns`.
+  - The initial invalid `:android:test --tests` invocation was corrected to
+    `:android:testDebugUnitTest --tests`; it is not a feature failure.

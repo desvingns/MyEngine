@@ -14,6 +14,7 @@ class MyEngineActivity : Activity() {
     private var session: SandboxSession? = null
     private var renderView: SandboxRenderView? = null
     private var latestSnapshot: EngineSnapshot? = null
+    private var soundConsumer: SoundPoolPresentationConsumer? = null
     private var pausedSave: String? = null
     private var nextCommandId: Long = FIRST_COMMAND_ID
     private val fixedTickLoop = FixedTickFrameLoop()
@@ -36,6 +37,11 @@ class MyEngineActivity : Activity() {
         started.onSuccess {
             session = it
             latestSnapshot = it.runtime.snapshot()
+            soundConsumer = SoundPoolPresentationConsumer(
+                assets = assets,
+                soundRefs = it.runtime.state.registry.sounds,
+                assetRoot = it.runtime.state.registry.manifest.id,
+            )
             val view = SandboxRenderView(
                 context = this,
                 latestSnapshot = { latestSnapshot },
@@ -105,8 +111,12 @@ class MyEngineActivity : Activity() {
         val activeSession = session
         if (activeSession != null) {
             val ticks = fixedTickLoop.advance(frameTimeNanos)
-            if (ticks > 0) activeSession.step(ticks)
-            latestSnapshot = activeSession.runtime.snapshot()
+            repeat(ticks) {
+                activeSession.step()
+                latestSnapshot = activeSession.runtime.snapshot()
+                latestSnapshot?.let { snapshot -> soundConsumer?.consume(snapshot) }
+            }
+            if (ticks == 0) latestSnapshot = activeSession.runtime.snapshot()
             renderView?.renderLatestFrame()
         }
         if (loopRunning) Choreographer.getInstance().postFrameCallback(frameCallback)
@@ -114,6 +124,12 @@ class MyEngineActivity : Activity() {
 
     /** Caller-owned command allocator: it stays in lifecycle UI state, outside render and simulation. */
     private fun issueCommandId(): CommandId = CommandId(nextCommandId++)
+
+    override fun onDestroy() {
+        soundConsumer?.release()
+        soundConsumer = null
+        super.onDestroy()
+    }
 
     private companion object {
         private const val SAVE_KEY = "me_sandbox_save"
