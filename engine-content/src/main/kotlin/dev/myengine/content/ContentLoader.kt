@@ -40,6 +40,8 @@ object ContentPackLoader {
 
         val tiles = parseDefinitions(root, "tiles.properties", errors, ::parseTile)
         val resources = parseDefinitions(root, "resources.properties", errors, ::parseResource)
+        val damageTypesDeclared = Files.exists(root.resolve("damage-types.properties"))
+        val damageTypes = parseOptionalDefinitions(root, "damage-types.properties", errors, ::parseDamageType)
         val towers = parseDefinitions(root, "towers.properties", errors, ::parseTower)
         val enemies = parseDefinitions(root, "enemies.properties", errors, ::parseEnemy)
         val buildings = parseOptionalDefinitions(root, "buildings.properties", errors, ::parseBuilding)
@@ -63,6 +65,8 @@ object ContentPackLoader {
             root = root,
             packId = manifest?.id ?: "unknown-pack",
             tiles = tiles,
+            damageTypes = damageTypes,
+            damageTypesDeclared = damageTypesDeclared,
             towers = towers,
             enemies = enemies,
             buildings = buildings,
@@ -77,7 +81,7 @@ object ContentPackLoader {
             errors = errors,
         )
         validateTerminalRules(maps, waves, endlessWave, errors)
-        validateLocalization(resources, towers, strings, errors)
+        validateLocalization(damageTypes, resources, towers, strings, errors)
 
         if (errors.isNotEmpty() || manifest == null) {
             return ContentLoadResult(null, errors)
@@ -100,6 +104,7 @@ object ContentPackLoader {
                 effects = effects,
                 sounds = sounds,
                 endlessWave = endlessWave,
+                damageTypes = damageTypes,
             ),
             errors = emptyList(),
         )
@@ -181,6 +186,12 @@ object ContentPackLoader {
             displayKey = fields.required(file, id, "displayKey", errors) ?: return null,
         )
 
+    private fun parseDamageType(id: String, fields: Map<String, String>, errors: MutableList<ContentValidationError>, file: String): DamageTypeContent? =
+        DamageTypeContent(
+            id = id,
+            displayKey = fields.required(file, id, "displayKey", errors) ?: return null,
+        )
+
     private fun parseTower(id: String, fields: Map<String, String>, errors: MutableList<ContentValidationError>, file: String): TowerContent? =
         TowerContent(
             id = id,
@@ -203,6 +214,7 @@ object ContentPackLoader {
                     null
                 } else value
             },
+            damageTypeId = fields.optionalNonBlank(file, id, "damageTypeId", errors),
         )
 
     private fun parseTowerUpgradeTiers(
@@ -272,8 +284,32 @@ object ContentPackLoader {
             healthScalePercent = fields.optionalPositivePercent(file, id, "healthScalePercent", errors) ?: 100,
             speedScalePercent = fields.optionalPositivePercent(file, id, "speedScalePercent", errors) ?: 100,
             rewardScalePercent = fields.optionalPositivePercent(file, id, "rewardScalePercent", errors) ?: 100,
+            resists = parseEnemyResists(id, fields, errors, file),
         )
     }
+
+    private fun parseEnemyResists(
+        id: String,
+        fields: Map<String, String>,
+        errors: MutableList<ContentValidationError>,
+        file: String,
+    ): Map<String, Int> = fields.keys
+        .filter { it.startsWith("resist.") }
+        .sorted()
+        .mapNotNull { field ->
+            val damageTypeId = field.removePrefix("resist.")
+            if (damageTypeId.isBlank()) {
+                errors += ContentValidationError(file, id, field, "Resistance damage type id must be non-blank.")
+                return@mapNotNull null
+            }
+            val value = fields[field]?.toIntOrNull()
+            if (value == null || value !in 0..100) {
+                errors += ContentValidationError(file, id, field, "Expected an integer resistance from 0 to 100.")
+                return@mapNotNull null
+            }
+            damageTypeId to value
+        }
+        .toMap()
 
     private fun parseStatusEffect(
         id: String,
@@ -1039,6 +1075,8 @@ object ContentPackLoader {
         root: Path,
         packId: String,
         tiles: Map<String, TileContent>,
+        damageTypes: Map<String, DamageTypeContent>,
+        damageTypesDeclared: Boolean,
         towers: Map<String, TowerContent>,
         enemies: Map<String, EnemyContent>,
         buildings: Map<String, BuildingContent>,
@@ -1057,6 +1095,20 @@ object ContentPackLoader {
         }
         towers.values.forEach { tower ->
             validateVisualAsset(root, packId, "towers.properties", tower.id, "", tower.assetRef, errors)
+            if (damageTypesDeclared && tower.damageTypeId == null) {
+                errors += ContentValidationError(
+                    "towers.properties",
+                    tower.id,
+                    "damageTypeId",
+                    "Typed content requires every tower to declare a non-blank damage type via damageTypeId.",
+                )
+            } else {
+                tower.damageTypeId?.let { damageTypeId ->
+                    if (!damageTypes.containsKey(damageTypeId)) {
+                        errors += ContentValidationError("towers.properties", tower.id, "damageTypeId", "Unknown damage type '$damageTypeId'.")
+                    }
+                }
+            }
             tower.effectId?.let { effectId ->
                 if (!effects.containsKey(effectId)) {
                     errors += ContentValidationError("towers.properties", tower.id, "effectId", "Unknown status effect '$effectId'.")
@@ -1072,6 +1124,33 @@ object ContentPackLoader {
         enemies.values.forEach {
             validateVisualAsset(root, packId, "enemies.properties", it.id, "", it.assetRef, errors)
             if (!resources.containsKey(it.rewardResource)) errors += ContentValidationError("enemies.properties", it.id, "rewardResource", "Unknown resource '${it.rewardResource}'.")
+            it.resists.toSortedMap().forEach { (damageTypeId, _) ->
+                if (!damageTypes.containsKey(damageTypeId)) {
+                    errors += ContentValidationError("enemies.properties", it.id, "resist.$damageTypeId", "Unknown damage type '$damageTypeId'.")
+                }
+            }
+        }
+        if (damageTypesDeclared) {
+            val towerDamageTypes = towers.values.mapNotNull { it.damageTypeId }.toSet()
+            val enemyResistanceTypes = enemies.values.flatMap { it.resists.keys }.toSet()
+            damageTypes.keys.sorted().forEach { damageTypeId ->
+                if (damageTypeId !in towerDamageTypes) {
+                    errors += ContentValidationError(
+                        "damage-types.properties",
+                        damageTypeId,
+                        "usage.towers",
+                        "Damage type must be used by at least one tower via damageTypeId.",
+                    )
+                }
+                if (damageTypeId !in enemyResistanceTypes) {
+                    errors += ContentValidationError(
+                        "damage-types.properties",
+                        damageTypeId,
+                        "usage.enemyResists",
+                        "Damage type must be used by at least one enemy resist.<damageTypeId> entry.",
+                    )
+                }
+            }
         }
         buildings.values.forEach { building ->
             validateVisualAsset(root, packId, "buildings.properties", building.id, "", building.assetRef, errors)
@@ -1356,11 +1435,17 @@ object ContentPackLoader {
     }
 
     private fun validateLocalization(
+        damageTypes: Map<String, DamageTypeContent>,
         resources: Map<String, ResourceContent>,
         towers: Map<String, TowerContent>,
         strings: Map<String, String>,
         errors: MutableList<ContentValidationError>,
     ) {
+        damageTypes.toSortedMap().values.forEach {
+            if (!strings.containsKey(it.displayKey)) {
+                errors += ContentValidationError("strings.properties", it.id, "displayKey", "Missing localization key '${it.displayKey}'.")
+            }
+        }
         resources.values.forEach {
             if (!strings.containsKey(it.displayKey)) {
                 errors += ContentValidationError("strings.properties", it.id, "displayKey", "Missing localization key '${it.displayKey}'.")
@@ -1408,6 +1493,17 @@ object ContentPackLoader {
 
     private fun Map<String, String>.required(file: String, id: String, field: String, errors: MutableList<ContentValidationError>): String? =
         this[field]?.takeIf { it.isNotBlank() } ?: errors.addAndNull(file, id, field, "Required field is missing.")
+
+    private fun Map<String, String>.optionalNonBlank(
+        file: String,
+        id: String,
+        field: String,
+        errors: MutableList<ContentValidationError>,
+    ): String? {
+        val raw = this[field] ?: return null
+        return raw.trim().takeIf { it.isNotEmpty() }
+            ?: errors.addAndNull(file, id, field, "Expected a non-blank id.")
+    }
 
     private fun Map<String, String>.requiredBool(file: String, id: String, field: String, errors: MutableList<ContentValidationError>): Boolean? =
         required(file, id, field, errors)?.toBooleanStrictOrNull() ?: errors.addAndNull(file, id, field, "Expected boolean.")

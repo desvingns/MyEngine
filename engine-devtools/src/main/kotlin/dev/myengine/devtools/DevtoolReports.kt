@@ -7,11 +7,14 @@ import dev.myengine.content.ContentValidationError
 import dev.myengine.content.EndlessWaveGenerator
 import dev.myengine.content.EffectiveEnemyStats
 import dev.myengine.content.EnemyContent
+import dev.myengine.content.TowerContent
+import dev.myengine.content.TowerUpgradeTier
 import dev.myengine.content.WaveModifier
 import dev.myengine.content.WaveContent
 import dev.myengine.content.effectiveStats
 import dev.myengine.core.Tick
 import dev.myengine.core.SeededRandom
+import dev.myengine.defense.DamageFormula
 import dev.myengine.defense.DefenseRuntime
 import dev.myengine.entities.Entity
 import dev.myengine.entities.EntityStore
@@ -24,7 +27,43 @@ import dev.myengine.world.TilePosition
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
+import java.math.BigDecimal
+import java.math.RoundingMode
 import kotlin.math.abs
+
+private const val BALANCE_TICKS_PER_SECOND = 20
+private const val RESIST_REPLAY_GOLDEN_HASH = "3f02607020d48668"
+private val EFFECTIVE_DPS_ASSUMPTIONS = RawJson(
+    "{\"targeting\":\"single-target\",\"range\":\"in-range\",\"splash\":false,\"ticks_per_second\":$BALANCE_TICKS_PER_SECOND}",
+)
+
+data class EffectiveDpsRow(
+    val towerId: String,
+    val profileId: String,
+    val upgradeBranch: String?,
+    val upgradeTier: Int,
+    val enemyId: String,
+    val damageTypeId: String?,
+    val resistPercent: Int,
+    val effectiveDamagePerShot: Int,
+    val cooldownTicks: Int,
+    val ticksPerSecond: Int = BALANCE_TICKS_PER_SECOND,
+    val effectiveDps: BigDecimal,
+) {
+    fun toJson(): String = buildJson(
+        "tower_id" to towerId,
+        "profile_id" to profileId,
+        "upgrade_branch" to upgradeBranch,
+        "upgrade_tier" to upgradeTier,
+        "enemy_id" to enemyId,
+        "damage_type_id" to damageTypeId,
+        "resist_percent" to resistPercent,
+        "effective_damage_per_shot" to effectiveDamagePerShot,
+        "cooldown_ticks" to cooldownTicks,
+        "ticks_per_second" to ticksPerSecond,
+        "effective_dps" to effectiveDps,
+    )
+}
 
 data class HeadlessScenarioReport(
     val scenario: String,
@@ -184,6 +223,8 @@ data class BalancePackSummary(
     val splashFalloffPercentTotal: Int,
     /** Total non-zero-damage Manhattan tiles across splash tower definitions. */
     val splashEffectiveAoeTiles: Int,
+    /** Single-target, in-range, no-splash DPS matrix at the fixed simulation tick rate. */
+    val effectiveDpsRows: List<EffectiveDpsRow> = emptyList(),
 ) {
     fun toJson(): String = buildJson(
         "pack_id" to packId,
@@ -202,6 +243,10 @@ data class BalancePackSummary(
         "splash_radius_total" to splashRadiusTotal,
         "splash_falloff_percent_total" to splashFalloffPercentTotal,
         "splash_effective_aoe_tiles" to splashEffectiveAoeTiles,
+        "effective_dps_assumptions" to EFFECTIVE_DPS_ASSUMPTIONS,
+        "assumptions" to EFFECTIVE_DPS_ASSUMPTIONS,
+        "ticks_per_second" to BALANCE_TICKS_PER_SECOND,
+        "effective_dps_rows" to RawJson(effectiveDpsRows.joinToString(prefix = "[", postfix = "]") { it.toJson() }),
     )
 }
 
@@ -557,7 +602,66 @@ object DevtoolReports {
             splashRadiusTotal = splashTowers.sumOf { it.splashRadius!! },
             splashFalloffPercentTotal = splashTowers.sumOf { it.falloffPercent },
             splashEffectiveAoeTiles = splashTowers.sumOf(::effectiveSplashAoeTiles),
+            effectiveDpsRows = effectiveDpsRows(registry),
         )
+    }
+
+    private fun effectiveDpsRows(registry: ContentRegistry): List<EffectiveDpsRow> {
+        val profiles = registry.towers.values
+            .sortedBy(TowerContent::id)
+            .flatMap { tower ->
+                val base = TowerBalanceProfile(
+                    towerId = tower.id,
+                    profileId = tower.id,
+                    upgradeBranch = null,
+                    upgradeTier = 0,
+                    damage = tower.damage,
+                    cooldownTicks = tower.cooldownTicks,
+                    damageTypeId = tower.damageTypeId,
+                )
+                val upgrades = tower.upgradeTiers.values
+                    .sortedWith(compareBy<TowerUpgradeTier> { it.branch }.thenBy { it.tier })
+                    .map { tier ->
+                        TowerBalanceProfile(
+                            towerId = tower.id,
+                            profileId = "${tower.id}.upgrade.${tier.branch}.${tier.tier}",
+                            upgradeBranch = tier.branch,
+                            upgradeTier = tier.tier,
+                            damage = tier.damage,
+                            cooldownTicks = tier.cooldownTicks,
+                            damageTypeId = tower.damageTypeId,
+                        )
+                    }
+                listOf(base) + upgrades
+            }
+        return profiles
+            .sortedBy { it.profileId }
+            .flatMap { profile ->
+                registry.enemies.values.sortedBy { it.id }.map { enemy ->
+                    val resistPercent = profile.damageTypeId?.let(enemy.resists::get) ?: 0
+                    val effectiveDamage = DamageFormula.effectiveDamage(
+                        baseDamage = profile.damage,
+                        distance = 0,
+                        falloffPercent = 0,
+                        resistPercent = resistPercent,
+                    )
+                    EffectiveDpsRow(
+                        towerId = profile.towerId,
+                        profileId = profile.profileId,
+                        upgradeBranch = profile.upgradeBranch,
+                        upgradeTier = profile.upgradeTier,
+                        enemyId = enemy.id,
+                        damageTypeId = profile.damageTypeId,
+                        resistPercent = resistPercent,
+                        effectiveDamagePerShot = effectiveDamage,
+                        cooldownTicks = profile.cooldownTicks,
+                        effectiveDps = BigDecimal.valueOf(effectiveDamage.toLong())
+                            .multiply(BigDecimal.valueOf(BALANCE_TICKS_PER_SECOND.toLong()))
+                            .divide(BigDecimal.valueOf(profile.cooldownTicks.toLong()), 6, RoundingMode.HALF_UP)
+                            .stripTrailingZeros(),
+                    )
+                }
+            }
     }
 
     private fun effectiveWaveEntries(
@@ -595,8 +699,12 @@ object DevtoolReports {
     private fun effectiveSplashAoeTiles(tower: dev.myengine.content.TowerContent): Int {
         val radius = tower.splashRadius ?: return 0
         return (0..radius).sumOf { distance ->
-            val remainingPercent = (100 - distance * tower.falloffPercent).coerceAtLeast(0)
-            val damage = (tower.damage.toLong() * remainingPercent) / 100L
+            val damage = DamageFormula.effectiveDamage(
+                baseDamage = tower.damage,
+                distance = distance,
+                falloffPercent = tower.falloffPercent,
+                resistPercent = 0,
+            )
             if (damage <= 0) 0 else if (distance == 0) 1 else 4 * distance
         }
     }
@@ -663,7 +771,24 @@ object DevtoolReports {
     fun replayInspect(): String {
         val canonical = replayScenarioJson("canonical", "1:build_tower:pulse:30:32", SandboxGame.runScriptedScenario())
         val kill = replayScenarioJson("kill", "1:build_tower:pulse:2:2", SandboxGame.runScriptedKillScenario())
-        return "{\"scenarios\":[$canonical,$kill]}"
+        val resist = SandboxGame.runScriptedResistScenario()
+        val repeat = SandboxGame.runScriptedResistScenario()
+        val unresisted = SandboxGame.runScriptedUnresistedScenario()
+        val resistJson = buildJson(
+            "scenario" to "resist",
+            "commands" to "1:build_tower:pulse:2:2",
+            "final_hash" to resist.hash,
+            "golden_hash" to RESIST_REPLAY_GOLDEN_HASH,
+            "repeat_hash" to repeat.hash,
+            "zero_resist_hash" to unresisted.hash,
+            "golden_match" to (resist.hash == RESIST_REPLAY_GOLDEN_HASH),
+            "repeat_stable" to (resist.hash == repeat.hash),
+            "differs_from_zero_resist" to (resist.hash != unresisted.hash),
+            "tick" to resist.snapshot.debug.tick.value,
+            "save_bytes" to resist.saveText.length,
+            "enemies_killed" to resist.metrics.enemiesKilled,
+        )
+        return "{\"scenarios\":[$canonical,$kill,$resistJson]}"
     }
 
     private fun replayScenarioJson(
@@ -680,6 +805,18 @@ object DevtoolReports {
     )
 }
 
+private data class TowerBalanceProfile(
+    val towerId: String,
+    val profileId: String,
+    val upgradeBranch: String?,
+    val upgradeTier: Int,
+    val damage: Int,
+    val cooldownTicks: Int,
+    val damageTypeId: String?,
+)
+
+private data class RawJson(val value: String)
+
 private fun saturatedAdd(left: Long, right: Long): Long =
     if (right > 0L && left > Long.MAX_VALUE - right) Long.MAX_VALUE else left + right
 
@@ -695,6 +832,7 @@ fun buildJson(vararg values: Pair<String, Any?>): String =
     }
 
 fun Any?.jsonValue(): String = when (this) {
+    is RawJson -> value
     null -> "null"
     is Number, is Boolean -> toString()
     else -> "\"${escape(toString())}\""

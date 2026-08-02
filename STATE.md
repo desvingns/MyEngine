@@ -1,8 +1,8 @@
 # MyEngine State
 
-Last updated: 2026-08-02 (ENG-018 close-out)
-Active phase: Phase 00-14 complete; Signal Garden SG-001..005 complete; MyTD MTD-001..005 complete; DX-008, ENG-002, ENG-005, ENG-007, ENG-008, ENG-009, ENG-010, ENG-012, ENG-013, ENG-014, ENG-015, ENG-016, ENG-018, ENG-020, ENG-021, ENG-026, ENG-027, ENG-028, ENG-029, ENG-030, PROC-002, PROC-003, PROC-007, and PROC-013 complete; pipeline at v0.2.0; next exact item ENG-011
-Owner of last update: Codex (2026-08-02: ENG-018 endless wave generation close-out; next exact item ENG-011)
+Last updated: 2026-08-02 (ENG-011 close-out)
+Active phase: Phase 00-14 complete; Signal Garden SG-001..005 complete; MyTD MTD-001..005 complete; DX-008, ENG-002, ENG-005, ENG-007, ENG-008, ENG-009, ENG-010, ENG-011, ENG-012, ENG-013, ENG-014, ENG-015, ENG-016, ENG-018, ENG-020, ENG-021, ENG-026, ENG-027, ENG-028, ENG-029, ENG-030, PROC-002, PROC-003, PROC-007, and PROC-013 complete; pipeline at v0.2.0; next exact item ENG-019
+Owner of last update: Codex (2026-08-02: ENG-011 armor + damage types close-out; next exact item ENG-019)
 
 ## Current Status
 
@@ -285,13 +285,34 @@ Owner of last update: Codex (2026-08-02: ENG-018 endless wave generation close-o
   yet. Roadmap demand tags were corrected: `mytd` removed from ENG-012 (2->1), ENG-021 (4->3),
   ENG-022 (2->1), and ENG-029 (4->3) as unbacked by the MyTD spec bundle.
 
+## ENG-011 Close-out (2026-08-02)
+
+- DONE: Approved Option A is complete: `DamageTypeContent`, `TowerContent.damageTypeId`, and
+  `EnemyContent.resists` are content-driven, resistance values are constrained to `0..100`, and
+  bidirectional damage-type validation covers tower references, enemy resistance references, and
+  orphan declared types with actionable diagnostics.
+- RUNTIME: `DamageFormula` uses
+  `floor(baseDamage * max(0,100 - distance*falloffPercent) * (100-resistPercent) / 10000)`
+  with `Long` intermediates and one final floor. Direct and splash resistance are applied; zero
+  damage produces no `HitEvent`. The effective-DPS matrix is deterministic under single-target,
+  in-range, no-splash, `ticks_per_second=20` assumptions.
+- PERSISTENCE: `SandboxSaveCodec.SAVE_VERSION=11` is unchanged; typed damage metadata is
+  registry-derived and not persisted.
+- REPLAY: canonical `e4892bcc18f9d8dc`, kill `a763da4ac32b15b4`, resist `3f02607020d48668`.
+- VERIFICATION: focused ENG-011 suite passed 24 tests after the `Int.MAX_VALUE` boundary test;
+  full tests/projects/content/replay/save-compat/benchmark/Android assemble/diff-check passed;
+  conditional simulation and balance reviewers passed, and the simulation low finding was resolved.
+  Final metrics: `sim=422 ms`, `kill=63 ms`, `goal-field=10743500 ns`, `spatial-index=6.4719 ms`.
+
 ## Next Exact Action
 
-Run `/me --feature --next` for ENG-011, the separate enemy armor + damage types backlog card. The PROC-013 commit 5eaaa78
-was pushed, so the earlier retro-file commit blocker is resolved.
+Run `/me --feature --next` for ENG-019 (walls + player-placed blockers), the next remaining
+TD-depth item with demand 2. No implementation blocker remains.
 
 ## Known Blockers
 
+- ENG-011 has no implementation blocker. No device/emulator evidence is claimed; existing manual
+  Android/device and performance follow-ups remain unchanged.
 - RESOLVED (2026-07-29): the pre-existing unrelated dirty `.ai/retro/retro-2026-07-28.md` commit
   blocker is cleared; PROC-013 commit 5eaaa78 was pushed.
 - ENG-030 non-blocking follow-ups: existing content packs intentionally do not configure an

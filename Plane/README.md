@@ -44,8 +44,9 @@
    `ENG-028` (sprite/atlas references in content schema), `ENG-009` (splash damage + shot events),
    and `ENG-020` (spatial index + 1k-entity benchmark) are closed; `ENG-020` was accepted on
    2026-07-29. PROC-003 sequencing adopted 2026-07-29 (see Plane/15): ENG-010 -> ENG-016 ->
-   PROC-007 -> ENG-021 -> ENG-029 -> ENG-012 -> ENG-007 -> ENG-018; ENG-010, ENG-016, PROC-007,
-   ENG-021, ENG-029, ENG-012, and ENG-007 are closed, and the next exact item is `ENG-018`.
+   PROC-007 -> ENG-021 -> ENG-029 -> ENG-012 -> ENG-007 -> ENG-018 (done 2026-08-02)
+   -> ENG-011 (done 2026-08-02) -> ENG-019; ENG-010, ENG-016, PROC-007, ENG-021, ENG-029,
+   ENG-012, ENG-007, ENG-018, and ENG-011 are closed, and the next exact item is `ENG-019`.
 4. Hardening gaps из `docs/HARDENING_AUDIT.md` закрывать по одному, с тестами и обновлением handoff.
 
 Новые крупные фазы добавлять только после того, как backlog specs перестанут быть достаточно
@@ -65,6 +66,8 @@
 | [x] | ENG-029 Audio event hooks | [ENG-029](../.claude/specs/done/ENG-029-audio-event-hooks.md) | Transient deterministic `GameplayEvent` snapshot feed, optional `sounds.properties` validation, Android `SoundPool` consumer, no save-version/hash change | 2026-08-02 |
 | [x] | ENG-012 Boss/elite enemies + wave modifiers | [ENG-012](../.claude/specs/done/ENG-012-boss-elites-wave-modifiers.md) | Data-defined ranks and stat scaling, indexed wave modifiers, deterministic effective spawn state, boss snapshot marker, save v11 migration, replay/save/balance coverage | 2026-08-02 |
 | [x] | ENG-007 Multiple spawn points + per-wave routing | [ENG-007](../.claude/specs/done/ENG-007-multi-spawn-wave-routing.md) | Optional validated wave spawn selection, deterministic scheduled/early/incident routing, reserved spawn-id guards, checked-in multi-spawn fixture, replay/save coverage; `SAVE_VERSION` remains 11 | 2026-08-02 |
+| [x] | ENG-018 Endless wave generation | [ENG-018](../.claude/specs/done/ENG-018-endless-wave-generation.md) | Validated endless schedule, shared-RNG deterministic generation, count/health/reward growth, no-win validation, and scaling report; `SAVE_VERSION` remains 11 | 2026-08-02 |
+| [x] | ENG-011 Enemy armor + damage types | [ENG-011](../.claude/specs/done/ENG-011-armor-damage-types.md) | Option A typed damage content, 0..100 resistances, bidirectional validation, Long/final-floor direct+splash formula, effective-DPS matrix, resist replay hash, and `SAVE_VERSION=11` preserved | 2026-08-02 |
 
 ## Глобальные инварианты
 
@@ -1386,3 +1389,21 @@
 - Limitations: Conditional simulation reviewer and final verifier worker threads timed out; local
   boundary review plus the complete runner gate set passed. No device/emulator claim was made.
 - Next: Run `/me --feature --next` for ENG-011 (enemy armor + damage types).
+
+### 2026-08-02 - ENG-011 (enemy armor + damage types)
+
+- Status: Done / accepted; documentation close-out
+- Owner: Codex
+- Result: Approved Option A adds static typed damage content and enemy percentage resistances with
+  deterministic bidirectional validation. `DamageFormula` uses the documented Long-intermediate,
+  single-final-floor formula for direct and splash runtime damage; zero damage emits no `HitEvent`.
+  Effective-DPS reporting is deterministic under single-target, in-range, no-splash,
+  `ticks_per_second=20` assumptions. `SandboxSaveCodec.SAVE_VERSION=11` is unchanged.
+- Verification: focused ENG-011 suite passed 24 tests after the `Int.MAX_VALUE` boundary test;
+  full tests, projects, content validation, replay, save-compat, benchmark, Android assemble, and
+  `git diff --check` passed. Conditional simulation and balance reviewers passed; the low simulation
+  finding was resolved. Replay hashes: canonical `e4892bcc18f9d8dc`, kill `a763da4ac32b15b4`,
+  resist `3f02607020d48668`. Benchmark: `sim=422 ms`, `kill=63 ms`,
+  `goal-field=10743500 ns`, `spatial-index=6.4719 ms`.
+- Blockers: no implementation blocker; no device/emulator evidence is claimed.
+- Next: Run `/me --feature --next` for ENG-019 (walls + player-placed blockers).

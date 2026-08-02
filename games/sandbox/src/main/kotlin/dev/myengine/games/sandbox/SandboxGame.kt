@@ -2,6 +2,7 @@ package dev.myengine.games.sandbox
 
 import dev.myengine.content.ContentPackLoader
 import dev.myengine.content.ContentRegistry
+import dev.myengine.content.DamageTypeContent
 import dev.myengine.content.EndlessWaveGenerator
 import dev.myengine.content.IncidentEffectDescriptor
 import dev.myengine.content.MapContent
@@ -647,7 +648,12 @@ class SandboxRuntime(
         state.entities.update(entityId) {
             it.copy(
                 tower = towerComponent.copy(upgradeBranch = tier.branch, upgradeTier = tier.tier),
-                attack = AttackComponent(tier.range, tier.damage, tier.cooldownTicks),
+                attack = AttackComponent(
+                    tier.range,
+                    tier.damage,
+                    tier.cooldownTicks,
+                    entity.attack?.damageTypeId ?: tower.damageTypeId,
+                ),
             )
         }
         state.inventory = state.inventory.remove(tier.costResource, tier.costAmount)
@@ -1311,6 +1317,24 @@ object SandboxGame {
     fun runScriptedKillScenario(seed: Long = 7, difficultyId: String? = null, mapId: String? = null): SandboxScenarioResult =
         runScriptedScenario(TilePosition(2, 2), seed, difficultyId, mapId)
 
+    /**
+     * Typed-damage replay scenario. The typed registry is assembled in memory so the scenario does
+     * not change the legacy sandbox pack or its canonical replay hashes. Resistance is static
+     * content metadata and therefore does not enter the save format.
+     */
+    fun runScriptedResistScenario(seed: Long = 7, resistPercent: Int = 50): SandboxScenarioResult {
+        require(resistPercent in 0..100) { "Resistance must be between 0 and 100 percent." }
+        return runScriptedTypedScenario(
+            registry = typedReplayRegistry(resistPercent),
+            towerPosition = TilePosition(2, 2),
+            seed = seed,
+        )
+    }
+
+    /** Control replay for the same typed scenario with no resistance. */
+    fun runScriptedUnresistedScenario(seed: Long = 7): SandboxScenarioResult =
+        runScriptedResistScenario(seed = seed, resistPercent = 0)
+
     private fun runScriptedScenario(
         towerPosition: TilePosition,
         seed: Long,
@@ -1318,11 +1342,35 @@ object SandboxGame {
         mapId: String?,
     ): SandboxScenarioResult {
         val registry = loadRegistry(difficultyId = difficultyId)
+        return runScriptedTypedScenario(registry, towerPosition, seed, mapId)
+    }
+
+    private fun runScriptedTypedScenario(
+        registry: ContentRegistry,
+        towerPosition: TilePosition,
+        seed: Long,
+        mapId: String? = null,
+    ): SandboxScenarioResult {
         val runtime = createRuntime(registry, mapId = mapId, seed = seed)
         runtime.submit(BuildTowerCommand(dev.myengine.core.CommandId(1), Tick(1), "pulse", TileCoordinate(towerPosition.x, towerPosition.y)))
         runtime.step(35)
         val save = SandboxSaveCodec.encode(runtime.state, seed)
         return SandboxScenarioResult(runtime.state.stableHash(), runtime.snapshot(), save, runtime.state.defense.metrics)
+    }
+
+    private fun typedReplayRegistry(resistPercent: Int): ContentRegistry {
+        val base = loadRegistry()
+        val damageTypeId = "arcane"
+        return base.copy(
+            strings = base.strings + ("damage.arcane" to "Arcane"),
+            damageTypes = mapOf(damageTypeId to DamageTypeContent(damageTypeId, "damage.arcane")),
+            towers = base.towers.mapValues { (_, tower) ->
+                tower.copy(damageTypeId = damageTypeId)
+            },
+            enemies = base.enemies.mapValues { (_, enemy) ->
+                enemy.copy(resists = mapOf(damageTypeId to resistPercent))
+            },
+        )
     }
 
     fun contentRoot(): Path {

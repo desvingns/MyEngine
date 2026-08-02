@@ -7,7 +7,7 @@ two or more games outranks single-game gaps of the same severity.
 Updated by: the `/me-spec` backlog bridge (new gaps / new demand) and `/me`
 close-out (status changes).
 
-Last updated: 2026-08-02 (ENG-018 close-out)
+Last updated: 2026-08-02 (ENG-011 close-out)
 
 ## Capabilities
 
@@ -33,7 +33,7 @@ Last updated: 2026-08-02 (ENG-018 close-out)
 | Targeting priority modes | ENG-008 | mytd, vision:td | 2 | **done** (2026-07-18; pure deterministic first/last/nearest/strongest/weakest selector with entity-id tiebreak, content default + queued per-tower override, HUD projection, and save v7 migration) |
 | Splash damage + shot events | ENG-009 | mytd, vision:td, vision:mindustry-like | 3 | **done** (2026-07-28; stable entity-id-ordered Manhattan AoE, integer per-ring falloff, and transient immutable source/target/tick shot-hit events; save v8 and replay hashes unchanged) |
 | Status effects framework | ENG-010 | mytd, vision:td, vision:mindustry-like | 3 | **done** (2026-08-01; content-defined slow/DoT, deterministic lifecycle, movement/damage modifiers, save v9 migration, immutable snapshot tags, and stable slow replay coverage) |
-| Enemy armor + damage types | ENG-011 | vision:td, vision:mindustry-like | 2 | backlog |
+| Enemy armor + damage types | ENG-011 | vision:td, vision:mindustry-like | 2 | **done** (2026-08-02; Option A typed damage content, 0..100 percentage resistances, bidirectional validation, deterministic Long/floor formula, direct/splash runtime, effective-DPS matrix, resist replay hash, and `SAVE_VERSION=11` preserved) |
 | Flying enemies | ENG-025 | vision:td | 1 | backlog |
 | Boss/elite enemies + wave modifiers | ENG-012 | vision:td | 1 | **done** (2026-08-02; data-defined elite/boss scaling, indexed wave modifiers, deterministic effective spawn state, boss snapshot marker, save v11 migration, replay/save/balance coverage) |
 | Tower sell/refund | ENG-013 | mytd, vision:td | 2 | **done** (2026-07-18; required validated `sellRefundRatio`, deterministic cumulative per-resource floor refund, atomic capacity rejection, occupancy/metrics cleanup, same-tick goal-field rebuild, and pending-sell save coverage; `SAVE_VERSION` remains 6) |
@@ -113,7 +113,9 @@ Last updated: 2026-08-02 (ENG-018 close-out)
    (done 2026-07-21) -> ENG-028 (done 2026-07-28) -> ENG-009 (done 2026-07-28) -> ENG-020
    (done 2026-07-29). PROC-003 sequencing adopted 2026-07-29: ENG-010 -> ENG-016 (done 2026-08-02)
    -> PROC-007 (done 2026-08-02) -> ENG-021 (done 2026-08-02) -> ENG-029 (done 2026-08-02)
-   -> ENG-012 (done 2026-08-02) -> ENG-007 (done 2026-08-02) -> ENG-018 (done 2026-08-02). The next exact item is ENG-011. Colony slice (ENG-001 ->
+   -> ENG-012 (done 2026-08-02) -> ENG-007 (done 2026-08-02) -> ENG-018 (done 2026-08-02)
+   -> ENG-011 (done 2026-08-02) -> ENG-019 (next exact item). ENG-019 is the next remaining
+   TD-depth card with demand 2; the colony slice (ENG-001 ->
    ENG-003 -> ENG-031 -> ENG-004 -> ENG-032) deferred until a colony/MySD spec supplies named FRs
    (see Plane/15).
 4. DX-008 is done: use its hybrid-format ADR for ENG-017/ENG-028 schema work. Other high-leverage

@@ -147,6 +147,8 @@ data class AttackComponent(
     val range: Int,
     val damage: Int,
     val cooldownTicks: Int,
+    /** Static content metadata; it is intentionally not persisted or included in stable hashes. */
+    val damageTypeId: String? = null,
 ) {
     fun appendHash(hash: StableHash) {
         hash.add(range).add(damage).add(cooldownTicks)

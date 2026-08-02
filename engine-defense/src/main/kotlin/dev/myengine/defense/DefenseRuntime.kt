@@ -133,7 +133,7 @@ class DefenseRuntime(private val pathfinder: GridPathfinder = GridPathfinder()) 
                 tags = setOf("tower"),
                 position = PositionComponent(position),
                 tower = TowerComponent(towerId, targetingMode = tower.targetingMode),
-                attack = AttackComponent(tower.range, tower.damage, tower.cooldownTicks),
+                attack = AttackComponent(tower.range, tower.damage, tower.cooldownTicks, tower.damageTypeId),
             )
         }
         world.occupy(position, entity.id.value)
@@ -443,10 +443,16 @@ class DefenseRuntime(private val pathfinder: GridPathfinder = GridPathfinder()) 
                 val health = damagedTarget.health ?: return@forEach
                 if (!health.isAlive()) return@forEach
                 val position = damagedTarget.position?.tile ?: return@forEach
-                val damage = splashDamage(
+                val enemyDefinition = damagedTarget.enemy?.enemyId
+                    ?.let(registry.enemies::get)
+                    ?: registry.enemies[damagedTarget.type.substringAfter("enemy:")]
+                val damageTypeId = attack.damageTypeId ?: towerContent.damageTypeId
+                val resistPercent = damageTypeId?.let { enemyDefinition?.resists?.get(it) } ?: 0
+                val damage = DamageFormula.effectiveDamage(
                     baseDamage = attack.damage,
                     distance = targetPosition.manhattanDistance(position),
-                    falloffPercent = towerContent.falloffPercent,
+                    falloffPercent = if (towerContent.splashRadius == null) 0 else towerContent.falloffPercent,
+                    resistPercent = resistPercent,
                 )
                 if (damage <= 0) return@forEach
 
@@ -529,15 +535,6 @@ class DefenseRuntime(private val pathfinder: GridPathfinder = GridPathfinder()) 
             }
             .sortedBy { it.id.value }
             .toList()
-    }
-
-    /**
-     * Integer-only AoE rule: damage loses [falloffPercent] percent of base damage per Manhattan
-     * ring, then truncates toward zero. Zero-damage outer-ring candidates produce no hit event.
-     */
-    private fun splashDamage(baseDamage: Int, distance: Int, falloffPercent: Int): Int {
-        val remainingPercent = (100 - distance * falloffPercent).coerceAtLeast(0)
-        return ((baseDamage.toLong() * remainingPercent) / 100L).toInt()
     }
 
     private data class PendingStatusEffect(

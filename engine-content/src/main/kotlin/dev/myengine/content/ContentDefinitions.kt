@@ -54,6 +54,11 @@ data class ResourceContent(
     val displayKey: String,
 ) : ContentDefinition
 
+data class DamageTypeContent(
+    override val id: String,
+    val displayKey: String,
+) : ContentDefinition
+
 data class TowerContent(
     override val id: String,
     val range: Int,
@@ -71,6 +76,7 @@ data class TowerContent(
     val displayKey: String = "tower.$id",
     val assetRef: VisualAssetRef? = null,
     val effectId: String? = null,
+    val damageTypeId: String? = null,
 ) : ContentDefinition
 
 enum class StatusEffectKind(val id: String) {
@@ -155,6 +161,7 @@ data class EnemyContent(
     val healthScalePercent: Int = 100,
     val speedScalePercent: Int = 100,
     val rewardScalePercent: Int = 100,
+    val resists: Map<String, Int> = emptyMap(),
 ) : ContentDefinition {
     init {
         require(!(isElite && isBoss)) { "An enemy cannot be both elite and boss." }
@@ -430,6 +437,7 @@ data class ContentRegistry(
     val effects: Map<String, StatusEffectContent> = emptyMap(),
     val sounds: Map<GameplayEventType, SoundRef> = emptyMap(),
     val endlessWave: EndlessWaveContent? = null,
+    val damageTypes: Map<String, DamageTypeContent> = emptyMap(),
 ) {
     /** Alias kept for callers that refer to the optional pack feature as simply `endless`. */
     val endless: EndlessWaveContent? get() = endlessWave
@@ -437,6 +445,7 @@ data class ContentRegistry(
     fun requireResource(id: String): ResourceContent = resources[id] ?: error("Unknown resource '$id'.")
     fun requireTower(id: String): TowerContent = towers[id] ?: error("Unknown tower '$id'.")
     fun requireEnemy(id: String): EnemyContent = enemies[id] ?: error("Unknown enemy '$id'.")
+    fun requireDamageType(id: String): DamageTypeContent = damageTypes[id] ?: error("Unknown damage type '$id'.")
     fun requireBuilding(id: String): BuildingContent = buildings[id] ?: error("Unknown building '$id'.")
     fun requireEffect(id: String): StatusEffectContent = effects[id] ?: error("Unknown status effect '$id'.")
     fun requireMap(id: String? = null): MapContent = when {

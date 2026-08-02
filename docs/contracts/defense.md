@@ -1,6 +1,6 @@
 # engine-defense Contract
 
-Status: Planned draft  
+Status: Accepted (ENG-011 close-out, 2026-08-02)
 Owner: waves, towers, enemies, and combat
 
 ## Responsibilities
@@ -26,6 +26,45 @@ Owner: waves, towers, enemies, and combat
 - `EnemyDefinition`
 - `TargetingRule`
 - `DamageEvent`
+- `DamageTypeContent`
+- `ContentRegistry.damageTypes`
+
+## ENG-011 damage and resistance semantics
+
+ENG-011 uses the approved Option A contract: damage types and percentage resistances are
+optional, static content metadata. `damage-types.properties` declares typed damage definitions;
+`TowerContent.damageTypeId` points from a tower to one of them, and
+`EnemyContent.resists` maps damage-type ids to integer resistance percentages.
+
+For a hit at Manhattan distance `distance`, the authoritative effective-damage formula is:
+
+```text
+effectiveDamage = floor(
+  baseDamage
+  * max(0, 100 - distance * falloffPercent)
+  * (100 - resistPercent)
+  / 10000
+)
+```
+
+`baseDamage`, `distance`, `falloffPercent`, and `resistPercent` are integer values;
+`resistPercent` is constrained to `0..100`, and an omitted resistance means `0`. The runtime uses
+`Long` intermediates and performs one final floor/truncation. Direct hits use `distance=0` and
+`falloffPercent=0`. The same formula applies to direct and splash candidates. A result of zero
+does not damage health and does not emit a `HitEvent`.
+
+When `damage-types.properties` exists, every tower must declare a non-blank `damageTypeId`; content
+validation is bidirectional: tower damage-type references and enemy resistance keys must resolve,
+and every declared damage type must be used by at least one tower and one enemy resistance entry.
+Legacy packs without the file retain nullable
+tower damage types, empty resistance maps, and direct legacy damage behavior.
+
+Damage types and resistances are registry-derived metadata, not dynamic entity state. They are not
+serialized; `SandboxSaveCodec.SAVE_VERSION` remains `11`.
+
+The effective-DPS balance matrix is deterministic and reports base towers and upgrade tiers against
+all enemies under explicit assumptions: single-target, in-range, no splash, and
+`ticks_per_second=20`. Rows sort by tower profile id and then enemy id.
 
 ## Test Gates
 
@@ -33,4 +72,5 @@ Owner: waves, towers, enemies, and combat
 - Wave replay tests.
 - Damage and status invariant tests.
 - Reward/resource integration tests.
-
+- ENG-011 formula, direct/splash resistance, zero-hit, typed-content cross-reference, effective-DPS,
+  replay-hash, and save-continuity tests.

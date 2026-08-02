@@ -1,6 +1,6 @@
 # MyEngine Content Properties Schema
 
-Status: Phase 06 accepted; DX-008 hybrid format accepted; ENG-016, ENG-028, ENG-009, and ENG-007 fields documented
+Status: Phase 06 accepted; DX-008 hybrid format accepted; ENG-016, ENG-028, ENG-009, ENG-007, and ENG-011 fields documented
 Last updated: 2026-08-02
 
 Content packs use the DX-008 hybrid format defined by
@@ -69,10 +69,31 @@ and tiers are positive integers. Every tower and tier `displayKey` must resolve 
 `strings.properties`.
 
 For a splash tower, candidates are live enemy entities within the declared Manhattan radius and
-are resolved in ascending entity-id order. For distance `d`, integer damage is
-`floor(baseDamage * max(0, 100 - d * falloff) / 100)`; zero-damage candidates receive no damage
-and emit no hit event. This rule uses integer arithmetic only and is the authoritative balance
-semantics; no game pack is required to declare splash values.
+are resolved in ascending entity-id order. For distance `d`, the authoritative effective damage is
+`floor(baseDamage * max(0, 100 - d * falloffPercent) * (100 - resistPercent) / 10000)`;
+`resistPercent` comes from the target's `resist.<damageTypeId>` entry and defaults to `0` when
+omitted. Direct hits use `d=0` and `falloffPercent=0`. The runtime uses `Long` intermediates and
+one final floor; zero-damage candidates receive no damage and emit no hit event. This rule uses
+integer arithmetic only and is the authoritative balance semantics; no game pack is required to
+declare splash values.
+
+### Damage types
+
+`damage-types.properties` is optional. Definitions use `<damageTypeId>.<field>=<value>`:
+
+- `displayKey`: required localization key
+
+Towers may declare `damageTypeId=<damageTypeId>`. When `damage-types.properties` exists, every
+tower must declare a non-blank `damageTypeId`. Enemies may declare one or more
+`resist.<damageTypeId>=<percent>` fields, where resistance is an integer from `0` through `100`.
+An omitted resistance means `0` percent. Unknown tower damage types and unknown enemy resistance
+types are rejected with file/id/field diagnostics; invalid resistance values are rejected while
+parsing. Every declared damage type must be referenced by at least one tower and by at least one
+enemy resistance entry. Damage types are static content
+metadata derived from the registry and are not persisted, so `SAVE_VERSION=11` remains unchanged.
+
+Legacy packs without `damage-types.properties` remain valid and keep nullable tower damage types
+and empty enemy resistance maps.
 
 ### Difficulties
 

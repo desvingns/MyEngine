@@ -1,6 +1,6 @@
 # MyEngine Handoff
 
-Last updated: 2026-08-02 (ENG-018 endless wave generation close-out; next ENG-011)
+Last updated: 2026-08-02 (ENG-011 armor + damage types close-out; next ENG-019)
 Owner: Codex
 
 ## DONE
@@ -23,6 +23,13 @@ Owner: Codex
   waves route through deterministic sorted spawn-id -> authored `WaveSpawn` -> instance ordering;
   reserved map spawn ids are guarded and a checked-in multi-spawn fixture covers the content gate.
   `SandboxSaveCodec.SAVE_VERSION` remains 11.
+
+- ENG-011 is done: approved Option A adds static `DamageTypeContent`, tower `damageTypeId`, enemy
+  `resists` in the inclusive `0..100` range, and deterministic bidirectional reference validation.
+  `DamageFormula` applies the documented Long/final-floor formula to direct and splash damage;
+  zero damage emits no `HitEvent`. The deterministic effective-DPS matrix uses single-target,
+  in-range, no-splash, `ticks_per_second=20` assumptions. `SAVE_VERSION=11` remains unchanged.
+  Resist replay, focused tests, and all runner gates passed.
 
 - PROC-003 is done: `Plane/15_domain_systems_sequencing.md` sequences the domain systems —
   flow-field/pathfinding already done via ENG-002 (MyTD FR-003/FR-009/FR-013), colony slice
@@ -602,8 +609,8 @@ Owner: Codex
 
 ## NEXT
 
-Run `/me --feature --next` for ENG-011, the separate enemy armor + damage types backlog card. The earlier commit blocker is
-resolved: PROC-013 commit 5eaaa78 was pushed.
+Run `/me --feature --next` for ENG-019 (walls + player-placed blockers), the next remaining TD-depth
+item with demand 2. The earlier commit blocker is resolved: PROC-013 commit 5eaaa78 was pushed.
 
 ## BLOCKERS
 
@@ -633,6 +640,9 @@ resolved: PROC-013 commit 5eaaa78 was pushed.
 
 - ENG-009 intentionally leaves all shipped content packs without splash values. Choose a game pack
   balance configuration only through an approved balance change; this is not an engine blocker.
+
+- ENG-011 has no implementation blocker. No device/emulator evidence is claimed; the existing
+  manual Android/device and performance follow-ups remain pending where previously recorded.
 
 - ENG-020 has one low, non-blocking test-coverage follow-up: seeded differential tests do not yet
   provide end-to-end `updateTowers` parity across every targeting-mode and splash combination.
@@ -730,6 +740,13 @@ resolved: PROC-013 commit 5eaaa78 was pushed.
   (unit add/drop + capacity-bound `step` telemetry) without shipping capacities in default content.
 
 ## VERIFICATION
+
+- ENG-011 (2026-08-02): focused ENG-011 suite passed 24 tests after the `Int.MAX_VALUE` boundary
+  test; full `test`, `projects`, content validation, replay, save-compat, benchmark,
+  `:android:assembleDebug`, and `git diff --check` -> pass. Conditional simulation and balance
+  reviewers -> pass; the simulation review's low overflow-test finding was resolved. Replay hashes:
+  canonical `e4892bcc18f9d8dc`, kill `a763da4ac32b15b4`, resist `3f02607020d48668`. Final benchmark:
+  `sim=422 ms`, `kill=63 ms`, `goal-field=10743500 ns`, `spatial-index=6.4719 ms`.
 
 - ENG-029 (2026-08-02): selfcheck, 160 focused core/content/sandbox/Android tests, full
   `.\gradlew.bat test`, `.\gradlew.bat projects`, content validation (2 packs), replay,
@@ -1198,3 +1215,43 @@ resolved: PROC-013 commit 5eaaa78 was pushed.
 - `gradlew.bat test`, `gradlew.bat projects`, content validation, replay, save-compat matrix,
   benchmark, focused tests, and `git diff --check` passed.
 - Replay hashes: canonical `e4892bcc18f9d8dc`, kill `a763da4ac32b15b4`.
+
+## ENG-011 Close-out (2026-08-02)
+
+### DONE
+
+- Approved Option A is complete: static `DamageTypeContent`, tower `damageTypeId`, enemy
+  percentage `resists` in `0..100`, and deterministic bidirectional reference validation.
+- `DamageFormula` applies
+  `floor(baseDamage * max(0,100 - distance*falloffPercent) * (100-resistPercent) / 10000)`
+  with `Long` intermediates and one final floor to direct and splash damage; zero damage emits no
+  `HitEvent`. Effective-DPS reporting is deterministic under single-target, in-range, no-splash,
+  `ticks_per_second=20` assumptions.
+- `SandboxSaveCodec.SAVE_VERSION=11` remains unchanged; typed metadata is registry-derived and
+  not persisted.
+
+### DECISIONS
+
+- No ADR: the approved additive Option A preserves legacy packs, Android-free simulation, and the
+  existing versioned-save boundary.
+
+### NEXT
+
+- Run `/me --feature --next` for ENG-019 (walls + player-placed blockers), the next remaining
+  TD-depth item with demand 2.
+
+### BLOCKERS
+
+- No implementation blocker. No device/emulator evidence is claimed; existing manual Android/device
+  and performance follow-ups remain pending where previously recorded.
+
+### VERIFICATION
+
+- Focused ENG-011 suite passed 24 tests after the `Int.MAX_VALUE` Long-intermediate boundary test.
+- Full tests, projects, content validation, replay, save-compat, benchmark, Android assemble, and
+  `git diff --check` passed. Conditional simulation and balance reviewers passed; the simulation
+  review's low overflow-test finding was resolved.
+- Replay hashes: canonical `e4892bcc18f9d8dc`, kill `a763da4ac32b15b4`, resist
+  `3f02607020d48668`.
+- Final benchmark: `sim=422 ms`, `kill=63 ms`, `goal-field=10743500 ns`,
+  `spatial-index=6.4719 ms`.
