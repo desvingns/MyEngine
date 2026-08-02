@@ -249,8 +249,13 @@ object ContentPackLoader {
             .associateBy { it.key }
     }
 
-    private fun parseEnemy(id: String, fields: Map<String, String>, errors: MutableList<ContentValidationError>, file: String): EnemyContent? =
-        EnemyContent(
+    private fun parseEnemy(id: String, fields: Map<String, String>, errors: MutableList<ContentValidationError>, file: String): EnemyContent? {
+        val isElite = fields.optionalBool(file, id, "isElite", errors) ?: false
+        val isBoss = fields.optionalBool(file, id, "isBoss", errors) ?: false
+        if (isElite && isBoss) {
+            errors += ContentValidationError(file, id, "isBoss", "An enemy cannot be both elite and boss.")
+        }
+        return EnemyContent(
             id = id,
             health = fields.requiredPositiveInt(file, id, "health", errors) ?: return null,
             speedTilesPerTick = fields.requiredPositiveInt(file, id, "speedTilesPerTick", errors) ?: return null,
@@ -258,7 +263,13 @@ object ContentPackLoader {
             rewardAmount = fields.requiredNonNegativeInt(file, id, "rewardAmount", errors) ?: return null,
             coreDamage = fields.requiredPositiveInt(file, id, "coreDamage", errors) ?: return null,
             assetRef = parseVisualAssetRef(id, fields, errors, file),
+            isElite = isElite,
+            isBoss = isBoss && !isElite,
+            healthScalePercent = fields.optionalPositivePercent(file, id, "healthScalePercent", errors) ?: 100,
+            speedScalePercent = fields.optionalPositivePercent(file, id, "speedScalePercent", errors) ?: 100,
+            rewardScalePercent = fields.optionalPositivePercent(file, id, "rewardScalePercent", errors) ?: 100,
         )
+    }
 
     private fun parseStatusEffect(
         id: String,
@@ -371,7 +382,39 @@ object ContentPackLoader {
             startTick = fields.requiredNonNegativeLong(file, id, "startTick", errors) ?: return null,
             spawns = spawns,
             earlyCallBonus = parseWaveEarlyCallBonus(id, fields, errors, file),
+            modifiers = parseWaveModifiers(id, fields, errors, file),
         )
+    }
+
+    private fun parseWaveModifiers(
+        id: String,
+        fields: Map<String, String>,
+        errors: MutableList<ContentValidationError>,
+        file: String,
+    ): List<WaveModifier> {
+        val modifierFields = fields.keys.filter { it.startsWith("modifier.") }
+        modifierFields.forEach { field ->
+            val parts = field.split('.')
+            if (parts.size != 3 || parts[1].toIntOrNull() == null || parts[2] !in setOf("healthPercent", "speedPercent", "count")) {
+                errors += ContentValidationError(file, id, field, "Expected modifier.<index>.healthPercent, speedPercent, or count.")
+            }
+        }
+        val indexes = modifierFields
+            .mapNotNull { key -> key.split('.').getOrNull(1)?.toIntOrNull() }
+            .distinct()
+            .sorted()
+        if (indexes.isEmpty()) return emptyList()
+        if (indexes != (0 until indexes.size).toList()) {
+            errors += ContentValidationError(file, id, "modifier", "Modifier indexes must be contiguous from 0.")
+            return emptyList()
+        }
+        return indexes.mapNotNull { index ->
+            val prefix = "modifier.$index."
+            val health = fields.requiredPositivePercent(file, id, "${prefix}healthPercent", errors) ?: return@mapNotNull null
+            val speed = fields.requiredPositivePercent(file, id, "${prefix}speedPercent", errors) ?: return@mapNotNull null
+            val count = fields.requiredPositiveInt(file, id, "${prefix}count", errors) ?: return@mapNotNull null
+            WaveModifier(health, speed, count)
+        }
     }
 
     /**
@@ -1154,6 +1197,16 @@ object ContentPackLoader {
     private fun Map<String, String>.requiredBool(file: String, id: String, field: String, errors: MutableList<ContentValidationError>): Boolean? =
         required(file, id, field, errors)?.toBooleanStrictOrNull() ?: errors.addAndNull(file, id, field, "Expected boolean.")
 
+    private fun Map<String, String>.optionalBool(
+        file: String,
+        id: String,
+        field: String,
+        errors: MutableList<ContentValidationError>,
+    ): Boolean? {
+        val raw = this[field] ?: return null
+        return raw.toBooleanStrictOrNull() ?: errors.addAndNull(file, id, field, "Expected boolean.")
+    }
+
     private fun Map<String, String>.requiredPositiveInt(file: String, id: String, field: String, errors: MutableList<ContentValidationError>): Int? {
         val value = required(file, id, field, errors)?.toIntOrNull() ?: return errors.addAndNull(file, id, field, "Expected integer.")
         return if (value > 0) value else errors.addAndNull(file, id, field, "Expected positive integer.")
@@ -1167,6 +1220,32 @@ object ContentPackLoader {
     private fun Map<String, String>.requiredNonNegativeLong(file: String, id: String, field: String, errors: MutableList<ContentValidationError>): Long? {
         val value = required(file, id, field, errors)?.toLongOrNull() ?: return errors.addAndNull(file, id, field, "Expected integer.")
         return if (value >= 0) value else errors.addAndNull(file, id, field, "Expected non-negative integer.")
+    }
+
+    private fun Map<String, String>.requiredPositivePercent(
+        file: String,
+        id: String,
+        field: String,
+        errors: MutableList<ContentValidationError>,
+    ): Int? {
+        val value = requiredPositiveInt(file, id, field, errors) ?: return null
+        return if (value <= 10_000) value else errors.addAndNull(
+            file,
+            id,
+            field,
+            "Expected a positive percentage no greater than 10000.",
+        )
+    }
+
+    private fun Map<String, String>.optionalPositivePercent(
+        file: String,
+        id: String,
+        field: String,
+        errors: MutableList<ContentValidationError>,
+    ): Int? {
+        if (!containsKey(field)) return null
+        val value = requiredPositivePercent(file, id, field, errors) ?: return null
+        return value
     }
 
     private fun Map<String, String>.optionalNonNegativeInt(

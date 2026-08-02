@@ -96,7 +96,17 @@ result half-up. Multipliers are parsed as decimal values and never through binar
 - `rewardResource`: resource id
 - `rewardAmount`: non-negative int
 - `coreDamage`: positive int
+- `isElite`: optional boolean; defaults to `false`
+- `isBoss`: optional boolean; defaults to `false`; an enemy cannot be both elite and boss
+- `healthScalePercent`: optional positive percentage from `1` through `10000`; defaults to `100`
+- `speedScalePercent`: optional positive percentage from `1` through `10000`; defaults to `100`
+- `rewardScalePercent`: optional positive percentage from `1` through `10000`; defaults to `100`
 - `spritePath`: optional pack-relative file path, or `atlasPath` + `atlasKey` optional pair
+
+Enemy scaling is materialized when the wave spawns. Health and speed use integer floor with a
+minimum of one; rewards use deterministic half-up rounding. Elite/boss flags and effective enemy
+stats are retained in the versioned sandbox save so a mid-wave restore does not fall back to base
+content values. Boss state is exposed to immutable render snapshots for presentation emphasis.
 
 ### Buildings
 
@@ -126,6 +136,9 @@ only validates opaque metadata; sprite decoding remains platform-owned.
 
 - `startTick`: non-negative int
 - `spawns`: comma-separated `enemyId:count`
+- `modifier.<index>.healthPercent`: optional positive percentage from `1` through `10000`
+- `modifier.<index>.speedPercent`: optional positive percentage from `1` through `10000`
+- `modifier.<index>.count`: positive number of consecutive enemies covered by this modifier
 - `earlyCallBonusResourceId`: optional resource id for the bonus granted by an accepted early
   wave call
 - `earlyCallBonusAmount`: optional positive int paired with `earlyCallBonusResourceId`
@@ -133,6 +146,10 @@ only validates opaque metadata; sprite decoding remains platform-owned.
 The early-call bonus fields must be either both present or both absent. When present, the resource
 id must resolve to a resource defined by the same content pack and the amount must be positive;
 partial, non-positive, or unknown-resource values are rejected during content validation.
+
+Wave modifier indexes must be contiguous from `0`. Modifiers cover enemies in numeric-index order
+and within each wave spawn entry's authored order; once all declared counts are covered, remaining
+enemies use the unmodified effective enemy stats. Enemy scaling is applied before the wave modifier.
 
 ### Incidents
 

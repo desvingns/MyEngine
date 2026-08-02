@@ -153,6 +153,34 @@ class DevtoolReportsTest {
     }
 
     @Test
+    fun balanceReportExposesBossCountsAndEffectiveScaledRewards() {
+        val changedRoot = Files.createTempDirectory("myengine-balance-boss")
+        copyFlatPack(SandboxGame.contentRoot(), changedRoot)
+        Files.writeString(
+            changedRoot.resolve("enemies.properties"),
+            Files.readString(changedRoot.resolve("enemies.properties")) +
+                "\ndrift.isBoss=true\ndrift.healthScalePercent=200\n" +
+                "drift.rewardScalePercent=150\n",
+        )
+        Files.writeString(
+            changedRoot.resolve("waves.properties"),
+            Files.readString(changedRoot.resolve("waves.properties")) +
+                "\nwave-1.modifier.0.healthPercent=150\n" +
+                "wave-1.modifier.0.speedPercent=100\nwave-1.modifier.0.count=1\n",
+        )
+
+        val report = DevtoolReports.balanceDeltaReport(SandboxGame.contentRoot(), changedRoot)
+        val changed = requireNotNull(report.changed)
+
+        assertTrue(report.valid, report.toJson())
+        assertEquals(1, changed.bossEnemyTypes)
+        assertTrue(changed.bossWaveEnemies > 0)
+        assertTrue(changed.enemyHealthTotal > report.baseline!!.enemyHealthTotal)
+        assertTrue(changed.rewardTotal > report.baseline.rewardTotal)
+        assertTrue(report.deltas.any { it.metric == "boss_enemy_types" })
+    }
+
+    @Test
     fun balanceDeltaReportJsonParsesAsStructuredObject() {
         val json = DevtoolReports.balanceDeltaReport(
             baselineRoot = SandboxGame.contentRoot(),

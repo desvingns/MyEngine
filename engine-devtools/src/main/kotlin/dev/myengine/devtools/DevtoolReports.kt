@@ -3,6 +3,11 @@ package dev.myengine.devtools
 import dev.myengine.ai.GoalField
 import dev.myengine.content.ContentPackLoader
 import dev.myengine.content.ContentRegistry
+import dev.myengine.content.EffectiveEnemyStats
+import dev.myengine.content.EnemyContent
+import dev.myengine.content.WaveModifier
+import dev.myengine.content.WaveContent
+import dev.myengine.content.effectiveStats
 import dev.myengine.core.Tick
 import dev.myengine.defense.DefenseRuntime
 import dev.myengine.entities.Entity
@@ -117,7 +122,11 @@ data class AggregateContentReport(val results: List<PackValidation>) {
 data class BalancePackSummary(
     val packId: String,
     val enemyTypes: Int,
+    val eliteEnemyTypes: Int,
+    val bossEnemyTypes: Int,
     val waveEnemies: Int,
+    val eliteWaveEnemies: Int,
+    val bossWaveEnemies: Int,
     val enemyHealthTotal: Int,
     val coreDamagePotential: Int,
     val rewardTotal: Int,
@@ -135,7 +144,11 @@ data class BalancePackSummary(
     fun toJson(): String = buildJson(
         "pack_id" to packId,
         "enemy_types" to enemyTypes,
+        "elite_enemy_types" to eliteEnemyTypes,
+        "boss_enemy_types" to bossEnemyTypes,
         "wave_enemies" to waveEnemies,
+        "elite_wave_enemies" to eliteWaveEnemies,
+        "boss_wave_enemies" to bossWaveEnemies,
         "enemy_health_total" to enemyHealthTotal,
         "core_damage_potential" to coreDamagePotential,
         "reward_total" to rewardTotal,
@@ -405,19 +418,16 @@ object DevtoolReports {
     }
 
     private fun summarizeBalance(registry: ContentRegistry): BalancePackSummary {
-        val waveEnemyCounts = registry.waves.values.flatMap { it.spawns }
-            .groupingBy { it.enemyId }
-            .fold(0) { count, spawn -> count + spawn.count }
-        val waveEnemies = waveEnemyCounts.values.sum()
-        val enemyHealthTotal = waveEnemyCounts.entries.sumOf { (enemyId, count) ->
-            registry.enemies.getValue(enemyId).health * count
-        }
-        val coreDamagePotential = waveEnemyCounts.entries.sumOf { (enemyId, count) ->
-            registry.enemies.getValue(enemyId).coreDamage * count
-        }
-        val rewardTotal = waveEnemyCounts.entries.sumOf { (enemyId, count) ->
-            registry.enemies.getValue(enemyId).rewardAmount * count
-        }
+        val waveEntries = registry.waves.values.flatMap { wave -> effectiveWaveEntries(registry, wave) }
+        val waveEnemies = waveEntries.size
+        val eliteWaveEnemies = waveEntries.count { it.first.isElite }
+        val bossWaveEnemies = waveEntries.count { it.first.isBoss }
+        val enemyHealthTotal = waveEntries.sumOf { it.second.health.toLong() }
+            .coerceAtMost(Int.MAX_VALUE.toLong()).toInt()
+        val coreDamagePotential = waveEntries.sumOf { it.first.coreDamage.toLong() }
+            .coerceAtMost(Int.MAX_VALUE.toLong()).toInt()
+        val rewardTotal = waveEntries.sumOf { it.second.rewardAmount.toLong() }
+            .coerceAtMost(Int.MAX_VALUE.toLong()).toInt()
         val recipeOutputPerTick = registry.recipes.values.sumOf { recipe ->
             recipe.outputAmount.toDouble() / recipe.durationTicks.toDouble()
         }
@@ -425,7 +435,11 @@ object DevtoolReports {
         return BalancePackSummary(
             packId = registry.manifest.id,
             enemyTypes = registry.enemies.size,
+            eliteEnemyTypes = registry.enemies.values.count { it.isElite },
+            bossEnemyTypes = registry.enemies.values.count { it.isBoss },
             waveEnemies = waveEnemies,
+            eliteWaveEnemies = eliteWaveEnemies,
+            bossWaveEnemies = bossWaveEnemies,
             enemyHealthTotal = enemyHealthTotal,
             coreDamagePotential = coreDamagePotential,
             rewardTotal = rewardTotal,
@@ -436,6 +450,32 @@ object DevtoolReports {
             splashFalloffPercentTotal = splashTowers.sumOf { it.falloffPercent },
             splashEffectiveAoeTiles = splashTowers.sumOf(::effectiveSplashAoeTiles),
         )
+    }
+
+    private fun effectiveWaveEntries(
+        registry: ContentRegistry,
+        wave: WaveContent,
+    ): List<Pair<EnemyContent, EffectiveEnemyStats>> {
+        val entries = ArrayList<Pair<EnemyContent, EffectiveEnemyStats>>()
+        var ordinal = 0
+        wave.spawns.forEach { spawn ->
+            val enemy = registry.enemies.getValue(spawn.enemyId)
+            repeat(spawn.count) {
+                val modifier = waveModifierAt(wave.modifiers, ordinal)
+                entries += enemy to enemy.effectiveStats(modifier)
+                ordinal += 1
+            }
+        }
+        return entries
+    }
+
+    private fun waveModifierAt(modifiers: List<WaveModifier>, enemyOrdinal: Int): WaveModifier? {
+        var covered = 0
+        modifiers.forEach { modifier ->
+            if (enemyOrdinal >= covered && enemyOrdinal < covered + modifier.count) return modifier
+            covered += modifier.count
+        }
+        return null
     }
 
     /**
@@ -456,7 +496,11 @@ object DevtoolReports {
     private fun balanceDeltas(baseline: BalancePackSummary, changed: BalancePackSummary): List<BalanceMetricDelta> =
         listOf(
             delta("enemy", "enemy_types", baseline.enemyTypes.toDouble(), changed.enemyTypes.toDouble()),
+            delta("enemy", "elite_enemy_types", baseline.eliteEnemyTypes.toDouble(), changed.eliteEnemyTypes.toDouble()),
+            delta("enemy", "boss_enemy_types", baseline.bossEnemyTypes.toDouble(), changed.bossEnemyTypes.toDouble()),
             delta("enemy", "wave_enemies", baseline.waveEnemies.toDouble(), changed.waveEnemies.toDouble()),
+            delta("enemy", "elite_wave_enemies", baseline.eliteWaveEnemies.toDouble(), changed.eliteWaveEnemies.toDouble()),
+            delta("enemy", "boss_wave_enemies", baseline.bossWaveEnemies.toDouble(), changed.bossWaveEnemies.toDouble()),
             delta("enemy", "enemy_health_total", baseline.enemyHealthTotal.toDouble(), changed.enemyHealthTotal.toDouble()),
             delta("core", "core_damage_potential", baseline.coreDamagePotential.toDouble(), changed.coreDamagePotential.toDouble()),
             delta("resource", "reward_total", baseline.rewardTotal.toDouble(), changed.rewardTotal.toDouble()),

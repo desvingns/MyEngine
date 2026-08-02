@@ -150,7 +150,19 @@ data class EnemyContent(
     val rewardAmount: Int,
     val coreDamage: Int,
     val assetRef: VisualAssetRef? = null,
-) : ContentDefinition
+    val isElite: Boolean = false,
+    val isBoss: Boolean = false,
+    val healthScalePercent: Int = 100,
+    val speedScalePercent: Int = 100,
+    val rewardScalePercent: Int = 100,
+) : ContentDefinition {
+    init {
+        require(!(isElite && isBoss)) { "An enemy cannot be both elite and boss." }
+        require(healthScalePercent in 1..10_000) { "Enemy health scale must be between 1 and 10000 percent." }
+        require(speedScalePercent in 1..10_000) { "Enemy speed scale must be between 1 and 10000 percent." }
+        require(rewardScalePercent in 1..10_000) { "Enemy reward scale must be between 1 and 10000 percent." }
+    }
+}
 
 /** Minimal data-driven building definition; gameplay components are intentionally out of scope. */
 data class BuildingContent(
@@ -172,6 +184,21 @@ data class WaveSpawn(
     val count: Int,
 )
 
+/** A deterministic modifier covering [count] consecutive enemies in a wave's spawn order. */
+data class WaveModifier(
+    val healthPercent: Int,
+    val speedPercent: Int,
+    val count: Int,
+) {
+    init {
+        require(healthPercent > 0) { "Wave health percentage must be positive." }
+        require(speedPercent > 0) { "Wave speed percentage must be positive." }
+        require(healthPercent <= 10_000) { "Wave health percentage cannot exceed 10000." }
+        require(speedPercent <= 10_000) { "Wave speed percentage cannot exceed 10000." }
+        require(count > 0) { "Wave modifier count must be positive." }
+    }
+}
+
 /** Content-defined reward granted when this wave is called before its scheduled start tick. */
 data class WaveEarlyCallBonus(
     val resourceId: String,
@@ -188,6 +215,7 @@ data class WaveContent(
     val startTick: Long,
     val spawns: List<WaveSpawn>,
     val earlyCallBonus: WaveEarlyCallBonus? = null,
+    val modifiers: List<WaveModifier> = emptyList(),
 ) : ContentDefinition
 
 data class DifficultyContent(

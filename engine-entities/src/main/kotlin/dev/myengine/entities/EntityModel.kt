@@ -24,6 +24,7 @@ data class Entity(
     val tower: TowerComponent? = null,
     val attack: AttackComponent? = null,
     val jobActor: JobActorComponent? = null,
+    val enemy: EnemyComponent? = null,
     val statusEffects: List<StatusEffectComponent> = emptyList(),
 ) {
     init {
@@ -42,10 +43,41 @@ data class Entity(
         tower?.appendHash(hash) ?: hash.add("no-tower")
         attack?.appendHash(hash) ?: hash.add("no-attack")
         jobActor?.appendHash(hash) ?: hash.add("no-job")
+        enemy?.appendHash(hash)
         statusEffects.sortedBy { it.effectId }.forEach { effect ->
             hash.add("status-effect")
             effect.appendHash(hash)
         }
+    }
+}
+
+/** Effective immutable state captured when an enemy is spawned, including rank markers. */
+data class EnemyComponent(
+    val enemyId: String,
+    val speedTilesPerTick: Int,
+    val coreDamage: Int,
+    val rewardResource: String,
+    val rewardAmount: Int,
+    val isElite: Boolean = false,
+    val isBoss: Boolean = false,
+) {
+    init {
+        require(enemyId.isNotBlank()) { "Enemy id cannot be blank." }
+        require(speedTilesPerTick > 0) { "Enemy speed must be positive." }
+        require(coreDamage > 0) { "Enemy core damage must be positive." }
+        require(rewardResource.isNotBlank()) { "Enemy reward resource cannot be blank." }
+        require(rewardAmount >= 0) { "Enemy reward cannot be negative." }
+        require(!(isElite && isBoss)) { "An enemy cannot be both elite and boss." }
+    }
+
+    fun appendHash(hash: StableHash) {
+        hash.add(enemyId)
+            .add(speedTilesPerTick)
+            .add(coreDamage)
+            .add(rewardResource)
+            .add(rewardAmount)
+            .add(isElite)
+            .add(isBoss)
     }
 }
 

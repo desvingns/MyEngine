@@ -422,3 +422,19 @@ by: claude
   replay `e4892bcc18f9d8dc`, kill replay `a763da4ac32b15b4`; remediation benchmark `sim=418 ms`,
   `kill=85 ms`, `spatial-index-1k=6.1036 ms`, `goal-field=10.427 ms`. Initial `614/120 ms` values
   are superseded. No plugin version bump; no commit or push was performed.
+
+## 2026-08-02 - MyEngine ENG-012 feature run
+
+- Owner: Codex
+- Change type: normal feature run; no agent/skill/adapter/pipeline contract change.
+- Summary: `/me --feature --next` selected ENG-012 and implemented data-defined elite/boss ranks,
+  enemy and indexed wave scaling, deterministic effective spawn state, boss snapshot/render marking,
+  save v11 with v1-v10 migration, and effective balance reporting.
+- Pipeline: selfcheck and scout/architect intake passed; developer/tester/runner and conditional
+  reviewer threads were unavailable after repeated timeouts, so the bounded implementation, tests,
+  local boundary review, and runner gates were completed in the orchestrator. No malformed JSON or
+  retry-triggered agent failure was recorded.
+- Verification: full tests, projects, content validation, replay, save-compat v1-v11 matrix,
+  benchmark, Android assemble, focused tests, selfcheck, and `git diff --check` passed. Canonical
+  replay hashes remain `e4892bcc18f9d8dc` / `a763da4ac32b15b4`.
+- No plugin version bump; no ADR.

@@ -61,7 +61,7 @@ private fun validateSandboxSaveSlotName(slotName: String) {
 /**
  * Android-free file boundary for named sandbox saves and rotating autosaves.
  *
- * The existing [SandboxSaveCodec] v10 text remains the authoritative payload. Slot metadata is
+ * The existing [SandboxSaveCodec] v11 text remains the authoritative payload. Slot metadata is
  * appended as additional properties, so [SandboxSession.restore] and the Android Bundle path do
  * not need a new save format or a lifecycle adapter.
  */

@@ -32,7 +32,7 @@ class SandboxSaveMigrationMatrixTest {
         assertCanonicalState(expected)
         val expectedHash = expected.stableHash()
 
-        (1..10).forEach { version ->
+        (1..11).forEach { version ->
             val text = fixture(version)
             val properties = Properties().also { it.load(StringReader(text)) }
             assertEquals(version.toString(), properties.getProperty("saveVersion"), "v$version fixture version")

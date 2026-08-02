@@ -180,7 +180,7 @@ class SandboxTerminalRunTest {
 
         val restored = SandboxSession.restore(save, registry)
 
-        assertEquals("10", saveProperty(save, "saveVersion"))
+        assertEquals(SandboxSaveCodec.SAVE_VERSION.toString(), saveProperty(save, "saveVersion"))
         assertEquals(session.runtime.state.run, restored.runtime.state.run)
         assertEquals(session.stableHash(), restored.stableHash())
         assertEquals(session.runtime.snapshot().runSummary, restored.runtime.snapshot().runSummary)

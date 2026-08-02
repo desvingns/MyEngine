@@ -37,6 +37,7 @@ import dev.myengine.entities.AttackComponent
 import dev.myengine.entities.Entity
 import dev.myengine.entities.EntityId
 import dev.myengine.entities.EntityStore
+import dev.myengine.entities.EnemyComponent
 import dev.myengine.entities.HealthComponent
 import dev.myengine.entities.MovementComponent
 import dev.myengine.entities.PositionComponent
@@ -371,6 +372,7 @@ class SandboxRuntime(
                 assetRef = assetRef,
                 activeEffectTags = it.statusEffects.sortedBy { effect -> effect.effectId }
                     .map { effect -> effect.effectId },
+                isBoss = it.enemy?.isBoss == true,
             )
         }
         return EngineSnapshot(
@@ -785,7 +787,7 @@ class SandboxRuntime(
 private fun VisualAssetRef.toRenderAssetRef(): RenderAssetRef = RenderAssetRef(path = path, atlasKey = atlasKey)
 
 object SandboxSaveCodec {
-    const val SAVE_VERSION: Int = 10
+    const val SAVE_VERSION: Int = 11
 
     fun encode(state: SandboxState, seed: Long, pendingCommands: List<EngineCommand> = emptyList()): String {
         val props = Properties()
@@ -861,6 +863,17 @@ object SandboxSaveCodec {
                 entity.statusEffects.sortedBy { it.effectId }.joinToString(",") { effect ->
                     "${effect.effectId}~${effect.remainingTicks}~${effect.stacks}"
                 },
+                entity.enemy?.let { enemy ->
+                    listOf(
+                        encodeToken(enemy.enemyId),
+                        enemy.speedTilesPerTick,
+                        enemy.coreDamage,
+                        encodeToken(enemy.rewardResource),
+                        enemy.rewardAmount,
+                        enemy.isElite,
+                        enemy.isBoss,
+                    ).joinToString("~")
+                }.orEmpty(),
             ).joinToString("|")
         }
         props["pendingCommands"] = pendingCommands.joinToString(";") { cmd ->
@@ -1133,6 +1146,11 @@ object SandboxSaveCodec {
             } else {
                 emptyList()
             }
+            val enemy = if (version >= 11) {
+                parseEnemyComponent(parts.getOrNull(17).orEmpty(), type)
+            } else {
+                null
+            }
             Entity(
                 id = id,
                 type = type,
@@ -1145,6 +1163,7 @@ object SandboxSaveCodec {
                 health = if (health != null && maxHealth != null) HealthComponent(health, maxHealth) else null,
                 tower = if (towerId != null && cooldown != null) TowerComponent(towerId, cooldown, upgradeBranch, upgradeTier, targetingMode) else null,
                 attack = if (range != null && damage != null && cooldownTicks != null) AttackComponent(range, damage, cooldownTicks) else null,
+                enemy = enemy,
                 statusEffects = statusEffects,
                 // Wave routing is a derived GoalField cache.  Older v6 saves can still carry a
                 // serialized per-enemy path; discard it and rebuild from restored world occupancy.
@@ -1157,6 +1176,28 @@ object SandboxSaveCodec {
                 },
             )
         }
+
+    private fun parseEnemyComponent(text: String, type: String): EnemyComponent? {
+        if (text.isBlank()) return null
+        require(type.startsWith("enemy:")) { "Enemy component is only valid on an enemy entity." }
+        val parts = text.split('~')
+        require(parts.size == 7) { "Invalid enemy component entry '$text'." }
+        val enemyId = decodeToken(parts[0])
+        require(type == "enemy:$enemyId") { "Enemy component id '$enemyId' does not match entity type '$type'." }
+        val speed = parts[1].toIntOrNull()
+        val coreDamage = parts[2].toIntOrNull()
+        val rewardAmount = parts[4].toIntOrNull()
+        require(speed != null && coreDamage != null && rewardAmount != null) { "Invalid enemy component values '$text'." }
+        return EnemyComponent(
+            enemyId = enemyId,
+            speedTilesPerTick = speed,
+            coreDamage = coreDamage,
+            rewardResource = decodeToken(parts[3]),
+            rewardAmount = rewardAmount,
+            isElite = parts[5].toBooleanStrictOrNull() ?: error("Invalid elite flag in '$text'."),
+            isBoss = parts[6].toBooleanStrictOrNull() ?: error("Invalid boss flag in '$text'."),
+        )
+    }
 
     private fun parseStatusEffects(text: String, registry: ContentRegistry): List<StatusEffectComponent> =
         text.split(',').filter { it.isNotBlank() }.map { encoded ->

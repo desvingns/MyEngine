@@ -31,6 +31,7 @@ class RenderEntity(
     val towerTier: Int? = null,
     val assetRef: RenderAssetRef? = null,
     activeEffectTags: List<String> = emptyList(),
+    val isBoss: Boolean = false,
 ) {
     val activeEffectTags: List<String> = Collections.unmodifiableList(activeEffectTags.toList().sorted())
 
@@ -41,12 +42,13 @@ class RenderEntity(
         health == other.health &&
         towerTier == other.towerTier &&
         assetRef == other.assetRef &&
-        activeEffectTags == other.activeEffectTags
+        activeEffectTags == other.activeEffectTags &&
+        isBoss == other.isBoss
 
-    override fun hashCode(): Int = listOf(id, type, position, health, towerTier, assetRef, activeEffectTags).hashCode()
+    override fun hashCode(): Int = listOf(id, type, position, health, towerTier, assetRef, activeEffectTags, isBoss).hashCode()
 
     override fun toString(): String = "RenderEntity(id=$id, type='$type', position=$position, health=$health, " +
-        "towerTier=$towerTier, assetRef=$assetRef, activeEffectTags=$activeEffectTags)"
+        "towerTier=$towerTier, assetRef=$assetRef, activeEffectTags=$activeEffectTags, isBoss=$isBoss)"
 }
 
 data class DebugOverlay(

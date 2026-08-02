@@ -6,6 +6,8 @@ import dev.myengine.ai.PathRequest
 import dev.myengine.ai.PathResult
 import dev.myengine.content.ContentRegistry
 import dev.myengine.content.EnemyContent
+import dev.myengine.content.WaveModifier
+import dev.myengine.content.effectiveStats
 import dev.myengine.content.StatusEffectKind
 import dev.myengine.content.StatusEffectStackingRule
 import dev.myengine.content.TowerContent
@@ -20,6 +22,7 @@ import dev.myengine.entities.AttackComponent
 import dev.myengine.entities.Entity
 import dev.myengine.entities.EntityId
 import dev.myengine.entities.EntityStore
+import dev.myengine.entities.EnemyComponent
 import dev.myengine.entities.HealthComponent
 import dev.myengine.entities.MovementComponent
 import dev.myengine.entities.PositionComponent
@@ -185,15 +188,27 @@ class DefenseRuntime(private val pathfinder: GridPathfinder = GridPathfinder()) 
     ): DefenseState {
         if (wave.id in state.spawnedWaveIds) return state
         var nextState = state
+        var enemyOrdinal = 0
         wave.spawns.forEach { spawnDef ->
             val enemy = registry.requireEnemy(spawnDef.enemyId)
             repeat(spawnDef.count) {
-                spawnEnemy(enemy, world, entities, spawn, core, goalField)
+                val modifier = waveModifierAt(wave.modifiers, enemyOrdinal)
+                spawnEnemy(enemy, modifier, world, entities, spawn, core, goalField)
+                enemyOrdinal += 1
             }
             nextState = nextState.record(DefenseMetrics(enemiesSpawned = spawnDef.count))
         }
         eventSink?.add(GameplayEvent(tick = tick, type = GameplayEventType.WAVE_START, contentId = wave.id))
         return nextState.copy(spawnedWaveIds = nextState.spawnedWaveIds + wave.id)
+    }
+
+    private fun waveModifierAt(modifiers: List<WaveModifier>, enemyOrdinal: Int): WaveModifier? {
+        var covered = 0
+        modifiers.forEach { modifier ->
+            if (enemyOrdinal >= covered && enemyOrdinal < covered + modifier.count) return modifier
+            covered += modifier.count
+        }
+        return null
     }
 
     /**
@@ -228,7 +243,7 @@ class DefenseRuntime(private val pathfinder: GridPathfinder = GridPathfinder()) 
                     if (killed) {
                         metrics = metrics.plus(DefenseMetrics(enemiesKilled = 1))
                         val enemyId = current.type.substringAfter("enemy:")
-                        registry.enemies[enemyId]?.let { enemyDefinition ->
+                        (current.enemy?.takeIf { it.enemyId == enemyId } ?: registry.enemies[enemyId]?.toEnemyComponent())?.let { enemyDefinition ->
                             if (enemyDefinition.rewardAmount > 0) {
                                 rewards[enemyDefinition.rewardResource] =
                                     (rewards[enemyDefinition.rewardResource] ?: 0) + enemyDefinition.rewardAmount
@@ -394,7 +409,7 @@ class DefenseRuntime(private val pathfinder: GridPathfinder = GridPathfinder()) 
                     )
                     metrics = metrics.plus(DefenseMetrics(enemiesKilled = 1))
                     val enemyId = damagedTarget.type.substringAfter("enemy:")
-                    val enemy = registry.enemies[enemyId]
+                    val enemy = damagedTarget.enemy?.takeIf { it.enemyId == enemyId } ?: registry.enemies[enemyId]?.toEnemyComponent()
                     if (enemy != null && enemy.rewardAmount > 0) {
                         rewards[enemy.rewardResource] = (rewards[enemy.rewardResource] ?: 0) + enemy.rewardAmount
                     }
@@ -476,7 +491,7 @@ class DefenseRuntime(private val pathfinder: GridPathfinder = GridPathfinder()) 
             }
             if (reachesCore) {
                 val enemyDefinition = registry.enemies[enemy.type.substringAfter("enemy:")]
-                val damage = enemyDefinition?.coreDamage ?: 1
+                val damage = enemy.enemy?.coreDamage ?: enemyDefinition?.coreDamage ?: 1
                 entities.markRemove(enemy.id)
                 nextState = nextState.copy(coreHealth = (nextState.coreHealth - damage).coerceAtLeast(0))
                     .record(DefenseMetrics(enemiesLeaked = 1, coreDamage = damage))
@@ -505,7 +520,7 @@ class DefenseRuntime(private val pathfinder: GridPathfinder = GridPathfinder()) 
 
     private fun effectiveMovementSpeed(registry: ContentRegistry, enemy: Entity): Int {
         val enemyId = enemy.type.substringAfter("enemy:")
-        val baseSpeed = registry.enemies[enemyId]?.speedTilesPerTick ?: 1
+        val baseSpeed = enemy.enemy?.speedTilesPerTick ?: registry.enemies[enemyId]?.speedTilesPerTick ?: 1
         val slowPercent = enemy.statusEffects
             .sortedBy { it.effectId }
             .fold(0L) { accumulated, active ->
@@ -525,6 +540,7 @@ class DefenseRuntime(private val pathfinder: GridPathfinder = GridPathfinder()) 
 
     private fun spawnEnemy(
         enemy: EnemyContent,
+        waveModifier: WaveModifier?,
         world: TileWorld,
         entities: EntityStore,
         spawn: TilePosition,
@@ -540,15 +556,40 @@ class DefenseRuntime(private val pathfinder: GridPathfinder = GridPathfinder()) 
             }
             MovementComponent(path = path, pathIndex = 0)
         }
+        val stats = enemy.effectiveStats(waveModifier)
+        val enemyComponent = EnemyComponent(
+            enemyId = enemy.id,
+            speedTilesPerTick = stats.speedTilesPerTick,
+            coreDamage = enemy.coreDamage,
+            rewardResource = enemy.rewardResource,
+            rewardAmount = stats.rewardAmount,
+            isElite = enemy.isElite,
+            isBoss = enemy.isBoss,
+        ).takeIf {
+            enemy.isElite || enemy.isBoss ||
+                enemy.healthScalePercent != 100 || enemy.speedScalePercent != 100 ||
+                enemy.rewardScalePercent != 100 || waveModifier != null
+        }
         entities.create("enemy:${enemy.id}", setOf("enemy")) { id ->
             Entity(
                 id = id,
                 type = "enemy:${enemy.id}",
                 tags = setOf("enemy"),
                 position = PositionComponent(spawn),
-                health = HealthComponent(enemy.health, enemy.health),
+                health = HealthComponent(stats.health, stats.health),
                 movement = movement,
+                enemy = enemyComponent,
             )
         }
     }
 }
+
+private fun EnemyContent.toEnemyComponent(): EnemyComponent = EnemyComponent(
+    enemyId = id,
+    speedTilesPerTick = speedTilesPerTick,
+    coreDamage = coreDamage,
+    rewardResource = rewardResource,
+    rewardAmount = rewardAmount,
+    isElite = isElite,
+    isBoss = isBoss,
+)

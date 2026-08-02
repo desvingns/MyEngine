@@ -1,6 +1,6 @@
 # MyEngine Handoff
 
-Last updated: 2026-08-02 (ENG-029 audio event hooks close-out; next ENG-012)
+Last updated: 2026-08-02 (ENG-012 boss/elite enemies + wave modifiers close-out; next ENG-007)
 Owner: Codex
 
 ## DONE
@@ -11,6 +11,12 @@ Owner: Codex
   `SoundPoolPresentationConsumer` consumes the feed with presentation-only volume/mute state.
   `SandboxSaveCodec.SAVE_VERSION` remains 10; events do not enter authoritative saves or stable
   hashes.
+
+- ENG-012 is done: `EnemyContent` supports validated elite/boss rank flags and deterministic
+  health/speed/reward scaling; `WaveContent` supports indexed modifiers with consecutive-enemy
+  coverage. Effective spawn state is persisted in `EnemyComponent`, bosses are marked in immutable
+  snapshots/render primitives, balance reports use effective stats, and sandbox saves are v11 with
+  v1-v10 migration fallback.
 
 - PROC-003 is done: `Plane/15_domain_systems_sequencing.md` sequences the domain systems —
   flow-field/pathfinding already done via ENG-002 (MyTD FR-003/FR-009/FR-013), colony slice
@@ -590,9 +596,9 @@ Owner: Codex
 
 ## NEXT
 
-Run `/me --feature --next` for ENG-012 (boss/elite enemies + wave modifiers), the next item in the
-PROC-003-adopted chain after completed ENG-029; continue `ENG-007 -> ENG-018`. The earlier commit
-blocker is resolved: PROC-013 commit 5eaaa78 was pushed.
+Run `/me --feature --next` for ENG-007 (enemy armor + damage types), the next item in the
+PROC-003-adopted chain after completed ENG-012; continue `ENG-018`. The earlier commit blocker is
+resolved: PROC-013 commit 5eaaa78 was pushed.
 
 ## BLOCKERS
 
@@ -603,6 +609,9 @@ blocker is resolved: PROC-013 commit 5eaaa78 was pushed.
   Android/content/simulation boundary and gate evidence passed. The initial invalid
   `:android:test --tests` invocation was corrected to `:android:testDebugUnitTest --tests` and is
   not a feature failure.
+- ENG-012 has no implementation blocker. Conditional reviewer agents were unavailable after repeated
+  thread timeouts; local simulation/render/save/content boundary review passed. No device/emulator
+  proof is claimed beyond the Android assemble gate.
 - MySD ENG-036 is specified but intentionally not started until the MySD evidence/spec gates choose
   the implementation order. PROC-015 is a backlog process change, not an implemented adapter.
 

@@ -30,6 +30,7 @@ data class RenderPrimitive(
     val entityId: Long? = null,
     val assetRef: RenderAssetRef? = null,
     val activeEffectTags: List<String> = emptyList(),
+    val isBoss: Boolean = false,
 )
 
 /**
@@ -78,6 +79,7 @@ class PlaceholderRenderSurface {
                 entityId = entity.id,
                 assetRef = entity.assetRef,
                 activeEffectTags = entity.activeEffectTags.sorted(),
+                isBoss = if (kind == RenderKind.ENEMY) entity.isBoss else false,
             )
         }
 

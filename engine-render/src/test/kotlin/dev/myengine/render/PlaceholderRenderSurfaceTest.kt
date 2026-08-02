@@ -210,6 +210,25 @@ class PlaceholderRenderSurfaceTest {
     }
 
     @Test
+    fun carriesBossMarkerFromSnapshotToRenderPrimitive() {
+        val snapshot = EngineSnapshot(
+            worldSize = WorldSize(64, 64),
+            tiles = emptyList(),
+            entities = listOf(
+                RenderEntity(2, "enemy:boss", TilePosition(2, 2), health = 20, isBoss = true),
+                RenderEntity(3, "enemy:grunt", TilePosition(3, 2), health = 5),
+            ),
+            coreHealth = 20,
+            debug = overlay(),
+        )
+
+        val frame = surface.project(snapshot, camera)
+
+        assertTrue(frame.primitives.single { it.entityId == 2L }.isBoss)
+        assertTrue(!frame.primitives.single { it.entityId == 3L }.isBoss)
+    }
+
+    @Test
     fun carriesBuildingAssetReferencesIntoRenderFrame() {
         val buildingRef = RenderAssetRef("visuals/placeholder.atlas", "building.marker")
         val snapshot = EngineSnapshot(

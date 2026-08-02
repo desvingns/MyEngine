@@ -45,7 +45,7 @@
    and `ENG-020` (spatial index + 1k-entity benchmark) are closed; `ENG-020` was accepted on
    2026-07-29. PROC-003 sequencing adopted 2026-07-29 (see Plane/15): ENG-010 -> ENG-016 ->
    PROC-007 -> ENG-021 -> ENG-029 -> ENG-012 -> ENG-007 -> ENG-018; ENG-010, ENG-016, PROC-007,
-   ENG-021, and ENG-029 are closed, and the next exact item is `ENG-012`.
+   ENG-021, ENG-029, and ENG-012 are closed, and the next exact item is `ENG-007`.
 4. Hardening gaps из `docs/HARDENING_AUDIT.md` закрывать по одному, с тестами и обновлением handoff.
 
 Новые крупные фазы добавлять только после того, как backlog specs перестанут быть достаточно
@@ -63,6 +63,7 @@
 | [x] | PROC-007 Save migration matrix | [PROC-007](../.claude/specs/done/PROC-007-save-migration-matrix.md) | Checked-in v1-v10 save fixtures, independent stable-hash migration matrix, and save-compat JSON reporting | 2026-08-02 |
 | [x] | ENG-021 Save slots + autosave policy | [ENG-021](../.claude/specs/done/ENG-021-save-slots-autosave.md) | Named `slots/`, config-driven rotating `autosave/`, flushed temp + `ATOMIC_MOVE` only, metadata-only inspection, corruption-only fallback, codec v10 and Android Bundle path preserved | 2026-08-02 |
 | [x] | ENG-029 Audio event hooks | [ENG-029](../.claude/specs/done/ENG-029-audio-event-hooks.md) | Transient deterministic `GameplayEvent` snapshot feed, optional `sounds.properties` validation, Android `SoundPool` consumer, no save-version/hash change | 2026-08-02 |
+| [x] | ENG-012 Boss/elite enemies + wave modifiers | [ENG-012](../.claude/specs/done/ENG-012-boss-elites-wave-modifiers.md) | Data-defined ranks and stat scaling, indexed wave modifiers, deterministic effective spawn state, boss snapshot marker, save v11 migration, replay/save/balance coverage | 2026-08-02 |
 
 ## Глобальные инварианты
 
@@ -1315,3 +1316,34 @@
   - Pre-existing low manual device/emulator Bundle save/restore smoke limitation remains.
 - Next:
   - Run `/me --feature --next` for ENG-029 (audio event hooks).
+
+### 2026-08-02 - ENG-012 (boss/elite enemies + wave modifiers)
+
+- Status: Done / accepted; documentation close-out completed
+- Owner: Codex
+- Created/changed:
+  - `engine-content/` enemy rank/scaling and indexed wave-modifier definitions, parser, and tests
+  - `engine-defense/` deterministic effective spawn state and persisted enemy combat metadata
+  - `engine-entities/` `EnemyComponent` extension with effective speed/reward/rank state
+  - `engine-render/` boss marker projection through immutable render data
+  - `games/sandbox/` save v11 encoding/decoding with v1-v10 migration fallback and tests
+  - `engine-devtools/` effective rank/scaling balance metrics
+  - `docs/content-schemas/PROPERTIES_SCHEMA.md`, ENG-012 card, roadmap, state, handoff, and digest
+- Result:
+  - Elite/boss flags and health/speed/reward scaling are content-defined and validated. Indexed wave
+    modifiers cover consecutive authored spawns in list order; scaling uses integer floor for health/
+    speed and deterministic half-up rounding for rewards. Existing default content remains unchanged.
+- Verification:
+  - Full `.\gradlew.bat test`, `.\gradlew.bat projects`, content validation, replay, save-compat
+    v1-v11 matrix, benchmark, `:android:assembleDebug`, focused tests, selfcheck, and
+    `git diff --check` -> pass.
+  - Replay hashes: canonical `e4892bcc18f9d8dc`, kill `a763da4ac32b15b4`.
+- Decisions:
+  - No ADR. Effective enemy state is persisted only when non-default rank/scaling/modifier data needs
+    to survive restore; legacy entities preserve canonical hashes and v1-v10 saves migrate to v11.
+- Known limitations:
+  - Conditional reviewer agents were unavailable after repeated thread timeouts; local simulation,
+    render, save, and content boundary review passed. No device/emulator proof is claimed beyond the
+    Android assemble gate.
+- Next:
+  - Run `/me --feature --next` for ENG-007 (enemy armor + damage types), then continue `ENG-018`.

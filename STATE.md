@@ -1,8 +1,8 @@
 # MyEngine State
 
-Last updated: 2026-08-02 (ENG-029 close-out)
-Active phase: Phase 00-14 complete; Signal Garden SG-001..005 complete; MyTD MTD-001..005 complete; DX-008, ENG-002, ENG-005, ENG-008, ENG-009, ENG-010, ENG-013, ENG-014, ENG-015, ENG-016, ENG-020, ENG-021, ENG-026, ENG-027, ENG-028, ENG-029, ENG-030, PROC-002, PROC-003, PROC-007, and PROC-013 complete; pipeline at v0.2.0; next exact item ENG-012
-Owner of last update: Codex (2026-08-02: ENG-029 audio event hooks close-out; adopted chain continues ENG-012 -> ENG-007 -> ENG-018)
+Last updated: 2026-08-02 (ENG-012 close-out)
+Active phase: Phase 00-14 complete; Signal Garden SG-001..005 complete; MyTD MTD-001..005 complete; DX-008, ENG-002, ENG-005, ENG-008, ENG-009, ENG-010, ENG-012, ENG-013, ENG-014, ENG-015, ENG-016, ENG-020, ENG-021, ENG-026, ENG-027, ENG-028, ENG-029, ENG-030, PROC-002, PROC-003, PROC-007, and PROC-013 complete; pipeline at v0.2.0; next exact item ENG-007
+Owner of last update: Codex (2026-08-02: ENG-012 boss/elite enemies + wave modifiers close-out; adopted chain continues ENG-007 -> ENG-018)
 
 ## Current Status
 
@@ -35,6 +35,10 @@ Owner of last update: Codex (2026-08-02: ENG-029 audio event hooks close-out; ad
   validation; Android `SoundPool` consumes the feed with presentation-only volume/mute state.
   Events do not enter authoritative saves or stable hashes; `SandboxSaveCodec.SAVE_VERSION` remains
   10. No ADR was needed.
+- ENG-012 is complete: content-defined elite/boss ranks and health/speed/reward scaling combine with
+  indexed wave modifiers at deterministic spawn time. Effective enemy state persists in
+  `EnemyComponent`, boss identity crosses the immutable snapshot/render boundary, and
+  `SandboxSaveCodec.SAVE_VERSION` is 11 with v1-v10 migration fallback. No ADR was needed.
 - MySD foundation filed ENG-036 for an Android-free reusable runtime/session extraction and
   PROC-015 for a reference-game state-graph/mechanic-claim bridge. Probable gameplay gaps and
   `mysd` demand remain deliberately uncarded until Luna evidence passes Gate 1.
@@ -278,9 +282,9 @@ Owner of last update: Codex (2026-08-02: ENG-029 audio event hooks close-out; ad
 
 ## Next Exact Action
 
-Run `/me --feature --next` for ENG-012 (boss/elite enemies + wave modifiers), the next item in the
-PROC-003-adopted chain after completed ENG-029; continue `ENG-007 -> ENG-018`. The PROC-013 commit
-5eaaa78 was pushed, so the earlier retro-file commit blocker is resolved.
+Run `/me --feature --next` for ENG-007 (enemy armor + damage types), the next item in the
+PROC-003-adopted chain after completed ENG-012; continue `ENG-018`. The PROC-013 commit 5eaaa78
+was pushed, so the earlier retro-file commit blocker is resolved.
 
 ## Known Blockers
 
@@ -300,6 +304,9 @@ PROC-003-adopted chain after completed ENG-029; continue `ENG-007 -> ENG-018`. T
   Android/content/simulation boundary and gate evidence passed. The initial invalid
   `:android:test --tests` invocation was corrected to `:android:testDebugUnitTest --tests` and is
   not a feature failure.
+- ENG-012 non-blocking limitation: conditional reviewer agents were unavailable after repeated
+  thread timeouts; local simulation/render/save/content boundary review passed. No device/emulator
+  proof is claimed beyond the Android assemble gate.
 - ENG-009 intentionally ships no splash balance values. Future game packs must choose them through
   an approved balance change; there is no engine blocker from this feature.
 - ENG-020 has one low, non-blocking test-coverage follow-up: seeded differential tests do not yet
@@ -878,3 +885,27 @@ Environment used:
     `goal-field=9947100 ns`.
   - The initial invalid `:android:test --tests` invocation was corrected to
     `:android:testDebugUnitTest --tests`; it is not a feature failure.
+
+## ENG-012 Close-out (2026-08-02)
+
+- DONE:
+  - Added validated data-defined elite/boss ranks and enemy health/speed/reward scaling.
+  - Added indexed wave modifiers with consecutive authored-spawn coverage and deterministic
+    effective stats. Persisted `EnemyComponent` state carries effective movement, core damage,
+    reward, and rank data through restore; boss identity crosses the immutable render boundary.
+  - Bumped `SandboxSaveCodec.SAVE_VERSION` to 11 with v1-v10 migration fallback and added
+    replay/save continuation, content, render, and balance-report coverage.
+- DECISIONS:
+  - No ADR. Default content remains unchanged; effective state is persisted when rank/scaling or
+    wave-modifier data is non-default, while legacy entities preserve canonical hashes.
+- NEXT:
+  - Run `/me --feature --next` for ENG-007 (enemy armor + damage types), then continue `ENG-018`.
+- BLOCKERS:
+  - No implementation blocker remains. Conditional reviewer agents were unavailable after repeated
+    thread timeouts; local simulation/render/save/content boundary review passed. No device/emulator
+    proof is claimed beyond the Android assemble gate.
+- VERIFICATION:
+  - Selfcheck, full `test`, `projects`, content validation, replay, save-compat v1-v11 matrix,
+    benchmark, `:android:assembleDebug`, focused tests, and `git diff --check` passed.
+  - Replay hashes: canonical `e4892bcc18f9d8dc`, kill `a763da4ac32b15b4`.
+  - Telemetry recorded event 45; `me-retro.ps1` ran with no proposal auto-applied.

@@ -6,6 +6,7 @@ import dev.myengine.content.StatusEffectContent
 import dev.myengine.content.StatusEffectKind
 import dev.myengine.content.StatusEffectStackingRule
 import dev.myengine.content.WaveContent
+import dev.myengine.content.WaveModifier
 import dev.myengine.content.WaveSpawn
 import dev.myengine.core.Tick
 import dev.myengine.core.HitEvent
@@ -465,6 +466,48 @@ class DefenseRuntimeTest {
         assertEquals(setOf("a-due", "z-overdue"), state.spawnedWaveIds)
         assertEquals(2, state.metrics.enemiesSpawned)
         assertEquals(listOf("enemy:alpha", "enemy:zeta"), entities.byTag("enemy").map { it.type })
+    }
+
+    @Test
+    fun bossAndWaveScalingApplyInStableSpawnOrderAndPersistEffectiveRewardStats() {
+        val base = testRegistry()
+        val boss = base.enemies.getValue("scout").copy(
+            health = 10,
+            speedTilesPerTick = 2,
+            rewardAmount = 5,
+            isBoss = true,
+            healthScalePercent = 150,
+            speedScalePercent = 200,
+            rewardScalePercent = 150,
+        )
+        val registry = base.copy(
+            enemies = mapOf(boss.id to boss),
+            waves = mapOf(
+                "boss-wave" to WaveContent(
+                    id = "boss-wave",
+                    startTick = 1,
+                    spawns = listOf(WaveSpawn(boss.id, 3)),
+                    modifiers = listOf(
+                        WaveModifier(healthPercent = 200, speedPercent = 50, count = 1),
+                        WaveModifier(healthPercent = 100, speedPercent = 150, count = 1),
+                    ),
+                ),
+            ),
+        )
+        val terrain = mapOf("floor" to TerrainRule("floor", buildable = true, blocksMovement = false))
+        val world = TileWorld.filled(WorldSize(4, 1), terrain, "floor")
+        val entities = EntityStore()
+
+        DefenseRuntime().spawnDueWaves(
+            Tick(1), DefenseState(coreHealth = 10), registry, world, entities,
+            TilePosition(0, 0), TilePosition(3, 0),
+        )
+
+        val spawned = entities.byTag("enemy")
+        assertEquals(listOf(30, 15, 15), spawned.map { it.health!!.max })
+        assertEquals(listOf(2, 6, 4), spawned.map { it.enemy!!.speedTilesPerTick })
+        assertEquals(listOf(8, 8, 8), spawned.map { it.enemy!!.rewardAmount })
+        assertTrue(spawned.all { it.enemy!!.isBoss })
     }
 
     @Test

@@ -11,7 +11,7 @@ import kotlin.test.assertTrue
 
 class SandboxSaveSlotsTest {
     @Test
-    fun namedSlotsAreIsolatedAndRoundTripThroughCodecV10() {
+    fun namedSlotsAreIsolatedAndRoundTripThroughCodecV11() {
         val registry = SandboxGame.loadRegistry()
         val store = SandboxSaveSlotStore(
             Files.createTempDirectory("sandbox-save-slot-store-isolation"),
@@ -32,8 +32,8 @@ class SandboxSaveSlotsTest {
         )
         assertEquals(3L, store.restore("first", registry).runtime.state.tick.value)
         assertEquals(7L, store.restore("second", registry).runtime.state.tick.value)
-        assertEquals(10, SandboxSaveCodec.SAVE_VERSION)
-        assertEquals(10, firstMetadata.codecVersion)
+        assertEquals(11, SandboxSaveCodec.SAVE_VERSION)
+        assertEquals(11, firstMetadata.codecVersion)
         assertTrue(Files.isRegularFile(store.pathFor("first")))
     }
 
@@ -124,7 +124,7 @@ class SandboxSaveSlotsTest {
         )
 
         assertEquals(session.stableHash(), restored.stableHash())
-        assertEquals(10, SandboxSaveCodec.SAVE_VERSION)
+        assertEquals(11, SandboxSaveCodec.SAVE_VERSION)
     }
 
     @Test
@@ -207,7 +207,7 @@ class SandboxSaveSlotsTest {
         store.save("checkpoint", session)
         val path = store.pathFor("checkpoint")
         val future = Files.readString(path, StandardCharsets.UTF_8)
-            .replace("saveVersion=10", "saveVersion=11")
+            .replace("saveVersion=${SandboxSaveCodec.SAVE_VERSION}", "saveVersion=${SandboxSaveCodec.SAVE_VERSION + 1}")
         Files.writeString(path, future, StandardCharsets.UTF_8)
 
         assertFailsWith<IllegalArgumentException> { store.restore("checkpoint", registry) }

@@ -28,6 +28,53 @@ class ContentPackLoaderTest {
     }
 
     @Test
+    fun eliteBossScalingAndIndexedWaveModifiersAreDataDefined() {
+        val root = createPack()
+        root.resolve("enemies.properties").writeText(
+            root.resolve("enemies.properties").toFile().readText() +
+                "\nscout.isBoss=true\nscout.healthScalePercent=150\n" +
+                "scout.speedScalePercent=200\nscout.rewardScalePercent=125\n",
+        )
+        root.resolve("waves.properties").writeText(
+            root.resolve("waves.properties").toFile().readText() +
+                "\nwave1.modifier.0.healthPercent=200\nwave1.modifier.0.speedPercent=50\n" +
+                "wave1.modifier.0.count=1\n",
+        )
+
+        val result = ContentPackLoader.load(root)
+
+        assertTrue(result.isValid, result.errors.joinToString("\n"))
+        val enemy = result.registry!!.requireEnemy("scout")
+        assertTrue(enemy.isBoss)
+        assertEquals(150, enemy.healthScalePercent)
+        assertEquals(200, enemy.speedScalePercent)
+        assertEquals(125, enemy.rewardScalePercent)
+        assertEquals(listOf(WaveModifier(200, 50, 1)), result.registry.waves.getValue("wave1").modifiers)
+    }
+
+    @Test
+    fun eliteBossAndWaveModifierValidationRejectInvalidValues() {
+        val bothRanks = createPack()
+        bothRanks.resolve("enemies.properties").writeText(
+            bothRanks.resolve("enemies.properties").toFile().readText() +
+                "\nscout.isElite=true\nscout.isBoss=true\n",
+        )
+        val bothRanksResult = ContentPackLoader.load(bothRanks)
+        assertFalse(bothRanksResult.isValid)
+        assertTrue(bothRanksResult.errors.any { it.id == "scout" && it.field == "isBoss" })
+
+        val invalidModifier = createPack()
+        invalidModifier.resolve("waves.properties").writeText(
+            invalidModifier.resolve("waves.properties").toFile().readText() +
+                "\nwave1.modifier.1.healthPercent=0\nwave1.modifier.1.speedPercent=101\n" +
+                "wave1.modifier.1.count=1\n",
+        )
+        val invalidModifierResult = ContentPackLoader.load(invalidModifier)
+        assertFalse(invalidModifierResult.isValid)
+        assertTrue(invalidModifierResult.errors.any { it.field == "modifier" })
+    }
+
+    @Test
     fun validSoundMappingsLoadWithNormalizedEventIdsAndRealPackFiles() {
         val root = createPack()
         Files.createDirectories(root.resolve("sounds"))

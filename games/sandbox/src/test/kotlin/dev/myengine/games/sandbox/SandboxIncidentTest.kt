@@ -171,7 +171,7 @@ class SandboxIncidentTest {
     }
 
     @Test
-    fun v10SaveRestoresRngDirectorAndContinuation() {
+    fun v11SaveRestoresRngDirectorAndContinuation() {
         val incident = IncidentContent(
             id = "pulse",
             minThreat = 0,
@@ -189,7 +189,7 @@ class SandboxIncidentTest {
         val restored = SandboxRuntime(SandboxSaveCodec.decode(save, registry), seed = 41)
         restored.step(4)
 
-        assertEquals(10, SandboxSaveCodec.SAVE_VERSION)
+        assertEquals(11, SandboxSaveCodec.SAVE_VERSION)
         assertEquals(uninterrupted.state.stableHash(), restored.state.stableHash())
         assertEquals(uninterrupted.state.incidentState, restored.state.incidentState)
         assertEquals(uninterrupted.state.randomCursor, restored.state.randomCursor)

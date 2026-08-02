@@ -137,7 +137,7 @@ class FixedTickFrameLoopTest {
             saveProperties(fourX.session.save()),
             "presentation speed must not alter the authoritative save payload",
         )
-        assertEquals(10, SandboxSaveCodec.SAVE_VERSION)
+        assertEquals(11, SandboxSaveCodec.SAVE_VERSION)
         assertFalse(
             saveProperties(oneX.session.save()).stringPropertyNames().any {
                 it.contains("speed", ignoreCase = true)
