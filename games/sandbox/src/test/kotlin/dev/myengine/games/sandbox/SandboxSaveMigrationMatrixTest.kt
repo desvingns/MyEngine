@@ -35,13 +35,15 @@ class SandboxSaveMigrationMatrixTest {
         assertCanonicalState(expected)
         val expectedHash = expected.stableHash()
 
-        (1..11).forEach { version ->
+        (1..11).plus(13).forEach { version ->
             val text = fixture(version)
             val properties = Properties().also { it.load(StringReader(text)) }
             assertEquals(version.toString(), properties.getProperty("saveVersion"), "v$version fixture version")
 
             val first = SandboxSaveCodec.decode(text, registry)
             assertCanonicalState(first)
+            assertTrue(first.zones.allStockpiles().isEmpty(), "v$version must migrate stockpiles to empty state")
+            assertTrue(first.zones.allHarvestDesignations().isEmpty(), "v$version must migrate designations to empty state")
             assertEquals(expectedHash, first.stableHash(), "v$version post-migration state hash")
 
             val second = SandboxSaveCodec.decode(fixture(version), registry)
@@ -84,6 +86,8 @@ class SandboxSaveMigrationMatrixTest {
 
         assertTrue(state.jobBoard.all().isEmpty())
         assertTrue(state.entities.all().all { it.jobActor == null })
+        assertTrue(state.zones.allStockpiles().isEmpty())
+        assertTrue(state.zones.allHarvestDesignations().isEmpty())
     }
 
     private fun fixture(version: Int): String =

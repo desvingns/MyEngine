@@ -16,6 +16,7 @@ java {
 
 dependencies {
     api(project(":engine-core"))
+    api(project(":engine-world"))
     api(project(":engine-content"))
     api(project(":engine-entities"))
     testImplementation(libs.kotlin.test.junit5)

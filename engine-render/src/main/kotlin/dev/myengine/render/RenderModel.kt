@@ -137,6 +137,33 @@ data class HudSnapshot(
     }
 }
 
+enum class RenderZoneKind {
+    STOCKPILE,
+    HARVEST_DESIGNATION,
+}
+
+/** Immutable presentation-only zone overlay data. */
+class RenderZone(
+    val id: String,
+    val kind: RenderZoneKind,
+    tiles: List<TilePosition>,
+    allowedResourceIds: List<String> = emptyList(),
+    val resourceId: String? = null,
+    val jobId: String? = null,
+) {
+    val tiles: List<TilePosition> = Collections.unmodifiableList(tiles.toList().sorted())
+    val allowedResourceIds: List<String> = Collections.unmodifiableList(allowedResourceIds.toList().sorted())
+
+    override fun equals(other: Any?): Boolean = other is RenderZone &&
+        id == other.id && kind == other.kind && tiles == other.tiles &&
+        allowedResourceIds == other.allowedResourceIds && resourceId == other.resourceId && jobId == other.jobId
+
+    override fun hashCode(): Int = listOf(id, kind, tiles, allowedResourceIds, resourceId, jobId).hashCode()
+
+    override fun toString(): String = "RenderZone(id='$id', kind=$kind, tiles=$tiles, " +
+        "allowedResourceIds=$allowedResourceIds, resourceId=$resourceId, jobId=$jobId)"
+}
+
 data class EngineSnapshot(
     val worldSize: WorldSize,
     val tiles: List<RenderTile>,
@@ -151,4 +178,5 @@ data class EngineSnapshot(
     val hud: HudSnapshot = HudSnapshot.EMPTY,
     /** Transient immutable combat events emitted during the latest simulation tick. */
     val combatEvents: CombatEvents = CombatEvents.EMPTY,
+    val zones: List<RenderZone> = emptyList(),
 )

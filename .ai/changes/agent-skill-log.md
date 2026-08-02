@@ -485,3 +485,16 @@ by: claude
   no device, emulator, visual-golden, or frame-budget claim is made.
 - Next: `/me --feature --next` for ENG-001 (A* point-to-point pathfinding for agents), the next
   backlog item in the deferred colony slice. No plugin, skill, or adapter version bump.
+
+## 2026-08-02 - MyEngine ENG-031 documentation close-out
+
+- Owner: Codex / me-docs
+- Change type: normal feature-run close-out; documentation/spec/telemetry only. No production code
+  or tests were edited by this role; no commit or push was performed.
+- Changed: ENG-031 card moved to `.claude/specs/done/` with status `done`; roadmap, `STATE.md`,
+  `.ai/handoff.md`, `Plane/README.md`, and `.ai/DIGEST.md` synced to the accepted Option A and
+  next order `ENG-004 -> ENG-032`; appended a NEW cross-project lesson to the brain inbox.
+- Decisions: No ADR, game-bundle traceability update, or plugin/skill/pipeline contract change;
+  no plugin version bump.
+- Verification: selfcheck passed; focused ENG-031/remediation tests and full runner evidence passed;
+  non-blocking reviewer follow-ups remain recorded in the close-out documents.

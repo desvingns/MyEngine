@@ -102,7 +102,7 @@ class SandboxBuildingTest {
     }
 
     @Test
-    fun v13SaveRoundtripPreservesWallAndPendingBuildingCommand() {
+    fun v14SaveRoundtripPreservesWallAndPendingBuildingCommand() {
         val registry = SandboxGame.loadRegistry()
         val session = SandboxSession.start(registry).also {
             it.runtime.state.producers = emptyList()
@@ -113,7 +113,7 @@ class SandboxBuildingTest {
         session.step(5)
         val save = session.save()
 
-        assertTrue(save.contains("saveVersion=13"))
+        assertTrue(save.contains("saveVersion=14"))
         val restored = SandboxSession.restore(save, registry)
         assertEquals(listOf(pending), restored.runtime.pendingCommands())
         assertEquals(session.stableHash(), restored.stableHash())

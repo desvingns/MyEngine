@@ -35,11 +35,16 @@ import dev.myengine.core.command.BuildTowerCommand
 import dev.myengine.core.command.PlaceBuildingCommand
 import dev.myengine.core.command.RemoveBuildingCommand
 import dev.myengine.core.command.CallWaveEarlyCommand
+import dev.myengine.core.command.DefineStockpileZoneCommand
+import dev.myengine.core.command.DesignateHarvestNodeCommand
+import dev.myengine.core.command.RemoveHarvestDesignationCommand
+import dev.myengine.core.command.RemoveStockpileZoneCommand
 import dev.myengine.core.command.SellTowerCommand
 import dev.myengine.core.command.SetTowerTargetingModeCommand
 import dev.myengine.core.command.TileCoordinate
 import dev.myengine.core.command.TargetingMode
 import dev.myengine.core.command.UpgradeTowerCommand
+import dev.myengine.core.command.UpdateStockpileZoneCommand
 import dev.myengine.defense.DefenseRuntime
 import dev.myengine.defense.DefenseState
 import dev.myengine.defense.TowerPlacementResult
@@ -57,6 +62,9 @@ import dev.myengine.entities.TowerComponent
 import dev.myengine.logistics.Inventory
 import dev.myengine.logistics.Producer
 import dev.myengine.logistics.ProducerSystem
+import dev.myengine.logistics.HarvestDesignation
+import dev.myengine.logistics.StockpileZone
+import dev.myengine.logistics.ZoneStore
 import dev.myengine.render.DebugOverlay
 import dev.myengine.render.EngineSnapshot
 import dev.myengine.render.HudBuildTower
@@ -68,6 +76,8 @@ import dev.myengine.render.HudTowerTier
 import dev.myengine.render.HudWaveCompositionEntry
 import dev.myengine.render.RenderEntity
 import dev.myengine.render.RenderAssetRef
+import dev.myengine.render.RenderZone
+import dev.myengine.render.RenderZoneKind
 import dev.myengine.render.RenderTile
 import dev.myengine.storyteller.IncidentDirector
 import dev.myengine.storyteller.IncidentDirectorState
@@ -118,6 +128,7 @@ data class SandboxState(
     var incidentState: IncidentDirectorState = IncidentDirectorState(),
     var incidentModifiers: Map<String, SandboxIncidentModifier> = emptyMap(),
     var jobBoard: JobBoard = JobBoard(),
+    var zones: ZoneStore = ZoneStore(),
 ) : HashableState {
     override fun appendHash(hash: StableHash) {
         hash.add(tick.value)
@@ -125,6 +136,7 @@ data class SandboxState(
         world.appendHash(hash)
         entities.appendHash(hash)
         jobBoard.appendHash(hash)
+        zones.appendHash(hash)
         inventory.appendHash(hash)
         producers.sortedBy { it.id }.forEach { hash.add(it.id).add(it.recipeId).add(it.progressTicks) }
         hash.add(defense.coreHealth)
@@ -421,6 +433,29 @@ class SandboxRuntime(
                 isBoss = it.enemy?.isBoss == true,
             )
         }
+        val renderZones = Collections.unmodifiableList(buildList {
+            state.zones.allStockpiles().forEach { zone ->
+                add(
+                    RenderZone(
+                        id = zone.id,
+                        kind = RenderZoneKind.STOCKPILE,
+                        tiles = zone.normalizedTiles,
+                        allowedResourceIds = zone.normalizedResourceIds.toList(),
+                    ),
+                )
+            }
+            state.zones.allHarvestDesignations().forEach { designation ->
+                add(
+                    RenderZone(
+                        id = designation.id,
+                        kind = RenderZoneKind.HARVEST_DESIGNATION,
+                        tiles = listOf(designation.position),
+                        resourceId = designation.resourceId,
+                        jobId = designation.jobId,
+                    ),
+                )
+            }
+        })
         return EngineSnapshot(
             worldSize = state.world.size,
             tiles = renderTiles,
@@ -440,6 +475,7 @@ class SandboxRuntime(
             runSummary = state.run.summary ?: currentRunSummary(),
             hud = hudSnapshot(),
             combatEvents = combatEvents,
+            zones = renderZones,
         )
     }
 
@@ -528,9 +564,116 @@ class SandboxRuntime(
             is RemoveBuildingCommand -> removeBuilding(command, eventSink)
             is SetTowerTargetingModeCommand -> setTowerTargetingMode(command)
             is CallWaveEarlyCommand -> callWaveEarly(command, eventSink)
+            is DefineStockpileZoneCommand -> defineStockpileZone(command)
+            is UpdateStockpileZoneCommand -> updateStockpileZone(command)
+            is RemoveStockpileZoneCommand -> removeStockpileZone(command)
+            is DesignateHarvestNodeCommand -> designateHarvestNode(command)
+            is RemoveHarvestDesignationCommand -> removeHarvestDesignation(command)
             else -> state.lastCommandOrError = "ignored:${command.type}"
         }
     }
+
+    private fun defineStockpileZone(command: DefineStockpileZoneCommand) {
+        val positionTiles = command.tiles.map(::toTilePosition)
+        if (positionTiles.any { !state.world.inBounds(it) }) {
+            state.lastCommandOrError = "zone_tile_out_of_bounds:${command.zoneId}"
+            return
+        }
+        if (command.allowedResourceIds.any { it !in state.registry.resources }) {
+            state.lastCommandOrError = "unknown_stockpile_resource:${command.zoneId}"
+            return
+        }
+        try {
+            state.zones.defineStockpile(
+                StockpileZone(command.zoneId, positionTiles, command.allowedResourceIds),
+            )
+            state.lastCommandOrError = "stockpile_defined:${command.zoneId}"
+        } catch (error: IllegalArgumentException) {
+            state.lastCommandOrError = "stockpile_rejected:${command.zoneId}:${error.message}"
+        }
+    }
+
+    private fun updateStockpileZone(command: UpdateStockpileZoneCommand) {
+        val positionTiles = command.tiles.map(::toTilePosition)
+        if (positionTiles.any { !state.world.inBounds(it) }) {
+            state.lastCommandOrError = "zone_tile_out_of_bounds:${command.zoneId}"
+            return
+        }
+        if (command.allowedResourceIds.any { it !in state.registry.resources }) {
+            state.lastCommandOrError = "unknown_stockpile_resource:${command.zoneId}"
+            return
+        }
+        try {
+            state.zones.updateStockpile(
+                StockpileZone(command.zoneId, positionTiles, command.allowedResourceIds),
+            )
+            state.lastCommandOrError = "stockpile_updated:${command.zoneId}"
+        } catch (error: IllegalArgumentException) {
+            state.lastCommandOrError = "stockpile_rejected:${command.zoneId}:${error.message}"
+        }
+    }
+
+    private fun removeStockpileZone(command: RemoveStockpileZoneCommand) {
+        state.lastCommandOrError = if (state.zones.removeStockpile(command.zoneId)) {
+            "stockpile_removed:${command.zoneId}"
+        } else {
+            "unknown_stockpile:${command.zoneId}"
+        }
+    }
+
+    private fun designateHarvestNode(command: DesignateHarvestNodeCommand) {
+        val position = toTilePosition(command.position)
+        if (!state.world.inBounds(position)) {
+            state.lastCommandOrError = "harvest_tile_out_of_bounds:${command.designationId}"
+            return
+        }
+        if (command.resourceId !in state.registry.resources) {
+            state.lastCommandOrError = "unknown_harvest_resource:${command.resourceId}"
+            return
+        }
+        val resourceNode = state.world.tileAt(position).tile.resourceNode
+        if (resourceNode?.resourceId != command.resourceId) {
+            state.lastCommandOrError = "harvest_resource_mismatch:${command.designationId}"
+            return
+        }
+        val jobId = HarvestDesignation.jobIdFor(command.designationId)
+        if (state.zones.harvestDesignation(command.designationId) != null || state.jobBoard.get(jobId) != null) {
+            state.lastCommandOrError = "duplicate_harvest_designation:${command.designationId}"
+            return
+        }
+        if (state.zones.allHarvestDesignations().any { it.position == position }) {
+            state.lastCommandOrError = "duplicate_harvest_tile:${position.x}:${position.y}"
+            return
+        }
+        val designation = HarvestDesignation(command.designationId, command.resourceId, position, jobId)
+        state.zones.addHarvestDesignation(designation)
+        state.jobBoard.add(
+            Job(
+                id = jobId,
+                type = "harvest_node",
+                target = position,
+                priority = 0,
+            ),
+        )
+        state.lastCommandOrError = "harvest_designated:${command.designationId}"
+    }
+
+    private fun removeHarvestDesignation(command: RemoveHarvestDesignationCommand) {
+        val designation = state.zones.harvestDesignation(command.designationId)
+        if (designation == null) {
+            state.lastCommandOrError = "unknown_harvest_designation:${command.designationId}"
+            return
+        }
+        val job = state.jobBoard.get(designation.jobId)
+        if (job?.status == JobStatus.OPEN && job.assignedTo == null) {
+            state.jobBoard.remove(designation.jobId)
+        }
+        state.zones.removeHarvestDesignation(command.designationId)
+        state.lastCommandOrError = "harvest_designation_removed:${command.designationId}"
+    }
+
+    private fun toTilePosition(coordinate: TileCoordinate): TilePosition =
+        TilePosition(coordinate.x, coordinate.y)
 
     /**
      * Resolves and starts the previewed wave before scheduled spawning. Rejection checks happen
@@ -974,7 +1117,7 @@ class SandboxRuntime(
 private fun VisualAssetRef.toRenderAssetRef(): RenderAssetRef = RenderAssetRef(path = path, atlasKey = atlasKey)
 
 object SandboxSaveCodec {
-    const val SAVE_VERSION: Int = 13
+    const val SAVE_VERSION: Int = 14
 
     fun encode(state: SandboxState, seed: Long, pendingCommands: List<EngineCommand> = emptyList()): String {
         val props = Properties()
@@ -1028,6 +1171,22 @@ object SandboxSaveCodec {
         props["inventory"] = state.inventory.resources.toSortedMap().entries.joinToString(";") { "${it.key}:${it.value}" }
         props["producers"] = state.producers.sortedBy { it.id }.joinToString(";") { "${it.id}|${it.recipeId}|${it.progressTicks}" }
         props["jobs"] = state.jobBoard.all().joinToString(";") { job -> encodeJob(job) }
+        props["stockpileZones"] = state.zones.allStockpiles().joinToString(";") { zone ->
+            listOf(
+                encodeToken(zone.id),
+                zone.normalizedTiles.joinToString(",") { "${it.x}:${it.y}" },
+                zone.normalizedResourceIds.joinToString(",", transform = ::encodeToken),
+            ).joinToString("|")
+        }
+        props["harvestDesignations"] = state.zones.allHarvestDesignations().joinToString(";") { designation ->
+            listOf(
+                encodeToken(designation.id),
+                encodeToken(designation.resourceId),
+                designation.position.x,
+                designation.position.y,
+                encodeToken(designation.jobId),
+            ).joinToString("|")
+        }
         props["nextEntityId"] = state.entities.nextIdSnapshot().toString()
         props["entities"] = state.entities.all().joinToString(";") { entity ->
             val path = entity.movement?.path?.joinToString("/") { "${it.x}:${it.y}" }.orEmpty()
@@ -1116,6 +1275,7 @@ object SandboxSaveCodec {
         state.incidentState = if (version >= 10) parseIncidentState(props) else IncidentDirectorState()
         state.incidentModifiers = if (version >= 10) parseIncidentModifiers(props) else emptyMap()
         state.jobBoard = if (version >= 13) parseJobs(props.getProperty("jobs", "")) else JobBoard()
+        state.zones = if (version >= 14) parseZones(props, registry, state.world, state.jobBoard) else ZoneStore()
         val entities = parseEntities(props.getProperty("entities", ""), registry, version)
         state.world.positions().forEach { state.world.clearOccupancy(it) }
         val loadedStore = EntityStore(props.getProperty("nextEntityId").toLong(), entities)
@@ -1199,6 +1359,57 @@ object SandboxSaveCodec {
                 )
             },
     )
+
+    private fun parseZones(
+        props: Properties,
+        registry: ContentRegistry,
+        world: TileWorld,
+        jobs: JobBoard,
+    ): ZoneStore {
+        val stockpiles = props.getProperty("stockpileZones", "")
+            .split(';')
+            .filter { it.isNotBlank() }
+            .map { encoded ->
+                val parts = encoded.split('|')
+                require(parts.size == 3) { "Invalid stockpile zone entry '$encoded'." }
+                val tiles = parts[1].split(',').filter { it.isNotBlank() }.map { tileText ->
+                    val xy = tileText.split(':')
+                    require(xy.size == 2) { "Invalid stockpile tile '$tileText'." }
+                    TilePosition(xy[0].toInt(), xy[1].toInt()).also {
+                        require(world.inBounds(it)) { "Stockpile tile $it is outside the saved world." }
+                    }
+                }
+                val resourceIds = parts[2].split(',').filter { it.isNotBlank() }.map(::decodeToken).toSet()
+                resourceIds.forEach { resourceId ->
+                    require(resourceId in registry.resources) { "Unknown stockpile resource '$resourceId' in save." }
+                }
+                StockpileZone(decodeToken(parts[0]), tiles, resourceIds)
+            }
+        val designations = props.getProperty("harvestDesignations", "")
+            .split(';')
+            .filter { it.isNotBlank() }
+            .map { encoded ->
+                val parts = encoded.split('|')
+                require(parts.size == 5) { "Invalid harvest designation entry '$encoded'." }
+                val designationId = decodeToken(parts[0])
+                val resourceId = decodeToken(parts[1])
+                val position = TilePosition(parts[2].toInt(), parts[3].toInt())
+                require(world.inBounds(position)) { "Harvest tile $position is outside the saved world." }
+                require(resourceId in registry.resources) { "Unknown harvest resource '$resourceId' in save." }
+                require(world.tileAt(position).tile.resourceNode?.resourceId == resourceId) {
+                    "Harvest designation '$designationId' does not match its resource node."
+                }
+                val jobId = decodeToken(parts[4])
+                require(jobId == HarvestDesignation.jobIdFor(designationId)) {
+                    "Harvest designation '$designationId' has a non-deterministic job id."
+                }
+                require(jobs.get(jobId) != null) {
+                    "Harvest designation '$designationId' is missing job '$jobId'."
+                }
+                HarvestDesignation(designationId, resourceId, position, jobId)
+            }
+        return ZoneStore(stockpiles, designations)
+    }
 
     private fun parseIncidentState(props: Properties): IncidentDirectorState {
         val cooldowns = props.getProperty("incidentCooldowns", "")
@@ -1345,10 +1556,45 @@ object SandboxSaveCodec {
                 SetTowerTargetingModeCommand(id, scheduledTick, payloadParts[0].toLong(), mode, actorId)
             } else if (type == "call_wave_early") {
                 CallWaveEarlyCommand(id, scheduledTick, actorId)
+            } else if (type == "define_stockpile_zone") {
+                val zone = parseStockpileCommandPayload(payload)
+                DefineStockpileZoneCommand(id, scheduledTick, zone.first, zone.second, zone.third, actorId)
+            } else if (type == "update_stockpile_zone") {
+                val zone = parseStockpileCommandPayload(payload)
+                UpdateStockpileZoneCommand(id, scheduledTick, zone.first, zone.second, zone.third, actorId)
+            } else if (type == "remove_stockpile_zone") {
+                RemoveStockpileZoneCommand(id, scheduledTick, payload, actorId)
+            } else if (type == "designate_harvest_node") {
+                val payloadParts = payload.split(':')
+                require(payloadParts.size == 4) { "Invalid harvest designation command payload '$payload'." }
+                DesignateHarvestNodeCommand(
+                    id = id,
+                    scheduledTick = scheduledTick,
+                    designationId = payloadParts[0],
+                    resourceId = payloadParts[1],
+                    position = TileCoordinate(payloadParts[2].toInt(), payloadParts[3].toInt()),
+                    actorId = actorId,
+                )
+            } else if (type == "remove_harvest_designation") {
+                RemoveHarvestDesignationCommand(id, scheduledTick, payload, actorId)
             } else {
                 dev.myengine.core.TextCommand(id, scheduledTick, type, payload, actorId)
             }
         }
+
+    private fun parseStockpileCommandPayload(
+        payload: String,
+    ): Triple<String, List<TileCoordinate>, Set<String>> {
+        val parts = payload.split(':')
+        require(parts.size == 3) { "Invalid stockpile zone command payload '$payload'." }
+        val tiles = parts[1].split(',').filter { it.isNotBlank() }.map { tileText ->
+            val xy = tileText.split('.')
+            require(xy.size == 2) { "Invalid stockpile tile '$tileText'." }
+            TileCoordinate(xy[0].toInt(), xy[1].toInt())
+        }
+        val resourceIds = parts[2].split(',').filter { it.isNotBlank() }.toSet()
+        return Triple(parts[0], tiles, resourceIds)
+    }
 
     private fun parseResources(text: String): Map<String, Int> =
         text.split(';').filter { it.isNotBlank() }.associate {

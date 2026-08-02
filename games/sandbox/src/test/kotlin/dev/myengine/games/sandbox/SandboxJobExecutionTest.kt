@@ -73,7 +73,7 @@ class SandboxJobExecutionTest {
     }
 
     @Test
-    fun v13RoundtripPreservesInFlightJobBoardActorProgressAndEffects() {
+    fun v14RoundtripPreservesInFlightJobBoardActorProgressAndEffects() {
         val registry = SandboxGame.loadRegistry()
         val worker = worker(7, TilePosition(5, 5)).copy(
             jobActor = JobActorComponent(assignedJobId = "in-flight", workTicks = 2),
@@ -104,15 +104,15 @@ class SandboxJobExecutionTest {
         val save = SandboxSaveCodec.encode(state, seed = 41L)
         val restored = SandboxSaveCodec.decode(save, registry)
 
-        assertEquals(13, SandboxSaveCodec.SAVE_VERSION)
-        assertEquals("13", saveProperty(save, "saveVersion"))
+        assertEquals(14, SandboxSaveCodec.SAVE_VERSION)
+        assertEquals("14", saveProperty(save, "saveVersion"))
         assertEquals(job, restored.jobBoard.get("in-flight"))
         assertEquals(worker, restored.entities.require(EntityId(7)))
         assertEquals(state.stableHash(), restored.stableHash())
     }
 
     @Test
-    fun futureSaveVersionIsRejectedAfterV13Bump() {
+    fun futureSaveVersionIsRejectedAfterV14Bump() {
         val registry = SandboxGame.loadRegistry()
         val valid = SandboxSession.start(registry).save()
         val future = valid.replace(

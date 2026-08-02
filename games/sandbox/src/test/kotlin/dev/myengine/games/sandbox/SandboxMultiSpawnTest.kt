@@ -90,8 +90,8 @@ class SandboxMultiSpawnTest {
         val save = paused.save()
 
         assertTrue(paused.runtime.state.entities.byTag("enemy").isEmpty())
-        assertEquals(13, SandboxSaveCodec.SAVE_VERSION)
-        assertEquals("13", saveProperty(save, "saveVersion"))
+        assertEquals(14, SandboxSaveCodec.SAVE_VERSION)
+        assertEquals("14", saveProperty(save, "saveVersion"))
 
         val restored = SandboxSession.restore(save, registry)
 
@@ -162,8 +162,8 @@ class SandboxMultiSpawnTest {
         val save = paused.save()
         val restored = SandboxSession.restore(save, registry)
 
-        assertEquals(13, SandboxSaveCodec.SAVE_VERSION)
-        assertEquals("13", saveProperty(save, "saveVersion"))
+        assertEquals(14, SandboxSaveCodec.SAVE_VERSION)
+        assertEquals("14", saveProperty(save, "saveVersion"))
         assertEquals(paused.stableHash(), restored.stableHash())
         assertEquals(
             paused.runtime.state.entities.all(),

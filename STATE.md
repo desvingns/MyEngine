@@ -1,8 +1,8 @@
 # MyEngine State
 
-Last updated: 2026-08-02 (ENG-003 close-out)
-Active phase: Phase 00-14 complete; Phase 15 sequencing adopted; Signal Garden SG-001..005 complete; MyTD MTD-001..005 complete; DX-008, ENG-001, ENG-002, ENG-003, ENG-005, ENG-007, ENG-008, ENG-009, ENG-010, ENG-011, ENG-012, ENG-013, ENG-014, ENG-015, ENG-016, ENG-018, ENG-019, ENG-020, ENG-021, ENG-026, ENG-027, ENG-028, ENG-029, ENG-030, PROC-002, PROC-003, PROC-007, and PROC-013 complete; pipeline at v0.2.0; next exact item ENG-031
-Owner of last update: Codex (2026-08-02: ENG-003 job execution close-out; next exact item ENG-031)
+Last updated: 2026-08-02 (ENG-031 close-out)
+Active phase: Phase 00-14 complete; Phase 15 sequencing adopted; Signal Garden SG-001..005 complete; MyTD MTD-001..005 complete; DX-008, ENG-001, ENG-002, ENG-003, ENG-005, ENG-007, ENG-008, ENG-009, ENG-010, ENG-011, ENG-012, ENG-013, ENG-014, ENG-015, ENG-016, ENG-018, ENG-019, ENG-020, ENG-021, ENG-026, ENG-027, ENG-028, ENG-029, ENG-030, ENG-031, PROC-002, PROC-003, PROC-007, and PROC-013 complete; pipeline at v0.2.0; next exact item ENG-004
+Owner of last update: Codex (2026-08-02: ENG-031 stockpiles/designations close-out; next exact item ENG-004)
 
 ## Current Status
 
@@ -35,6 +35,11 @@ Owner of last update: Codex (2026-08-02: ENG-003 job execution close-out; next e
   validation; Android `SoundPool` consumes the feed with presentation-only volume/mute state.
   Events do not enter authoritative saves or stable hashes; `SandboxSaveCodec.SAVE_VERSION` remains
   10. No ADR was needed.
+- ENG-031 is complete: accepted Option A adds deterministic zone commands/store state, validated
+  stockpile resource filters, one-shot harvest-node JobBoard designation jobs, immutable snapshot
+  zone projection, and `SandboxSaveCodec` v14 with v1-v13 migration. Colony demand remains
+  vision-only; hauling, stockpile quantities/capacity, depletion/repeated harvest, and actual
+  Android overlay consumption are deliberately deferred to follow-up/ENG-004 scope.
 - ENG-012 is complete: content-defined elite/boss ranks and health/speed/reward scaling combine with
   indexed wave modifiers at deterministic spawn time. Effective enemy state persists in
   `EnemyComponent`, boss identity crosses the immutable snapshot/render boundary, and
@@ -375,10 +380,34 @@ Owner of last update: Codex (2026-08-02: ENG-003 job execution close-out; next e
   simulation 430 ms, kill 76 ms, spatial index 6.6127 ms. Verifier passed with all boundary checks
   true.
 
+## ENG-031 Close-out (2026-08-02)
+
+- DONE: Accepted Option A is complete: deterministic zone define/update/remove commands and
+  canonical zone state; validated stockpile filters; harvest-node designations that mint at most one
+  deterministic `JobBoard` job; immutable `EngineSnapshot.zones`; and save v14 with v1-v13 migration.
+- DECISIONS: No ADR and no game-bundle traceability update. The additive Android-free simulation,
+  snapshot-only render, content-validation, and versioned-save boundaries remain unchanged. Colony
+  demand is vision-only. Hauling, stockpile quantities/capacity, depletion/repeated harvest, and
+  actual Android `RenderFrame`/view overlay rendering are deferred to follow-up/ENG-004 scope.
+- NEXT: Run `/me --feature --next` for ENG-004 (first worker agent MVP / hauling), then ENG-032.
+- BLOCKERS: No implementation blocker. Non-blocking follow-ups are: deleting a claimed/in-progress
+  designation can leave its job and allow a second job on the same node; generic pending-command
+  delimiter escaping remains a pre-existing codec concern (current ENG-031 ids are regex-safe);
+  `RenderFrame`/Android view do not yet consume `snapshot.zones`; and per-frame zone snapshot
+  allocations need later profiling/consumer work.
+- VERIFICATION: Selfcheck passed. Full runner passed with `JAVA_HOME=C:\Program Files\Android\Android Studio\jbr`:
+  `gradlew test`, `projects`, content validation (2 packs), replay, save-compat, benchmark,
+  `android:assembleDebug`, and `git diff --check`. Replay hashes: `e4892bcc18f9d8dc`,
+  `a763da4ac32b15b4`, `3f02607020d48668`. Benchmark: canonical 413 ms, kill 85 ms,
+  spatial index 5.2368 ms, goal rebuild 10958000 ns. Focused ENG-031 and remediation tests passed;
+  simulation reviewer passed with a non-blocking finding, renderer passed, save reviewer passed with
+  a low finding, Android review was partial with non-blocking findings, and verifier passed with all
+  boundary checks true.
+
 ## Next Exact Action
 
-Run `/me --feature --next` for ENG-031 (stockpile zones + designations), the next item in the deferred
-colony slice. ENG-003 has no implementation blocker.
+Run `/me --feature --next` for ENG-004 (first worker agent MVP / hauling), then ENG-032. ENG-031 has
+no implementation blocker.
 
 ## Known Blockers
 
@@ -389,6 +418,9 @@ colony slice. ENG-003 has no implementation blocker.
   replay to `DevtoolReports.replayInspect`, invoking `SandboxJobExecutionTest` from
   `scripts/me-save-compat.ps1`, and adding a job-heavy benchmark for large worker/job counts and
   invalidated paths.
+- ENG-031 has no implementation blocker. Its non-blocking follow-ups are recorded in the ENG-031
+  close-out above; colony demand remains vision-only until MySD Gate 1 or an authored colony game
+  spec supplies named FRs.
 - ENG-011 has no implementation blocker. No device/emulator evidence is claimed; existing manual
   Android/device and performance follow-ups remain unchanged.
 - RESOLVED (2026-07-29): the pre-existing unrelated dirty `.ai/retro/retro-2026-07-28.md` commit

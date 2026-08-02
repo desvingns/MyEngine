@@ -1,6 +1,6 @@
 # MyEngine Handoff
 
-Last updated: 2026-08-02 (ENG-003 job execution close-out; next ENG-031)
+Last updated: 2026-08-02 (ENG-031 close-out; next ENG-004)
 Owner: Codex
 
 ## DONE
@@ -34,6 +34,12 @@ Owner: Codex
   work ticks, typed `resource_delta` completion effects, invalid-target/no-path release, reservation
   guards, and same-tick reclaim prevention are covered. `SandboxSaveCodec` v13 persists JobBoard,
   in-flight jobs, actor assignment/progress, and effects with v12 migration to empty job state.
+
+- ENG-031 is done: accepted Option A adds deterministic zone commands/store state, validated stockpile
+  resource filters, one-shot harvest-node designation jobs, immutable `EngineSnapshot.zones`, and
+  `SandboxSaveCodec` v14 with v1-v13 migration. Colony demand remains vision-only; hauling,
+  stockpile quantities/capacity, depletion/repeated harvest, and actual Android overlay consumption
+  are deferred to follow-up/ENG-004 scope.
 
 - ENG-029 is done: the latest completed snapshot tick exposes a deterministic transient immutable
   `GameplayEvent` feed for shot, hit, death, wave-start, build, and sell events. Optional
@@ -1345,3 +1351,40 @@ deferred colony slice. ENG-003 is closed; the earlier commit blocker is resolved
   `3f02607020d48668`.
 - Final benchmark: `sim=422 ms`, `kill=63 ms`, `goal-field=10743500 ns`,
   `spatial-index=6.4719 ms`.
+
+## ENG-031 Close-out (2026-08-02)
+
+### DONE
+
+- Accepted Option A is complete: deterministic zone commands/store state, validated stockpile
+  resource filters, one-shot harvest-node designation jobs on the `JobBoard`, immutable snapshot
+  zone projection, and `SandboxSaveCodec` v14 with v1-v13 migration.
+
+### DECISIONS
+
+- No ADR and no game-bundle traceability update. Colony demand remains vision-only. Hauling,
+  stockpile quantities/capacity, depletion/repeated harvest, and actual Android `RenderFrame`/view
+  overlay rendering are deferred to follow-up/ENG-004 scope. No plugin/skill/pipeline contract
+  changed.
+
+### NEXT
+
+- Run `/me --feature --next` for ENG-004 (first worker agent MVP / hauling), then ENG-032.
+
+### BLOCKERS
+
+- No implementation blocker. Non-blocking follow-ups: removing a claimed/in-progress designation
+  can leave its job and permit a second job on the same node; generic pending-command delimiter
+  escaping remains a pre-existing codec concern while current ENG-031 ids are regex-safe;
+  `RenderFrame`/Android view do not yet consume `snapshot.zones`; per-frame zone snapshot
+  allocations need later profiling/consumer work.
+
+### VERIFICATION
+
+- Selfcheck and focused ENG-031/remediation tests passed. Full runner passed with
+  `JAVA_HOME=C:\Program Files\Android\Android Studio\jbr`: `gradlew test`, `projects`, content
+  validation (2 packs), replay, save-compat, benchmark, `android:assembleDebug`, and
+  `git diff --check`. Replay hashes: `e4892bcc18f9d8dc`, `a763da4ac32b15b4`,
+  `3f02607020d48668`; benchmark: canonical 413 ms, kill 85 ms, spatial index 5.2368 ms,
+  goal rebuild 10958000 ns. Simulation, renderer, save, Android, and verifier reviews passed or
+  reported only the non-blocking findings above; verifier boundary checks were all true.

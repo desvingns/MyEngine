@@ -28,7 +28,7 @@ import kotlin.test.assertTrue
  * [SandboxSession] holder the lifecycle delegates to: that a save-at-pause then
  * restore-and-resume is behaviorally indistinguishable from an uninterrupted run.
  *
- * Save format v13 persists `state`, active status effects, effective enemy components, tower upgrade branch/tier/targeting-mode markers, per-tower metrics, the data-defined map identity,
+ * Save format v14 persists `state`, active status effects, effective enemy components, tower upgrade branch/tier/targeting-mode markers, per-tower metrics, the data-defined map identity,
  * content version, and the runtime's pending
  * (not-yet-drained) [dev.myengine.core.CommandQueue] contents, so [SandboxSession.save] is sound at ANY tick.
  * Tests below cover both shapes: saves taken at a quiescent tick where the submitted build
@@ -172,7 +172,7 @@ class SandboxSessionLifecycleTest {
         val expectedTowerMetrics = session.runtime.state.defense.towerMetrics
         val save = session.save()
 
-        assertEquals(13, SandboxSaveCodec.SAVE_VERSION)
+        assertEquals(14, SandboxSaveCodec.SAVE_VERSION)
         assertEquals(map.id, saveProperty(save, "mapId"))
         assertEquals(registry.manifest.version, saveProperty(save, "contentVersion"))
         assertEquals(map.id, SandboxSaveCodec.decode(save, registry).mapId)
@@ -357,7 +357,7 @@ class SandboxSessionLifecycleTest {
 
         val valid = session.save()
         // Sanity: the valid save carries the codec's current version and decodes cleanly.
-        assertEquals(13, SandboxSaveCodec.SAVE_VERSION)
+        assertEquals(14, SandboxSaveCodec.SAVE_VERSION)
         SandboxSaveCodec.decode(valid, registry)
 
         val future = valid.replace("saveVersion=${SandboxSaveCodec.SAVE_VERSION}", "saveVersion=${SandboxSaveCodec.SAVE_VERSION + 1}")

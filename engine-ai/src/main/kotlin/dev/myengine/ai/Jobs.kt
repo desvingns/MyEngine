@@ -152,6 +152,9 @@ class JobBoard(initialJobs: List<Job> = emptyList()) {
 
     fun get(jobId: String): Job? = jobs[jobId]
 
+    /** Removes an unclaimed job during authoritative designation cancellation. */
+    fun remove(jobId: String): Job? = jobs.remove(jobId)
+
     fun all(): List<Job> = jobs.values.toList()
 
     fun appendHash(hash: StableHash) {
