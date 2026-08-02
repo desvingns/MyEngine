@@ -24,6 +24,7 @@ data class Entity(
     val tower: TowerComponent? = null,
     val attack: AttackComponent? = null,
     val jobActor: JobActorComponent? = null,
+    val worker: WorkerComponent? = null,
     val enemy: EnemyComponent? = null,
     val statusEffects: List<StatusEffectComponent> = emptyList(),
 ) {
@@ -43,6 +44,10 @@ data class Entity(
         tower?.appendHash(hash) ?: hash.add("no-tower")
         attack?.appendHash(hash) ?: hash.add("no-attack")
         jobActor?.appendHash(hash) ?: hash.add("no-job")
+        worker?.let {
+            hash.add("worker")
+            it.appendHash(hash)
+        }
         enemy?.appendHash(hash)
         statusEffects.sortedBy { it.effectId }.forEach { effect ->
             hash.add("status-effect")
@@ -166,6 +171,17 @@ data class JobActorComponent(
     fun appendHash(hash: StableHash) {
         hash.add(assignedJobId ?: "").add(workTicks)
     }
+}
+
+/** Stable identity for content-defined worker capabilities. Carry lives in [InventoryComponent]. */
+data class WorkerComponent(
+    val workerId: String,
+) {
+    init {
+        require(workerId.isNotBlank()) { "Worker id cannot be blank." }
+    }
+
+    fun appendHash(hash: StableHash) = hash.add(workerId)
 }
 
 data class StatusEffectComponent(

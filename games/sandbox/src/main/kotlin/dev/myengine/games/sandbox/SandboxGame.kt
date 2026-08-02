@@ -18,6 +18,7 @@ import dev.myengine.ai.JobCompletionEffect
 import dev.myengine.ai.JobCompletionEffectSink
 import dev.myengine.ai.JobExecutionSystem
 import dev.myengine.ai.JobStatus
+import dev.myengine.logistics.HaulingSystem
 import dev.myengine.core.CommandQueue
 import dev.myengine.core.CombatEvents
 import dev.myengine.core.EngineCommand
@@ -54,7 +55,9 @@ import dev.myengine.entities.EntityId
 import dev.myengine.entities.EntityStore
 import dev.myengine.entities.EnemyComponent
 import dev.myengine.entities.HealthComponent
+import dev.myengine.entities.InventoryComponent
 import dev.myengine.entities.JobActorComponent
+import dev.myengine.entities.WorkerComponent
 import dev.myengine.entities.MovementComponent
 import dev.myengine.entities.PositionComponent
 import dev.myengine.entities.StatusEffectComponent
@@ -63,6 +66,8 @@ import dev.myengine.logistics.Inventory
 import dev.myengine.logistics.Producer
 import dev.myengine.logistics.ProducerSystem
 import dev.myengine.logistics.HarvestDesignation
+import dev.myengine.logistics.HaulSource
+import dev.myengine.logistics.HaulSourceStore
 import dev.myengine.logistics.StockpileZone
 import dev.myengine.logistics.ZoneStore
 import dev.myengine.render.DebugOverlay
@@ -129,6 +134,7 @@ data class SandboxState(
     var incidentModifiers: Map<String, SandboxIncidentModifier> = emptyMap(),
     var jobBoard: JobBoard = JobBoard(),
     var zones: ZoneStore = ZoneStore(),
+    var haulSources: HaulSourceStore = HaulSourceStore(),
 ) : HashableState {
     override fun appendHash(hash: StableHash) {
         hash.add(tick.value)
@@ -137,8 +143,12 @@ data class SandboxState(
         entities.appendHash(hash)
         jobBoard.appendHash(hash)
         zones.appendHash(hash)
+        haulSources.appendHash(hash)
         inventory.appendHash(hash)
-        producers.sortedBy { it.id }.forEach { hash.add(it.id).add(it.recipeId).add(it.progressTicks) }
+        producers.sortedBy { it.id }.forEach {
+            hash.add(it.id).add(it.recipeId).add(it.progressTicks)
+            it.position?.let { position -> hash.add("producer-position").add(position.x).add(position.y) }
+        }
         hash.add(defense.coreHealth)
         defense.spawnedWaveIds.sorted().forEach(hash::add)
         hash.add(defense.metrics.enemiesSpawned)
@@ -205,7 +215,9 @@ class SandboxRuntime(
     private val jobEffects = mutableListOf<JobCompletionEffect>()
     private val jobExecutionSystem = JobExecutionSystem(
         completionEffectSink = JobCompletionEffectSink { _, _, effect -> jobEffects += effect },
+        eligibleJob = { it.haul == null },
     )
+    private val haulingSystem = HaulingSystem()
     private val map = state.registry.requireMap(state.mapId)
     private val spawn = map.primarySpawn.position.let { TilePosition(it.x, it.y) }
     private val spawnRoutes: Map<String, TilePosition> = map.spawns.toSortedMap()
@@ -261,6 +273,7 @@ class SandboxRuntime(
             val incidentWaveEvents = mutableListOf<GameplayEvent>()
             val commands = commandQueue.drainFor(state.tick)
             commands.forEach { applyCommand(it, commandEvents) }
+            executeHauling()
             executeJobs()
             updateProduction()
             state.defense = defenseRuntime.spawnDueWaves(
@@ -396,6 +409,17 @@ class SandboxRuntime(
                     }
                 }
             }
+    }
+
+    private fun executeHauling() {
+        haulingSystem.tick(
+            world = state.world,
+            entities = state.entities,
+            jobs = state.jobBoard,
+            sources = state.haulSources,
+            zones = state.zones,
+            workers = state.registry.workers,
+        )
     }
 
     fun snapshot(): EngineSnapshot {
@@ -1104,7 +1128,19 @@ class SandboxRuntime(
     private fun updateProduction() {
         state.producers = state.producers.map { producer ->
             val result = producerSystem.tick(producer, state.inventory)
-            state.inventory = result.inventory
+            val recipe = state.registry.recipes[producer.recipeId]
+            val producerPosition = producer.position
+            state.inventory = if (result.completed && producerPosition != null && recipe != null) {
+                state.haulSources.addOutput(
+                    sourceId = "producer:${producer.id}",
+                    position = producerPosition,
+                    resourceId = recipe.outputResource,
+                    amount = recipe.outputAmount,
+                )
+                result.inventory.remove(recipe.outputResource, recipe.outputAmount)
+            } else {
+                result.inventory
+            }
             result.producer
         }
     }
@@ -1117,7 +1153,7 @@ class SandboxRuntime(
 private fun VisualAssetRef.toRenderAssetRef(): RenderAssetRef = RenderAssetRef(path = path, atlasKey = atlasKey)
 
 object SandboxSaveCodec {
-    const val SAVE_VERSION: Int = 14
+    const val SAVE_VERSION: Int = 15
 
     fun encode(state: SandboxState, seed: Long, pendingCommands: List<EngineCommand> = emptyList()): String {
         val props = Properties()
@@ -1169,13 +1205,16 @@ object SandboxSaveCodec {
             "$entityId|${metrics.actualDamage}|${metrics.kills}"
         }
         props["inventory"] = state.inventory.resources.toSortedMap().entries.joinToString(";") { "${it.key}:${it.value}" }
-        props["producers"] = state.producers.sortedBy { it.id }.joinToString(";") { "${it.id}|${it.recipeId}|${it.progressTicks}" }
+        props["producers"] = state.producers.sortedBy { it.id }.joinToString(";") {
+            listOf(it.id, it.recipeId, it.progressTicks, it.position?.x ?: "", it.position?.y ?: "").joinToString("|")
+        }
         props["jobs"] = state.jobBoard.all().joinToString(";") { job -> encodeJob(job) }
         props["stockpileZones"] = state.zones.allStockpiles().joinToString(";") { zone ->
             listOf(
                 encodeToken(zone.id),
                 zone.normalizedTiles.joinToString(",") { "${it.x}:${it.y}" },
                 zone.normalizedResourceIds.joinToString(",", transform = ::encodeToken),
+                zone.storedResources.toSortedMap().entries.joinToString(",") { (id, amount) -> "${encodeToken(id)}:$amount" },
             ).joinToString("|")
         }
         props["harvestDesignations"] = state.zones.allHarvestDesignations().joinToString(";") { designation ->
@@ -1185,6 +1224,13 @@ object SandboxSaveCodec {
                 designation.position.x,
                 designation.position.y,
                 encodeToken(designation.jobId),
+            ).joinToString("|")
+        }
+        props["haulSources"] = state.haulSources.all().joinToString(";") { source ->
+            listOf(
+                encodeToken(source.id), source.position.x, source.position.y,
+                source.resources.toSortedMap().entries.joinToString(",") { (id, amount) -> "${encodeToken(id)}:$amount" },
+                source.reservations.toSortedMap().entries.joinToString(",") { (jobId, amount) -> "${encodeToken(jobId)}:$amount" },
             ).joinToString("|")
         }
         props["nextEntityId"] = state.entities.nextIdSnapshot().toString()
@@ -1224,6 +1270,11 @@ object SandboxSaveCodec {
                 if (entity.jobActor != null) "1" else "",
                 entity.jobActor?.assignedJobId?.let(::encodeToken).orEmpty(),
                 entity.jobActor?.workTicks?.toString().orEmpty(),
+                if (entity.inventory != null) "1" else "",
+                entity.inventory?.resources?.toSortedMap()?.entries?.joinToString("~") { (id, amount) -> "${encodeToken(id)}:$amount" }.orEmpty(),
+                entity.inventory?.capacity?.toString().orEmpty(),
+                if (entity.worker != null) "1" else "",
+                entity.worker?.workerId?.let(::encodeToken).orEmpty(),
             ).joinToString("|")
         }
         props["pendingCommands"] = pendingCommands.joinToString(";") { cmd ->
@@ -1269,13 +1320,19 @@ object SandboxSaveCodec {
             .filter { it.isNotBlank() }
             .map {
                 val parts = it.split('|')
-                Producer(parts[0], parts[1], parts[2].toInt())
+                Producer(
+                    parts[0], parts[1], parts[2].toInt(),
+                    if (version >= 15 && parts.getOrNull(3)?.isNotBlank() == true && parts.getOrNull(4)?.isNotBlank() == true) {
+                        TilePosition(parts[3].toInt(), parts[4].toInt())
+                    } else null,
+                )
             }
         state.run = if (version >= 5) parseRunState(props) else RunState()
         state.incidentState = if (version >= 10) parseIncidentState(props) else IncidentDirectorState()
         state.incidentModifiers = if (version >= 10) parseIncidentModifiers(props) else emptyMap()
         state.jobBoard = if (version >= 13) parseJobs(props.getProperty("jobs", "")) else JobBoard()
         state.zones = if (version >= 14) parseZones(props, registry, state.world, state.jobBoard) else ZoneStore()
+        state.haulSources = if (version >= 15) parseHaulSources(props.getProperty("haulSources", "")) else HaulSourceStore()
         val entities = parseEntities(props.getProperty("entities", ""), registry, version)
         state.world.positions().forEach { state.world.clearOccupancy(it) }
         val loadedStore = EntityStore(props.getProperty("nextEntityId").toLong(), entities)
@@ -1324,6 +1381,12 @@ object SandboxSaveCodec {
                         listOf(effect.type.id, encodeToken(effect.resourceId), effect.amount).joinToString(":")
                 }
             },
+        job.haul?.let { haul ->
+            listOf(
+                encodeToken(haul.sourceId), encodeToken(haul.resourceId), haul.amount,
+                encodeToken(haul.destinationZoneId), haul.phase.name,
+            ).joinToString(":")
+        }.orEmpty(),
     ).joinToString("|")
 
     private fun parseJobs(text: String): JobBoard = JobBoard(
@@ -1331,7 +1394,7 @@ object SandboxSaveCodec {
             .filter { it.isNotBlank() }
             .map { encoded ->
                 val parts = encoded.split('|')
-                require(parts.size == 11) { "Invalid job entry '$encoded'." }
+                require(parts.size == 11 || parts.size == 12) { "Invalid job entry '$encoded'." }
                 val reservedBy = parts[5].toLongOrNull()?.let(::EntityId)
                 val assignedTo = parts[6].toLongOrNull()?.let(::EntityId)
                 val effects = parts[10].split('~').filter { it.isNotBlank() }.map { effectText ->
@@ -1356,6 +1419,17 @@ object SandboxSaveCodec {
                     failureReason = decodeToken(parts[8]).takeIf { it.isNotBlank() },
                     workTicks = parts[9].toInt(),
                     completionEffects = effects,
+                    haul = parts.getOrNull(11)?.takeIf { it.isNotBlank() }?.let { haulText ->
+                        val haulParts = haulText.split(':')
+                        require(haulParts.size == 5) { "Invalid haul job payload '$haulText'." }
+                        dev.myengine.ai.HaulJobSpec(
+                            sourceId = decodeToken(haulParts[0]),
+                            resourceId = decodeToken(haulParts[1]),
+                            amount = haulParts[2].toInt(),
+                            destinationZoneId = decodeToken(haulParts[3]),
+                            phase = dev.myengine.ai.HaulPhase.valueOf(haulParts[4]),
+                        )
+                    },
                 )
             },
     )
@@ -1371,7 +1445,7 @@ object SandboxSaveCodec {
             .filter { it.isNotBlank() }
             .map { encoded ->
                 val parts = encoded.split('|')
-                require(parts.size == 3) { "Invalid stockpile zone entry '$encoded'." }
+                require(parts.size == 3 || parts.size == 4) { "Invalid stockpile zone entry '$encoded'." }
                 val tiles = parts[1].split(',').filter { it.isNotBlank() }.map { tileText ->
                     val xy = tileText.split(':')
                     require(xy.size == 2) { "Invalid stockpile tile '$tileText'." }
@@ -1383,7 +1457,9 @@ object SandboxSaveCodec {
                 resourceIds.forEach { resourceId ->
                     require(resourceId in registry.resources) { "Unknown stockpile resource '$resourceId' in save." }
                 }
-                StockpileZone(decodeToken(parts[0]), tiles, resourceIds)
+                val stored = if (parts.size == 4) parseEncodedResources(parts[3], "stockpile") else emptyMap()
+                stored.keys.forEach { resourceId -> require(resourceId in registry.resources) { "Unknown stockpile resource '$resourceId' in save." } }
+                StockpileZone(decodeToken(parts[0]), tiles, resourceIds, stored)
             }
         val designations = props.getProperty("harvestDesignations", "")
             .split(';')
@@ -1410,6 +1486,28 @@ object SandboxSaveCodec {
             }
         return ZoneStore(stockpiles, designations)
     }
+
+    private fun parseHaulSources(text: String): HaulSourceStore = HaulSourceStore(
+        text.split(';').filter { it.isNotBlank() }.map { encoded ->
+            val parts = encoded.split('|')
+            require(parts.size == 5) { "Invalid haul source entry '$encoded'." }
+            HaulSource(
+                id = decodeToken(parts[0]),
+                position = TilePosition(parts[1].toInt(), parts[2].toInt()),
+                resources = parseEncodedResources(parts[3], "haul source"),
+                reservations = parseEncodedResources(parts[4], "haul reservation"),
+            )
+        },
+    )
+
+    private fun parseEncodedResources(text: String, label: String): Map<String, Int> =
+        text.split(',').filter { it.isNotBlank() }.associate { encoded ->
+            val parts = encoded.split(':')
+            require(parts.size == 2) { "Invalid $label resource entry '$encoded'." }
+            val amount = parts[1].toIntOrNull()
+            require(amount != null && amount >= 0) { "Invalid $label resource amount '$encoded'." }
+            decodeToken(parts[0]) to amount
+        }
 
     private fun parseIncidentState(props: Properties): IncidentDirectorState {
         val cooldowns = props.getProperty("incidentCooldowns", "")
@@ -1655,6 +1753,19 @@ object SandboxSaveCodec {
             val jobActorPresent = version >= 13 && parts.getOrNull(18) == "1"
             val assignedJobId = parts.getOrNull(19)?.takeIf { it.isNotBlank() }?.let(::decodeToken)
             val workTicks = parts.getOrNull(20)?.toIntOrNull() ?: 0
+            val inventoryPresent = version >= 15 && parts.getOrNull(21) == "1"
+            val entityInventory = if (inventoryPresent) {
+                InventoryComponent(
+                    resources = parseEncodedResources(parts.getOrNull(22).orEmpty(), "worker inventory"),
+                    capacity = parts.getOrNull(23)?.toIntOrNull(),
+                )
+            } else null
+            val workerPresent = version >= 15 && parts.getOrNull(24) == "1"
+            val workerComponent = if (workerPresent) {
+                WorkerComponent(decodeToken(parts.getOrNull(25).orEmpty())).also {
+                    require(it.workerId in registry.workers) { "Unknown worker '${it.workerId}' in save." }
+                }
+            } else null
             Entity(
                 id = id,
                 type = type,
@@ -1662,14 +1773,17 @@ object SandboxSaveCodec {
                     type.startsWith("tower") -> setOf("tower")
                     type.startsWith("enemy") -> setOf("enemy")
                     type.startsWith("building:") -> setOf("building")
+                    type.startsWith("worker:") -> setOf("worker")
                     else -> emptySet()
                 },
                 position = if (x != null && y != null) PositionComponent(TilePosition(x, y)) else null,
                 health = if (health != null && maxHealth != null) HealthComponent(health, maxHealth) else null,
                 tower = if (towerId != null && cooldown != null) TowerComponent(towerId, cooldown, upgradeBranch, upgradeTier, targetingMode) else null,
                 attack = if (range != null && damage != null && cooldownTicks != null) AttackComponent(range, damage, cooldownTicks) else null,
+                inventory = entityInventory,
                 enemy = enemy,
                 jobActor = if (jobActorPresent) JobActorComponent(assignedJobId, workTicks) else null,
+                worker = workerComponent,
                 statusEffects = statusEffects,
                 // Wave routing is a derived GoalField cache.  Older v6 saves can still carry a
                 // serialized per-enemy path; discard it and rebuild from restored world occupancy.

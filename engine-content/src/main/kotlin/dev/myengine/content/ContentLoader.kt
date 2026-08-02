@@ -44,6 +44,7 @@ object ContentPackLoader {
         val damageTypes = parseOptionalDefinitions(root, "damage-types.properties", errors, ::parseDamageType)
         val towers = parseDefinitions(root, "towers.properties", errors, ::parseTower)
         val enemies = parseDefinitions(root, "enemies.properties", errors, ::parseEnemy)
+        val workers = parseOptionalDefinitions(root, "workers.properties", errors, ::parseWorker)
         val buildings = parseOptionalDefinitions(root, "buildings.properties", errors, ::parseBuilding)
         val recipes = parseDefinitions(root, "recipes.properties", errors, ::parseRecipe)
         val waves = parseDefinitions(root, "waves.properties", errors, ::parseWave)
@@ -105,6 +106,7 @@ object ContentPackLoader {
                 sounds = sounds,
                 endlessWave = endlessWave,
                 damageTypes = damageTypes,
+                workers = workers,
             ),
             errors = emptyList(),
         )
@@ -287,6 +289,13 @@ object ContentPackLoader {
             resists = parseEnemyResists(id, fields, errors, file),
         )
     }
+
+    private fun parseWorker(id: String, fields: Map<String, String>, errors: MutableList<ContentValidationError>, file: String): WorkerContent? =
+        WorkerContent(
+            id = id,
+            speedTilesPerTick = fields.requiredPositiveInt(file, id, "speedTilesPerTick", errors) ?: return null,
+            capacity = fields.requiredPositiveInt(file, id, "capacity", errors) ?: return null,
+        )
 
     private fun parseEnemyResists(
         id: String,

@@ -19,6 +19,7 @@ dependencies {
     api(project(":engine-world"))
     api(project(":engine-content"))
     api(project(":engine-entities"))
+    api(project(":engine-ai"))
     testImplementation(libs.kotlin.test.junit5)
     testImplementation(libs.junit.jupiter)
 }

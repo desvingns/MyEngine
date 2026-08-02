@@ -46,9 +46,9 @@
    2026-07-29. PROC-003 sequencing adopted 2026-07-29 (see Plane/15): ENG-010 -> ENG-016 ->
    PROC-007 -> ENG-021 -> ENG-029 -> ENG-012 -> ENG-007 -> ENG-018 (done 2026-08-02)
    -> ENG-011 (done 2026-08-02) -> ENG-019 (done 2026-08-02) -> ENG-001 (done 2026-08-02)
-   -> ENG-003 (done 2026-08-02) -> ENG-031 (done 2026-08-02) -> ENG-004 (next exact item)
-   -> ENG-032; ENG-010, ENG-016, PROC-007, ENG-021, ENG-029, ENG-012, ENG-007, ENG-018,
-   ENG-011, ENG-019, ENG-001, ENG-003, and ENG-031 are closed.
+   -> ENG-003 (done 2026-08-02) -> ENG-031 (done 2026-08-02) -> ENG-004 (done 2026-08-02)
+   -> ENG-032 (next exact item); ENG-010, ENG-016, PROC-007, ENG-021, ENG-029, ENG-012, ENG-007,
+   ENG-018, ENG-011, ENG-019, ENG-001, ENG-003, ENG-031, and ENG-004 are closed.
 4. Hardening gaps из `docs/HARDENING_AUDIT.md` закрывать по одному, с тестами и обновлением handoff.
 
 Новые крупные фазы добавлять только после того, как backlog specs перестанут быть достаточно
@@ -73,7 +73,8 @@
 | [x] | ENG-019 Walls + player-placed blockers | [ENG-019](../.claude/specs/done/ENG-019-walls-blocking-buildings.md) | Validated 1x1 wall content, atomic place/remove commands with path rejection and refund, immutable snapshot health, save v12 with v1-v11 migration, forced-corridor replay, and full gates | 2026-08-02 |
 | [x] | ENG-001 A* point-to-point pathfinding for agents | [ENG-001](../.claude/specs/done/ENG-001-astar-agent-pathfinding.md) | Deterministic 4-neighbor integer-cost A*, stable tie ordering, API-preserving GridPathfinder delegation, and deterministic AgentPathPlanner repaths; JobBoard/job-actor tick wiring is delivered by ENG-003, with hauling MVP remaining in ENG-004 | 2026-08-02 |
 | [x] | ENG-003 Job execution system | [ENG-003](../.claude/specs/done/ENG-003-job-execution-loop.md) | Post-Phase-14/Phase-15 feature close-out: deterministic v13 JobBoard tick execution, lifecycle, pathfinding movement, work ticks, typed resource-delta effects, release semantics, save migration, and replay/full-gate verification | 2026-08-02 |
-| [x] | ENG-031 Stockpile zones + designations | [ENG-031](../.claude/specs/done/ENG-031-stockpiles-designations.md) | Accepted Option A: deterministic zone commands/store, validated resource filters, one-shot harvest-node JobBoard jobs, immutable snapshot zone projection, and save v14 with v1-v13 migration; hauling and actual Android overlay consumption deferred | 2026-08-02 |
+| [x] | ENG-031 Stockpile zones + designations | [ENG-031](../.claude/specs/done/ENG-031-stockpiles-designations.md) | Accepted Option A: deterministic zone commands/store, validated resource filters, one-shot harvest-node JobBoard jobs, immutable snapshot zone projection, and save v14 with v1-v13 migration; hauling was completed by ENG-004 | 2026-08-02 |
+| [x] | ENG-004 First worker agent MVP (hauling) | [ENG-004](../.claude/specs/done/ENG-004-hauling-worker-mvp.md) | Data-defined worker speed/capacity, deterministic source reservations, source-to-stockpile carry/deposit, positioned producer outputs, stockpile contents, and save v15 with v1-v14 migration | 2026-08-02 |
 
 ## Глобальные инварианты
 
@@ -1466,10 +1467,10 @@
 - DONE: Accepted Option A delivers deterministic zone commands/store state, validated stockpile
   resource filters, one-shot harvest-node designation jobs, immutable `EngineSnapshot.zones`, and
   `SandboxSaveCodec` v14 with v1-v13 migration.
-- DECISIONS: No ADR or game-bundle traceability update. Colony demand remains vision-only. Hauling,
-  stockpile quantities/capacity, depletion/repeated harvest, and actual Android `RenderFrame`/view
-  overlay rendering are deferred to follow-up/ENG-004 scope. No plugin/skill/pipeline contract changed.
-- NEXT: Run `/me --feature --next` for ENG-004 (first worker agent MVP / hauling), then ENG-032.
+- DECISIONS: No ADR or game-bundle traceability update. Colony demand remains vision-only. Hauling
+  is now delivered by ENG-004; generic stockpile capacity, depletion/repeated harvest, and actual
+  Android `RenderFrame`/view overlay rendering remain follow-up scope. No plugin/skill/pipeline contract changed.
+- NEXT: Run `/me --feature --next` for ENG-032 (construction blueprints).
 - BLOCKERS: No implementation blocker. Non-blocking follow-ups: claimed/in-progress designation
   removal can leave its job and allow a second job on the same node; generic pending-command
   delimiter escaping remains a pre-existing codec concern while ENG-031 ids are regex-safe;
@@ -1481,3 +1482,21 @@
   `e4892bcc18f9d8dc`, `a763da4ac32b15b4`, `3f02607020d48668`; benchmark: canonical 413 ms,
   kill 85 ms, spatial index 5.2368 ms, goal rebuild 10958000 ns. Simulation, renderer, save,
   Android, and verifier reviews found no blocker; verifier boundary checks were all true.
+
+### 2026-08-02 - ENG-004 (first worker agent MVP / hauling)
+
+- Status: Done / accepted; documentation close-out completed. No new phase was created.
+- DONE: Added optional content-defined workers with speed/capacity, deterministic `HaulSourceStore`
+  reservations, typed haul job payload/phase, `InventoryComponent` in-transit carry, speed-budgeted
+  source-to-stockpile execution, persisted stockpile contents, and positioned ProducerSystem output
+  sources without double-counting global inventory.
+- DECISIONS: No ADR or game-bundle traceability update. Generic jobs remain supported through an
+  eligibility filter; legacy replay hashes remain unchanged when no worker/haul state is present.
+  `SandboxSaveCodec` is v15 with v1-v14 migration. Colony demand remains vision-only; generic
+  stockpile capacity/depletion, worker spawn commands, and Android overlay consumption remain follow-up scope.
+- NEXT: Run `/me --feature --next` for ENG-032 (construction blueprints).
+- BLOCKERS: No implementation blocker. No device/emulator or visual-golden proof is claimed beyond
+  the Android assemble gate.
+- VERIFICATION: Selfcheck, full `test` (132 sandbox tests plus engine/desktop/Android suites),
+  `projects`, content validation, replay, save-compat, benchmark, `:android:assembleDebug`, and
+  `git diff --check` passed. Replay hashes: `e4892bcc18f9d8dc`, `a763da4ac32b15b4`.

@@ -1,6 +1,6 @@
 # MyEngine Handoff
 
-Last updated: 2026-08-02 (ENG-031 close-out; next ENG-004)
+Last updated: 2026-08-02 (ENG-004 close-out; next ENG-032)
 Owner: Codex
 
 ## DONE
@@ -37,9 +37,15 @@ Owner: Codex
 
 - ENG-031 is done: accepted Option A adds deterministic zone commands/store state, validated stockpile
   resource filters, one-shot harvest-node designation jobs, immutable `EngineSnapshot.zones`, and
-  `SandboxSaveCodec` v14 with v1-v13 migration. Colony demand remains vision-only; hauling,
-  stockpile quantities/capacity, depletion/repeated harvest, and actual Android overlay consumption
-  are deferred to follow-up/ENG-004 scope.
+  `SandboxSaveCodec` v14 with v1-v13 migration. ENG-004 now adds hauling and persisted stockpile
+  contents; generic stockpile capacity, depletion/repeated harvest, and actual Android overlay
+  consumption remain follow-up scope.
+
+- ENG-004 is done: optional `WorkerContent` defines speed/capacity; `HaulSourceStore` reserves
+  source quantities by job id; typed haul jobs move `InventoryComponent` carry to validated stockpile
+  tiles at a content-defined speed; positioned ProducerSystem outputs become sources; stockpile
+  contents and worker carry are included in deterministic state/save v15. Legacy generic jobs and
+  replay hashes remain compatible when no new haul state is present.
 
 - ENG-029 is done: the latest completed snapshot tick exposes a deterministic transient immutable
   `GameplayEvent` feed for shot, hit, death, wave-start, build, and sell events. Optional
@@ -654,9 +660,9 @@ Owner: Codex
 
 ## NEXT
 
-Run `/me --feature --next` for ENG-031 (stockpile zones + designations), the next item in the
-deferred colony slice. ENG-003 is closed; the earlier commit blocker is resolved: PROC-013 commit
-5eaaa78 was pushed.
+Run `/me --feature --next` for ENG-032 (construction blueprints), the next item in the deferred
+colony slice. ENG-004 is closed; the earlier commit blocker is resolved: PROC-013 commit 5eaaa78
+was pushed.
 
 ## BLOCKERS
 
@@ -1388,3 +1394,42 @@ deferred colony slice. ENG-003 is closed; the earlier commit blocker is resolved
   `3f02607020d48668`; benchmark: canonical 413 ms, kill 85 ms, spatial index 5.2368 ms,
   goal rebuild 10958000 ns. Simulation, renderer, save, Android, and verifier reviews passed or
   reported only the non-blocking findings above; verifier boundary checks were all true.
+
+## ENG-004 Close-out (2026-08-02)
+
+### DONE
+
+- Added data-defined workers (`speedTilesPerTick`, `capacity`) and `WorkerComponent`; carry uses the
+  existing simulation-owned `InventoryComponent` so no Android/render dependency was introduced.
+- Added typed haul payload/phase and a deterministic `HaulingSystem`: workers process by EntityId,
+  jobs by priority/id, reserve source quantities atomically, pick up, move at content speed, and
+  deposit into validated stockpile tiles. Generic `JobExecutionSystem` excludes typed haul jobs
+  without changing legacy generic-job behavior.
+- Positioned producer outputs are materialized as `producer:<id>` haul sources instead of being
+  credited twice to global inventory. Stockpile contents, source reservations, worker carry, producer
+  positions, and haul phases are persisted by `SandboxSaveCodec` v15; v1-v14 decode with empty new state.
+
+### DECISIONS
+
+- No ADR, game-bundle traceability update, or plugin/skill/pipeline contract change.
+- Legacy stable replay hashes remain unchanged when no new worker/haul state is present. Generic
+  stockpile capacity/depletion, worker spawn commands, and Android overlay consumption remain follow-up scope.
+
+### NEXT
+
+- Run `/me --feature --next` for ENG-032 (construction blueprints).
+
+### BLOCKERS
+
+- No implementation blocker. No device/emulator or visual-golden proof is claimed beyond assembleDebug.
+- Delegated developer and verifier workers timed out; production/test completion and boundary review
+  were completed locally after their bounded retries. Scout and architect contracts passed.
+
+### VERIFICATION
+
+- Focused hauling/content tests and full `.\gradlew.bat test` passed (132 sandbox tests plus
+  engine/desktop/Android suites).
+- `.\gradlew.bat projects`, content validation, replay, save-compat, benchmark,
+  `.\gradlew.bat :android:assembleDebug`, selfcheck, and `git diff --check` passed.
+- Replay hashes: `e4892bcc18f9d8dc`, `a763da4ac32b15b4`; benchmark: `sim=559 ms`, `kill=111 ms`,
+  GoalField rebuild `7144000 ns`, spatial index `7.7432 ms`.

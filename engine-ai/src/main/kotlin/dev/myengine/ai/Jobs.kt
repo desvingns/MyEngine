@@ -16,6 +16,27 @@ enum class JobStatus {
     FAILED,
 }
 
+enum class HaulPhase {
+    TO_SOURCE,
+    TO_STOCKPILE,
+}
+
+/** Typed payload for a deterministic source -> stockpile job. */
+data class HaulJobSpec(
+    val sourceId: String,
+    val resourceId: String,
+    val amount: Int,
+    val destinationZoneId: String,
+    val phase: HaulPhase = HaulPhase.TO_SOURCE,
+) {
+    init {
+        require(sourceId.isNotBlank()) { "Haul source id cannot be blank." }
+        require(resourceId.isNotBlank()) { "Haul resource id cannot be blank." }
+        require(amount > 0) { "Haul amount must be positive." }
+        require(destinationZoneId.isNotBlank()) { "Haul destination zone id cannot be blank." }
+    }
+}
+
 enum class JobEffectType(val id: String) {
     RESOURCE_DELTA("resource_delta"),
 }
@@ -46,6 +67,7 @@ data class Job(
     val failureReason: String? = null,
     val workTicks: Int = 1,
     val completionEffects: List<JobCompletionEffect> = emptyList(),
+    val haul: HaulJobSpec? = null,
 ) {
     init {
         require(id.isNotBlank()) { "Job id cannot be blank." }
@@ -71,10 +93,15 @@ class JobBoard(initialJobs: List<Job> = emptyList()) {
         jobs[job.id] = job
     }
 
-    fun assignNext(actor: EntityId, excludedJobIds: Set<String> = emptySet()): JobAssignment? {
+    fun assignNext(
+        actor: EntityId,
+        excludedJobIds: Set<String> = emptySet(),
+        eligible: (Job) -> Boolean = { true },
+    ): JobAssignment? {
         val candidate = jobs.values
             .filter {
                 it.id !in excludedJobIds &&
+                    eligible(it) &&
                     it.status == JobStatus.OPEN &&
                     (it.reservedBy == null || it.reservedBy == actor)
             }
@@ -116,6 +143,12 @@ class JobBoard(initialJobs: List<Job> = emptyList()) {
             "Job '$jobId' cannot start from ${current.status}."
         }
         return current.copy(status = JobStatus.IN_PROGRESS).also { jobs[jobId] = it }
+    }
+
+    fun updateHaulPhase(jobId: String, phase: HaulPhase): Job {
+        val current = jobs[jobId] ?: error("Unknown job '$jobId'.")
+        val haul = current.haul ?: error("Job '$jobId' is not a haul job.")
+        return current.copy(haul = haul.copy(phase = phase)).also { jobs[jobId] = it }
     }
 
     fun complete(jobId: String) {
@@ -171,6 +204,10 @@ class JobBoard(initialJobs: List<Job> = emptyList()) {
                 .add(job.status.name)
                 .add(job.failureReason ?: "")
                 .add(job.workTicks)
+            job.haul?.let { haul ->
+                hash.add("haul").add(haul.sourceId).add(haul.resourceId).add(haul.amount)
+                    .add(haul.destinationZoneId).add(haul.phase.name)
+            }
             job.completionEffects
                 .sortedWith(compareBy<JobCompletionEffect> { it.type.id }.thenBy {
                     (it as? JobCompletionEffect.ResourceDelta)?.resourceId.orEmpty()

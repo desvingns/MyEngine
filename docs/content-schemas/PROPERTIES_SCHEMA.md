@@ -1,6 +1,6 @@
 # MyEngine Content Properties Schema
 
-Status: Phase 06 accepted; DX-008 hybrid format accepted; ENG-016, ENG-028, ENG-009, ENG-007, and ENG-011 fields documented
+Status: Phase 06 accepted; DX-008 hybrid format accepted; ENG-016, ENG-028, ENG-009, ENG-007, ENG-011, and ENG-004 fields documented
 Last updated: 2026-08-02
 
 Content packs use the DX-008 hybrid format defined by
@@ -128,6 +128,20 @@ Enemy scaling is materialized when the wave spawns. Health and speed use integer
 minimum of one; rewards use deterministic half-up rounding. Elite/boss flags and effective enemy
 stats are retained in the versioned sandbox save so a mid-wave restore does not fall back to base
 content values. Boss state is exposed to immutable render snapshots for presentation emphasis.
+
+### Workers
+
+`workers.properties` is optional. Definitions use `<workerId>.<field>=<value>`:
+
+- `speedTilesPerTick`: positive integer movement budget consumed by the hauling system per tick
+- `capacity`: positive integer maximum amount carried in the worker's in-transit inventory
+
+Worker capability is content metadata; the authoritative entity stores only the worker id and
+current carry. Typed haul jobs reserve source quantities by job id, pick up at the source, and
+deposit into a permitted tile of the referenced stockpile. Source quantities, reservations,
+worker carry, haul phase, and stockpile contents are persisted in sandbox save v15; v1-v14 saves
+migrate with empty hauling state. Positioned producer outputs are materialized as deterministic
+`producer:<producerId>` sources and are not also credited to global inventory.
 
 ### Buildings
 

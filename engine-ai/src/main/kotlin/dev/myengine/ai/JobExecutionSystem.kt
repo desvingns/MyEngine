@@ -25,6 +25,7 @@ fun interface JobCompletionEffectSink {
 class JobExecutionSystem(
     private val pathPlanner: AgentPathPlanner = AgentPathPlanner(),
     private val completionEffectSink: JobCompletionEffectSink = JobCompletionEffectSink { _, _, _ -> },
+    private val eligibleJob: (Job) -> Boolean = { true },
 ) {
     fun tick(
         world: TileWorld,
@@ -46,11 +47,15 @@ class JobExecutionSystem(
                     clearWorker(entities, worker.id)
                     return@forEach
                 }
+                if (jobId != null && jobs.get(jobId)?.let { !eligibleJob(it) } == true) {
+                    return@forEach
+                }
                 val job = if (jobId == null) {
-                    jobs.assignNext(worker.id, releasedThisTick)?.job
+                    jobs.assignNext(worker.id, releasedThisTick, eligibleJob)?.job
                 } else {
                     jobs.get(jobId)?.let { existing ->
                         when {
+                            !eligibleJob(existing) -> null
                             existing.status == JobStatus.OPEN -> jobs.claim(existing.id, worker.id)
                             existing.assignedTo == worker.id &&
                                 existing.status != JobStatus.DONE &&

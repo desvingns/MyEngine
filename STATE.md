@@ -1,8 +1,8 @@
 # MyEngine State
 
-Last updated: 2026-08-02 (ENG-031 close-out)
-Active phase: Phase 00-14 complete; Phase 15 sequencing adopted; Signal Garden SG-001..005 complete; MyTD MTD-001..005 complete; DX-008, ENG-001, ENG-002, ENG-003, ENG-005, ENG-007, ENG-008, ENG-009, ENG-010, ENG-011, ENG-012, ENG-013, ENG-014, ENG-015, ENG-016, ENG-018, ENG-019, ENG-020, ENG-021, ENG-026, ENG-027, ENG-028, ENG-029, ENG-030, ENG-031, PROC-002, PROC-003, PROC-007, and PROC-013 complete; pipeline at v0.2.0; next exact item ENG-004
-Owner of last update: Codex (2026-08-02: ENG-031 stockpiles/designations close-out; next exact item ENG-004)
+Last updated: 2026-08-02 (ENG-004 close-out)
+Active phase: Phase 00-14 complete; Phase 15 sequencing adopted; Signal Garden SG-001..005 complete; MyTD MTD-001..005 complete; DX-008, ENG-001, ENG-002, ENG-003, ENG-004, ENG-005, ENG-007, ENG-008, ENG-009, ENG-010, ENG-011, ENG-012, ENG-013, ENG-014, ENG-015, ENG-016, ENG-018, ENG-019, ENG-020, ENG-021, ENG-026, ENG-027, ENG-028, ENG-029, ENG-030, ENG-031, PROC-002, PROC-003, PROC-007, and PROC-013 complete; pipeline at v0.2.0; next exact item ENG-032
+Owner of last update: Codex (2026-08-02: ENG-004 hauling close-out; next exact item ENG-032)
 
 ## Current Status
 
@@ -38,8 +38,8 @@ Owner of last update: Codex (2026-08-02: ENG-031 stockpiles/designations close-o
 - ENG-031 is complete: accepted Option A adds deterministic zone commands/store state, validated
   stockpile resource filters, one-shot harvest-node JobBoard designation jobs, immutable snapshot
   zone projection, and `SandboxSaveCodec` v14 with v1-v13 migration. Colony demand remains
-  vision-only; hauling, stockpile quantities/capacity, depletion/repeated harvest, and actual
-  Android overlay consumption are deliberately deferred to follow-up/ENG-004 scope.
+  vision-only; ENG-004 now adds hauling and persisted stockpile contents. Generic stockpile
+  capacity, depletion/repeated harvest, and actual Android overlay consumption remain follow-up scope.
 - ENG-012 is complete: content-defined elite/boss ranks and health/speed/reward scaling combine with
   indexed wave modifiers at deterministic spawn time. Effective enemy state persists in
   `EnemyComponent`, boss identity crosses the immutable snapshot/render boundary, and
@@ -406,8 +406,7 @@ Owner of last update: Codex (2026-08-02: ENG-031 stockpiles/designations close-o
 
 ## Next Exact Action
 
-Run `/me --feature --next` for ENG-004 (first worker agent MVP / hauling), then ENG-032. ENG-031 has
-no implementation blocker.
+Run `/me --feature --next` for ENG-032 (construction blueprints). ENG-004 has no implementation blocker.
 
 ## Known Blockers
 
@@ -429,6 +428,23 @@ no implementation blocker.
   early-call bonus because no balance value was approved; synthetic tests cover the data-driven
   path. Per-snapshot HUD allocation and device profiling remain follow-up work. The pre-existing
   save delimiter assumption remains documented; no code fix was made in this docs-only close-out.
+
+## ENG-004 Close-out (2026-08-02)
+
+- DONE: Added optional worker content with deterministic speed/capacity, typed haul jobs/phases,
+  atomic source reservations, source pickup, speed-budgeted movement, stockpile deposit contents,
+  and positioned ProducerSystem outputs as haul sources without double-counting global inventory.
+  In-transit carry is persisted in the existing Entity inventory component.
+- DECISIONS: No ADR or game-bundle traceability update. Generic jobs remain compatible through an
+  eligibility filter; legacy replay hashes are unchanged when no new worker/haul state exists.
+  SandboxSaveCodec is v15 with v1-v14 migration. Generic stockpile capacity/depletion, worker
+  spawn commands, and Android overlay consumption remain follow-up scope.
+- NEXT: Run `/me --feature --next` for ENG-032 (construction blueprints).
+- BLOCKERS: No implementation blocker; no device/emulator or visual-golden proof is claimed beyond
+  Android assembleDebug.
+- VERIFICATION: Full tests, projects, content validation, replay, save-compat, benchmark,
+  Android assembleDebug, selfcheck, and git diff --check passed. Replay hashes remain
+  `e4892bcc18f9d8dc` and `a763da4ac32b15b4`.
 - ENG-028 non-blocking follow-ups: Android AssetManager resolution has compile/assemble coverage but
   no device/instrumented runtime fixture; the full PROC-009 screenshot/golden lane remains manual.
   Conditional domain reviewer agents could not be spawned in this run because the agent-thread limit

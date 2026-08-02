@@ -1,11 +1,13 @@
 package dev.myengine.logistics
 
 import dev.myengine.content.RecipeContent
+import dev.myengine.world.TilePosition
 
 data class Producer(
     val id: String,
     val recipeId: String,
     val progressTicks: Int = 0,
+    val position: TilePosition? = null,
 )
 
 data class ProductionResult(

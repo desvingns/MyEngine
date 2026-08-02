@@ -171,6 +171,18 @@ data class EnemyContent(
     }
 }
 
+/** Data-defined worker capabilities used by the deterministic hauling slice. */
+data class WorkerContent(
+    override val id: String,
+    val speedTilesPerTick: Int,
+    val capacity: Int,
+) : ContentDefinition {
+    init {
+        require(speedTilesPerTick > 0) { "Worker speed must be positive." }
+        require(capacity > 0) { "Worker capacity must be positive." }
+    }
+}
+
 /** Data-driven 1x1 wall definition for the player-placed blocker slice. */
 data class BuildingContent(
     override val id: String,
@@ -456,6 +468,7 @@ data class ContentRegistry(
     val sounds: Map<GameplayEventType, SoundRef> = emptyMap(),
     val endlessWave: EndlessWaveContent? = null,
     val damageTypes: Map<String, DamageTypeContent> = emptyMap(),
+    val workers: Map<String, WorkerContent> = emptyMap(),
 ) {
     /** Alias kept for callers that refer to the optional pack feature as simply `endless`. */
     val endless: EndlessWaveContent? get() = endlessWave
@@ -466,6 +479,7 @@ data class ContentRegistry(
     fun requireDamageType(id: String): DamageTypeContent = damageTypes[id] ?: error("Unknown damage type '$id'.")
     fun requireBuilding(id: String): BuildingContent = buildings[id] ?: error("Unknown building '$id'.")
     fun requireEffect(id: String): StatusEffectContent = effects[id] ?: error("Unknown status effect '$id'.")
+    fun requireWorker(id: String): WorkerContent = workers[id] ?: error("Unknown worker '$id'.")
     fun requireMap(id: String? = null): MapContent = when {
         id != null -> maps[id] ?: error("Unknown map '$id'.")
         maps.size == 1 -> maps.values.single()

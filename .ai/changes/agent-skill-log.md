@@ -498,3 +498,17 @@ by: claude
   no plugin version bump.
 - Verification: selfcheck passed; focused ENG-031/remediation tests and full runner evidence passed;
   non-blocking reviewer follow-ups remain recorded in the close-out documents.
+
+## 2026-08-02 - MyEngine ENG-004 feature run
+
+- Owner: Codex
+- Change type: normal feature run; no agent/skill/adapter/pipeline contract change.
+- Summary: `/me --feature --next` selected ENG-004 and delivered data-defined worker capabilities,
+  deterministic source reservations, source-to-stockpile hauling, positioned producer output sources,
+  persisted stockpile contents/carry, and save v15 migration.
+- Pipeline: selfcheck passed; scout and architect contracts passed. Developer and verifier workers
+  timed out after bounded waits, so the scoped production implementation, tests, runner gates, and
+  local boundary review were completed by the orchestrator. No malformed JSON was returned.
+- Verification: full tests/projects/content validation/replay/save-compat/benchmark/Android assemble
+  and diff-check passed. Replay hashes remain `e4892bcc18f9d8dc` / `a763da4ac32b15b4`.
+- No plugin version bump; no ADR.
