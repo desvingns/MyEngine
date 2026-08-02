@@ -21,13 +21,19 @@ enum class HaulPhase {
     TO_STOCKPILE,
 }
 
-/** Typed payload for a deterministic source -> stockpile job. */
+enum class HaulDestinationKind {
+    STOCKPILE,
+    CONSTRUCTION,
+}
+
+/** Typed payload for a deterministic source -> destination job. */
 data class HaulJobSpec(
     val sourceId: String,
     val resourceId: String,
     val amount: Int,
     val destinationZoneId: String,
     val phase: HaulPhase = HaulPhase.TO_SOURCE,
+    val destinationKind: HaulDestinationKind = HaulDestinationKind.STOCKPILE,
 ) {
     init {
         require(sourceId.isNotBlank()) { "Haul source id cannot be blank." }
@@ -39,6 +45,7 @@ data class HaulJobSpec(
 
 enum class JobEffectType(val id: String) {
     RESOURCE_DELTA("resource_delta"),
+    SPAWN_BUILDING("spawn_building"),
 }
 
 sealed interface JobCompletionEffect {
@@ -54,6 +61,26 @@ sealed interface JobCompletionEffect {
             require(resourceId.isNotBlank()) { "Resource id cannot be blank." }
         }
     }
+
+    data class SpawnBuilding(
+        val buildingId: String,
+        val siteId: String,
+    ) : JobCompletionEffect {
+        override val type: JobEffectType = JobEffectType.SPAWN_BUILDING
+
+        init {
+            require(buildingId.isNotBlank()) { "Building id cannot be blank." }
+            require(siteId.isNotBlank()) { "Construction site id cannot be blank." }
+        }
+    }
+}
+
+/** Canonical effect key used by hashes, save encoding, and completion application. */
+fun JobCompletionEffect.stableSortKey(): String = when (this) {
+    is JobCompletionEffect.ResourceDelta ->
+        listOf(type.id, resourceId, amount).joinToString("\u0000")
+    is JobCompletionEffect.SpawnBuilding ->
+        listOf(type.id, siteId, buildingId).joinToString("\u0000")
 }
 
 data class Job(
@@ -206,16 +233,14 @@ class JobBoard(initialJobs: List<Job> = emptyList()) {
                 .add(job.workTicks)
             job.haul?.let { haul ->
                 hash.add("haul").add(haul.sourceId).add(haul.resourceId).add(haul.amount)
-                    .add(haul.destinationZoneId).add(haul.phase.name)
+                    .add(haul.destinationZoneId).add(haul.phase.name).add(haul.destinationKind.name)
             }
-            job.completionEffects
-                .sortedWith(compareBy<JobCompletionEffect> { it.type.id }.thenBy {
-                    (it as? JobCompletionEffect.ResourceDelta)?.resourceId.orEmpty()
-                })
+            job.completionEffects.sortedBy { it.stableSortKey() }
                 .forEach { effect ->
                     hash.add(effect.type.id)
                     when (effect) {
                         is JobCompletionEffect.ResourceDelta -> hash.add(effect.resourceId).add(effect.amount)
+                        is JobCompletionEffect.SpawnBuilding -> hash.add(effect.buildingId).add(effect.siteId)
                     }
                 }
         }

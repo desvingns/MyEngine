@@ -18,6 +18,8 @@ import dev.myengine.ai.JobCompletionEffect
 import dev.myengine.ai.JobCompletionEffectSink
 import dev.myengine.ai.JobExecutionSystem
 import dev.myengine.ai.JobStatus
+import dev.myengine.ai.HaulDestinationKind
+import dev.myengine.ai.stableSortKey
 import dev.myengine.logistics.HaulingSystem
 import dev.myengine.core.CommandQueue
 import dev.myengine.core.CombatEvents
@@ -33,6 +35,8 @@ import dev.myengine.core.StableHash
 import dev.myengine.core.TerminalReason
 import dev.myengine.core.Tick
 import dev.myengine.core.command.BuildTowerCommand
+import dev.myengine.core.command.CancelBlueprintCommand
+import dev.myengine.core.command.PlaceBlueprintCommand
 import dev.myengine.core.command.PlaceBuildingCommand
 import dev.myengine.core.command.RemoveBuildingCommand
 import dev.myengine.core.command.CallWaveEarlyCommand
@@ -68,6 +72,9 @@ import dev.myengine.logistics.ProducerSystem
 import dev.myengine.logistics.HarvestDesignation
 import dev.myengine.logistics.HaulSource
 import dev.myengine.logistics.HaulSourceStore
+import dev.myengine.logistics.ConstructionSite
+import dev.myengine.logistics.ConstructionSiteStore
+import dev.myengine.logistics.HaulDestinationSink
 import dev.myengine.logistics.StockpileZone
 import dev.myengine.logistics.ZoneStore
 import dev.myengine.render.DebugOverlay
@@ -135,6 +142,7 @@ data class SandboxState(
     var jobBoard: JobBoard = JobBoard(),
     var zones: ZoneStore = ZoneStore(),
     var haulSources: HaulSourceStore = HaulSourceStore(),
+    var constructionSites: ConstructionSiteStore = ConstructionSiteStore(),
 ) : HashableState {
     override fun appendHash(hash: StableHash) {
         hash.add(tick.value)
@@ -144,6 +152,7 @@ data class SandboxState(
         jobBoard.appendHash(hash)
         zones.appendHash(hash)
         haulSources.appendHash(hash)
+        constructionSites.appendHash(hash)
         inventory.appendHash(hash)
         producers.sortedBy { it.id }.forEach {
             hash.add(it.id).add(it.recipeId).add(it.progressTicks)
@@ -212,9 +221,11 @@ class SandboxRuntime(
     seed: Long = 7L,
 ) {
     private val producerSystem = ProducerSystem(state.registry.recipes)
-    private val jobEffects = mutableListOf<JobCompletionEffect>()
+    private data class PendingJobEffect(val job: Job, val effect: JobCompletionEffect)
+
+    private val jobEffects = mutableListOf<PendingJobEffect>()
     private val jobExecutionSystem = JobExecutionSystem(
-        completionEffectSink = JobCompletionEffectSink { _, _, effect -> jobEffects += effect },
+        completionEffectSink = JobCompletionEffectSink { _, job, effect -> jobEffects += PendingJobEffect(job, effect) },
         eligibleJob = { it.haul == null },
     )
     private val haulingSystem = HaulingSystem()
@@ -273,8 +284,10 @@ class SandboxRuntime(
             val incidentWaveEvents = mutableListOf<GameplayEvent>()
             val commands = commandQueue.drainFor(state.tick)
             commands.forEach { applyCommand(it, commandEvents) }
+            ensureConstructionJobs()
             executeHauling()
-            executeJobs()
+            ensureConstructionJobs()
+            executeJobs(commandEvents)
             updateProduction()
             state.defense = defenseRuntime.spawnDueWaves(
                 state.tick,
@@ -390,23 +403,28 @@ class SandboxRuntime(
             .toMap()
     }
 
-    private fun executeJobs() {
+    private fun executeJobs(eventSink: MutableList<GameplayEvent>) {
         jobEffects.clear()
         jobExecutionSystem.tick(state.world, state.entities, state.jobBoard)
         jobEffects
-            .filterIsInstance<JobCompletionEffect.ResourceDelta>()
-            .sortedBy { it.resourceId }
-            .forEach { effect ->
-                when {
-                    effect.amount >= 0 && state.inventory.canAdd(effect.resourceId, effect.amount) -> {
-                        state.inventory = state.inventory.add(effect.resourceId, effect.amount)
+            .sortedWith(
+                compareBy<PendingJobEffect> { it.effect.stableSortKey() }.thenBy { it.job.id },
+            )
+            .forEach { pending ->
+                when (val effect = pending.effect) {
+                    is JobCompletionEffect.ResourceDelta -> when {
+                        effect.amount >= 0 && state.inventory.canAdd(effect.resourceId, effect.amount) -> {
+                            state.inventory = state.inventory.add(effect.resourceId, effect.amount)
+                        }
+                        effect.amount < 0 && state.inventory.canRemove(effect.resourceId, -effect.amount) -> {
+                            state.inventory = state.inventory.remove(effect.resourceId, -effect.amount)
+                        }
+                        else -> {
+                            state.lastCommandOrError = "job_effect_rejected:${effect.resourceId}:${effect.amount}"
+                        }
                     }
-                    effect.amount < 0 && state.inventory.canRemove(effect.resourceId, -effect.amount) -> {
-                        state.inventory = state.inventory.remove(effect.resourceId, -effect.amount)
-                    }
-                    else -> {
-                        state.lastCommandOrError = "job_effect_rejected:${effect.resourceId}:${effect.amount}"
-                    }
+                    is JobCompletionEffect.SpawnBuilding ->
+                        spawnCompletedBuilding(pending.job, effect, eventSink)
                 }
             }
     }
@@ -419,6 +437,15 @@ class SandboxRuntime(
             sources = state.haulSources,
             zones = state.zones,
             workers = state.registry.workers,
+            destinationSink = HaulDestinationSink { job, position, resourceId, amount ->
+                val spec = job.haul ?: return@HaulDestinationSink false
+                when (spec.destinationKind) {
+                    HaulDestinationKind.STOCKPILE ->
+                        state.zones.deposit(spec.destinationZoneId, position, resourceId, amount)
+                    HaulDestinationKind.CONSTRUCTION ->
+                        state.constructionSites.deposit(spec.destinationZoneId, spec.sourceId, resourceId, amount)
+                }
+            },
         )
     }
 
@@ -582,10 +609,12 @@ class SandboxRuntime(
     private fun applyCommand(command: EngineCommand, eventSink: MutableList<GameplayEvent>) {
         when (command) {
             is BuildTowerCommand -> buildTower(command, eventSink)
+            is PlaceBlueprintCommand -> placeBlueprint(command)
             is PlaceBuildingCommand -> placeBuilding(command, eventSink)
             is UpgradeTowerCommand -> upgradeTower(command)
             is SellTowerCommand -> sellTower(command, eventSink)
             is RemoveBuildingCommand -> removeBuilding(command, eventSink)
+            is CancelBlueprintCommand -> cancelBlueprint(command)
             is SetTowerTargetingModeCommand -> setTowerTargetingMode(command)
             is CallWaveEarlyCommand -> callWaveEarly(command, eventSink)
             is DefineStockpileZoneCommand -> defineStockpileZone(command)
@@ -818,6 +847,251 @@ class SandboxRuntime(
             is TowerPlacementResult.Rejected -> state.lastCommandOrError = result.reason
         }
     }
+
+    private fun placeBlueprint(command: PlaceBlueprintCommand) {
+        val building = state.registry.buildings[command.buildingId]
+        if (building == null) {
+            state.lastCommandOrError = "unknown_building:${command.buildingId}"
+            return
+        }
+        if (building.footprintWidth != 1 || building.footprintHeight != 1) {
+            state.lastCommandOrError = "unsupported_building_footprint:${command.buildingId}"
+            return
+        }
+        val position = toTilePosition(command.position)
+        if (!state.world.inBounds(position)) {
+            state.lastCommandOrError = "position_out_of_bounds"
+            return
+        }
+        if (!state.world.canBuild(position)) {
+            state.lastCommandOrError = "tile_not_buildable"
+            return
+        }
+        if (state.entities.byTag("enemy").any { enemy ->
+                enemy.position?.tile == position && enemy.health?.isAlive() == true
+            }
+        ) {
+            state.lastCommandOrError = "occupied_by_enemy"
+            return
+        }
+        if (state.constructionSites.all().any { it.position == position }) {
+            state.lastCommandOrError = "duplicate_construction_site:${position.x}:${position.y}"
+            return
+        }
+        val prospective = GoalField.rebuildAfterWalkabilityChange(
+            world = state.world,
+            goal = core,
+            spawns = spawns,
+            additionalBlocked = position,
+        )
+        if (!prospective.keepsAllSpawnsReachable) {
+            state.lastCommandOrError = "blocks_spawn_path"
+            return
+        }
+        val siteId = constructionSiteId(command.id.value)
+        try {
+            state.constructionSites.add(
+                ConstructionSite(
+                    id = siteId,
+                    buildingId = building.id,
+                    position = position,
+                    materialResourceId = building.costResource,
+                    requiredAmount = building.costAmount,
+                ),
+            )
+            state.lastCommandOrError = "blueprint_placed:$siteId"
+        } catch (error: IllegalArgumentException) {
+            state.lastCommandOrError = "blueprint_rejected:$siteId:${error.message}"
+        }
+    }
+
+    private fun ensureConstructionJobs() {
+        state.constructionSites.all().forEach { site ->
+            val building = state.registry.buildings[site.buildingId] ?: return@forEach
+            val constructionJobs = state.jobBoard.all().filter { job ->
+                val spec = job.haul
+                spec?.destinationKind == HaulDestinationKind.CONSTRUCTION &&
+                    spec.destinationZoneId == site.id
+            }
+            if (site.remainingAmount > 0) {
+                constructionJobs
+                    .filter { it.status == JobStatus.FAILED || (it.status == JobStatus.OPEN && it.failureReason in setOf("source_unavailable", "source_pickup_failed")) }
+                    .forEach { failed ->
+                        state.haulSources.release(failed.id)
+                        state.jobBoard.remove(failed.id)
+                    }
+                val active = state.jobBoard.all().any { job ->
+                    val spec = job.haul
+                    spec?.destinationKind == HaulDestinationKind.CONSTRUCTION &&
+                        spec.destinationZoneId == site.id &&
+                        job.status in setOf(JobStatus.OPEN, JobStatus.CLAIMED, JobStatus.IN_PROGRESS)
+                }
+                if (!active) {
+                    val source = state.haulSources.all()
+                        .sortedBy { it.id }
+                        .firstOrNull { it.available(site.materialResourceId) >= site.remainingAmount }
+                    if (source != null) {
+                        val jobId = constructionHaulJobId(site.id)
+                        if (state.jobBoard.get(jobId) == null) {
+                            state.jobBoard.add(
+                                Job(
+                                    id = jobId,
+                                    type = "construction_haul",
+                                    target = site.position,
+                                    priority = 100,
+                                    haul = dev.myengine.ai.HaulJobSpec(
+                                        sourceId = source.id,
+                                        resourceId = site.materialResourceId,
+                                        amount = site.remainingAmount,
+                                        destinationZoneId = site.id,
+                                        destinationKind = HaulDestinationKind.CONSTRUCTION,
+                                    ),
+                                ),
+                            )
+                        }
+                    }
+                }
+            } else {
+                val buildJobId = constructionBuildJobId(site.id)
+                val buildJob = state.jobBoard.get(buildJobId)
+                if (buildJob == null || buildJob.status == JobStatus.FAILED || buildJob.status == JobStatus.DONE) {
+                    if (buildJob != null) state.jobBoard.remove(buildJobId)
+                    state.jobBoard.add(
+                        Job(
+                            id = buildJobId,
+                            type = "construction_build",
+                            target = site.position,
+                            priority = 100,
+                            workTicks = building.buildWorkTicks,
+                            completionEffects = listOf(JobCompletionEffect.SpawnBuilding(building.id, site.id)),
+                        ),
+                    )
+                }
+            }
+        }
+    }
+
+    private fun spawnCompletedBuilding(
+        job: Job,
+        effect: JobCompletionEffect.SpawnBuilding,
+        eventSink: MutableList<GameplayEvent>,
+    ) {
+        val site = state.constructionSites.get(effect.siteId)
+        val building = state.registry.buildings[effect.buildingId]
+        if (site == null || building == null || site.buildingId != building.id || site.position != job.target || site.remainingAmount != 0) {
+            state.jobBoard.remove(job.id)
+            state.lastCommandOrError = "construction_completion_rejected:${effect.siteId}"
+            return
+        }
+        if (!state.world.canBuild(site.position) || state.entities.byTag("enemy").any { it.position?.tile == site.position && it.health?.isAlive() == true }) {
+            state.jobBoard.remove(job.id)
+            state.lastCommandOrError = "construction_tile_unavailable:${effect.siteId}"
+            return
+        }
+        val entity = state.entities.create("building:${building.id}", setOf("building")) { id ->
+            Entity(
+                id = id,
+                type = "building:${building.id}",
+                tags = setOf("building"),
+                position = PositionComponent(site.position),
+                health = HealthComponent(building.maxHealth, building.maxHealth),
+            )
+        }
+        state.world.occupy(site.position, entity.id.value)
+        goalField = rebuildAfterWalkabilityChange()
+        state.constructionSites.remove(site.id)
+        state.jobBoard.all()
+            .filter { job ->
+                val spec = job.haul
+                spec?.destinationKind == HaulDestinationKind.CONSTRUCTION && spec.destinationZoneId == site.id
+            }
+            .forEach { state.jobBoard.remove(it.id) }
+        state.jobBoard.remove(job.id)
+        state.lastCommandOrError = "built:${entity.id.value}"
+        eventSink += GameplayEvent(
+            tick = state.tick,
+            type = dev.myengine.core.GameplayEventType.BUILD,
+            targetEntityId = entity.id.value,
+            contentId = building.id,
+        )
+    }
+
+    private fun cancelBlueprint(command: CancelBlueprintCommand) {
+        val site = state.constructionSites.get(command.siteId)
+        if (site == null) {
+            state.lastCommandOrError = "unknown_construction_site:${command.siteId}"
+            return
+        }
+        val jobs = state.jobBoard.all().filter { job ->
+            val spec = job.haul
+            (spec?.destinationKind == HaulDestinationKind.CONSTRUCTION && spec.destinationZoneId == site.id) ||
+                job.id == constructionBuildJobId(site.id)
+        }
+        val carried = jobs.mapNotNull { job ->
+            val spec = job.haul ?: return@mapNotNull null
+            val actorId = job.assignedTo ?: job.reservedBy ?: return@mapNotNull null
+            val worker = state.entities.get(actorId) ?: return@mapNotNull null
+            val amount = worker.inventory?.resources?.get(spec.resourceId)
+                ?.takeIf { it >= spec.amount }
+                ?: return@mapNotNull null
+            Triple(job, worker, amount)
+        }
+        val refundBySource = linkedMapOf<String, Int>()
+        site.deliveredBySource.forEach { (sourceId, amount) -> refundBySource[sourceId] = (refundBySource[sourceId] ?: 0) + amount }
+        carried.forEach { (job, _, amount) ->
+            val sourceId = job.haul!!.sourceId
+            refundBySource[sourceId] = (refundBySource[sourceId] ?: 0) + amount
+        }
+        if (refundBySource.keys.any { state.haulSources.get(it) == null }) {
+            state.lastCommandOrError = "refund_source_missing:${command.siteId}"
+            return
+        }
+        refundBySource.forEach { (sourceId, amount) ->
+            check(state.haulSources.refund(sourceId, site.materialResourceId, amount))
+        }
+        jobs.forEach { job ->
+            state.haulSources.release(job.id)
+            val carriedJob = carried.firstOrNull { it.first.id == job.id }
+            if (carriedJob != null) {
+                val spec = requireNotNull(carriedJob.first.haul)
+                val amount = carriedJob.third
+                state.entities.update(carriedJob.second.id) {
+                    val nextInventory = it.inventory?.let { inventory ->
+                        val nextResources = inventory.resources.toMutableMap()
+                        val remaining = (nextResources[spec.resourceId] ?: 0) - amount
+                        if (remaining > 0) nextResources[spec.resourceId] = remaining
+                        else nextResources.remove(spec.resourceId)
+                        nextResources.takeIf { resources -> resources.isNotEmpty() }?.let { resources ->
+                            inventory.copy(resources = resources)
+                        }
+                    }
+                    it.copy(
+                        movement = null,
+                        inventory = nextInventory,
+                        jobActor = it.jobActor?.copy(assignedJobId = null, workTicks = 0),
+                    )
+                }
+            } else {
+                job.assignedTo?.let { actorId ->
+                    state.entities.update(actorId) {
+                        it.copy(
+                            movement = null,
+                            jobActor = it.jobActor?.copy(assignedJobId = null, workTicks = 0),
+                        )
+                    }
+                }
+            }
+            state.jobBoard.remove(job.id)
+        }
+        state.constructionSites.remove(site.id)
+        state.lastCommandOrError = "blueprint_cancelled:${site.id}"
+    }
+
+    private fun constructionSiteId(commandId: Long): String = "construction:$commandId"
+
+    private fun constructionHaulJobId(siteId: String): String = "construction-haul:$siteId"
+
+    private fun constructionBuildJobId(siteId: String): String = "construction-build:$siteId"
 
     private fun placeBuilding(command: PlaceBuildingCommand, eventSink: MutableList<GameplayEvent>) {
         val building = state.registry.buildings[command.buildingId]
@@ -1153,7 +1427,7 @@ class SandboxRuntime(
 private fun VisualAssetRef.toRenderAssetRef(): RenderAssetRef = RenderAssetRef(path = path, atlasKey = atlasKey)
 
 object SandboxSaveCodec {
-    const val SAVE_VERSION: Int = 15
+    const val SAVE_VERSION: Int = 16
 
     fun encode(state: SandboxState, seed: Long, pendingCommands: List<EngineCommand> = emptyList()): String {
         val props = Properties()
@@ -1230,7 +1504,22 @@ object SandboxSaveCodec {
             listOf(
                 encodeToken(source.id), source.position.x, source.position.y,
                 source.resources.toSortedMap().entries.joinToString(",") { (id, amount) -> "${encodeToken(id)}:$amount" },
-                source.reservations.toSortedMap().entries.joinToString(",") { (jobId, amount) -> "${encodeToken(jobId)}:$amount" },
+                source.reservations.toSortedMap().entries.joinToString(",") { (jobId, amount) ->
+                    "${encodeToken(jobId)}:$amount:${encodeToken(source.reservationResources[jobId].orEmpty())}"
+                },
+            ).joinToString("|")
+        }
+        props["constructionSites"] = state.constructionSites.all().joinToString(";") { site ->
+            listOf(
+                encodeToken(site.id),
+                encodeToken(site.buildingId),
+                site.position.x,
+                site.position.y,
+                encodeToken(site.materialResourceId),
+                site.requiredAmount,
+                site.deliveredBySource.toSortedMap().entries.joinToString(",") { (sourceId, amount) ->
+                    "${encodeToken(sourceId)}:$amount"
+                },
             ).joinToString("|")
         }
         props["nextEntityId"] = state.entities.nextIdSnapshot().toString()
@@ -1332,7 +1621,10 @@ object SandboxSaveCodec {
         state.incidentModifiers = if (version >= 10) parseIncidentModifiers(props) else emptyMap()
         state.jobBoard = if (version >= 13) parseJobs(props.getProperty("jobs", "")) else JobBoard()
         state.zones = if (version >= 14) parseZones(props, registry, state.world, state.jobBoard) else ZoneStore()
-        state.haulSources = if (version >= 15) parseHaulSources(props.getProperty("haulSources", "")) else HaulSourceStore()
+        state.haulSources = if (version >= 15) parseHaulSources(props.getProperty("haulSources", ""), version) else HaulSourceStore()
+        state.constructionSites = if (version >= 16) {
+            parseConstructionSites(props.getProperty("constructionSites", ""), registry, state.world, state.haulSources)
+        } else ConstructionSiteStore()
         val entities = parseEntities(props.getProperty("entities", ""), registry, version)
         state.world.positions().forEach { state.world.clearOccupancy(it) }
         val loadedStore = EntityStore(props.getProperty("nextEntityId").toLong(), entities)
@@ -1372,19 +1664,20 @@ object SandboxSaveCodec {
         encodeToken(job.failureReason.orEmpty()),
         job.workTicks,
         job.completionEffects
-            .sortedWith(compareBy<JobCompletionEffect> { it.type.id }.thenBy {
-                (it as? JobCompletionEffect.ResourceDelta)?.resourceId.orEmpty()
-            })
+            .sortedBy { it.stableSortKey() }
             .joinToString("~") { effect ->
                 when (effect) {
                     is JobCompletionEffect.ResourceDelta ->
                         listOf(effect.type.id, encodeToken(effect.resourceId), effect.amount).joinToString(":")
+                    is JobCompletionEffect.SpawnBuilding ->
+                        listOf(effect.type.id, encodeToken(effect.buildingId), encodeToken(effect.siteId)).joinToString(":")
                 }
             },
         job.haul?.let { haul ->
             listOf(
                 encodeToken(haul.sourceId), encodeToken(haul.resourceId), haul.amount,
                 encodeToken(haul.destinationZoneId), haul.phase.name,
+                haul.destinationKind.name,
             ).joinToString(":")
         }.orEmpty(),
     ).joinToString("|")
@@ -1399,14 +1692,21 @@ object SandboxSaveCodec {
                 val assignedTo = parts[6].toLongOrNull()?.let(::EntityId)
                 val effects = parts[10].split('~').filter { it.isNotBlank() }.map { effectText ->
                     val effectParts = effectText.split(':')
-                    require(effectParts.size == 3 && effectParts[0] == "resource_delta") {
+                    require(effectParts.size == 3 && effectParts[0] in setOf("resource_delta", "spawn_building")) {
                         "Invalid job completion effect '$effectText'."
                     }
-                    JobCompletionEffect.ResourceDelta(
-                        resourceId = decodeToken(effectParts[1]),
-                        amount = effectParts[2].toIntOrNull()
-                            ?: error("Invalid resource delta amount in '$effectText'."),
-                    )
+                    if (effectParts[0] == "resource_delta") {
+                        JobCompletionEffect.ResourceDelta(
+                            resourceId = decodeToken(effectParts[1]),
+                            amount = effectParts[2].toIntOrNull()
+                                ?: error("Invalid resource delta amount in '$effectText'."),
+                        )
+                    } else {
+                        JobCompletionEffect.SpawnBuilding(
+                            buildingId = decodeToken(effectParts[1]),
+                            siteId = decodeToken(effectParts[2]),
+                        )
+                    }
                 }
                 Job(
                     id = decodeToken(parts[0]),
@@ -1421,13 +1721,15 @@ object SandboxSaveCodec {
                     completionEffects = effects,
                     haul = parts.getOrNull(11)?.takeIf { it.isNotBlank() }?.let { haulText ->
                         val haulParts = haulText.split(':')
-                        require(haulParts.size == 5) { "Invalid haul job payload '$haulText'." }
+                        require(haulParts.size == 5 || haulParts.size == 6) { "Invalid haul job payload '$haulText'." }
                         dev.myengine.ai.HaulJobSpec(
                             sourceId = decodeToken(haulParts[0]),
                             resourceId = decodeToken(haulParts[1]),
                             amount = haulParts[2].toInt(),
                             destinationZoneId = decodeToken(haulParts[3]),
                             phase = dev.myengine.ai.HaulPhase.valueOf(haulParts[4]),
+                            destinationKind = haulParts.getOrNull(5)?.let(dev.myengine.ai.HaulDestinationKind::valueOf)
+                                ?: dev.myengine.ai.HaulDestinationKind.STOCKPILE,
                         )
                     },
                 )
@@ -1487,15 +1789,56 @@ object SandboxSaveCodec {
         return ZoneStore(stockpiles, designations)
     }
 
-    private fun parseHaulSources(text: String): HaulSourceStore = HaulSourceStore(
+    private fun parseHaulSources(text: String, version: Int): HaulSourceStore = HaulSourceStore(
         text.split(';').filter { it.isNotBlank() }.map { encoded ->
             val parts = encoded.split('|')
-            require(parts.size == 5) { "Invalid haul source entry '$encoded'." }
+            require(parts.size == 5 || (version >= 16 && parts.size == 6)) { "Invalid haul source entry '$encoded'." }
+            val (reservations, reservationResources) = parseEncodedReservations(parts[4], "haul reservation")
             HaulSource(
                 id = decodeToken(parts[0]),
                 position = TilePosition(parts[1].toInt(), parts[2].toInt()),
                 resources = parseEncodedResources(parts[3], "haul source"),
-                reservations = parseEncodedResources(parts[4], "haul reservation"),
+                reservations = reservations,
+                reservationResources = reservationResources,
+            )
+        },
+    )
+
+    private fun parseConstructionSites(
+        text: String,
+        registry: ContentRegistry,
+        world: TileWorld,
+        sources: HaulSourceStore,
+    ): ConstructionSiteStore = ConstructionSiteStore(
+        text.split(';').filter { it.isNotBlank() }.map { encoded ->
+            val parts = encoded.split('|')
+            require(parts.size == 7) { "Invalid construction site entry '$encoded'." }
+            val siteId = decodeToken(parts[0])
+            val buildingId = decodeToken(parts[1])
+            val position = TilePosition(parts[2].toInt(), parts[3].toInt())
+            require(world.inBounds(position)) { "Construction site $siteId is outside the saved world." }
+            val building = registry.buildings[buildingId]
+                ?: error("Unknown construction building '$buildingId' in save.")
+            val resourceId = decodeToken(parts[4])
+            require(resourceId == building.costResource) {
+                "Construction site '$siteId' material does not match building '$buildingId'."
+            }
+            require(parts[5].toIntOrNull() == building.costAmount) {
+                "Construction site '$siteId' requirement does not match building '$buildingId'."
+            }
+            val delivered = parseEncodedResources(parts[6], "construction delivery")
+            delivered.keys.forEach { sourceId ->
+                require(sources.get(sourceId) != null) {
+                    "Unknown construction source '$sourceId' in save."
+                }
+            }
+            ConstructionSite(
+                id = siteId,
+                buildingId = buildingId,
+                position = position,
+                materialResourceId = resourceId,
+                requiredAmount = parts[5].toInt(),
+                deliveredBySource = delivered,
             )
         },
     )
@@ -1508,6 +1851,21 @@ object SandboxSaveCodec {
             require(amount != null && amount >= 0) { "Invalid $label resource amount '$encoded'." }
             decodeToken(parts[0]) to amount
         }
+
+    private fun parseEncodedReservations(text: String, label: String): Pair<Map<String, Int>, Map<String, String>> {
+        val reservations = linkedMapOf<String, Int>()
+        val reservationResources = linkedMapOf<String, String>()
+        text.split(',').filter { it.isNotBlank() }.forEach { encoded ->
+            val parts = encoded.split(':')
+            require(parts.size == 2 || parts.size == 3) { "Invalid $label resource entry '$encoded'." }
+            val amount = parts[1].toIntOrNull()
+                ?: error("Invalid $label amount '$encoded'.")
+            val jobId = decodeToken(parts[0])
+            reservations[jobId] = amount
+            if (parts.size == 3 && parts[2].isNotBlank()) reservationResources[jobId] = decodeToken(parts[2])
+        }
+        return reservations to reservationResources
+    }
 
     private fun parseIncidentState(props: Properties): IncidentDirectorState {
         val cooldowns = props.getProperty("incidentCooldowns", "")
@@ -1639,6 +1997,16 @@ object SandboxSaveCodec {
                 val payloadParts = payload.split(':')
                 require(payloadParts.size == 3) { "Invalid place-building command payload '$payload'." }
                 PlaceBuildingCommand(id, scheduledTick, payloadParts[0], TileCoordinate(payloadParts[1].toInt(), payloadParts[2].toInt()), actorId)
+            } else if (type == "place_blueprint") {
+                val payloadParts = payload.split(':')
+                require(payloadParts.size == 3) { "Invalid place-blueprint command payload '$payload'." }
+                PlaceBlueprintCommand(
+                    id,
+                    scheduledTick,
+                    payloadParts[0],
+                    TileCoordinate(payloadParts[1].toInt(), payloadParts[2].toInt()),
+                    actorId,
+                )
             } else if (type == "upgrade_tower") {
                 val payloadParts = payload.split(':')
                 UpgradeTowerCommand(id, scheduledTick, payloadParts[0].toLong(), payloadParts[1], payloadParts[2].toInt(), actorId)
@@ -1646,6 +2014,8 @@ object SandboxSaveCodec {
                 SellTowerCommand(id, scheduledTick, payload.toLong(), actorId)
             } else if (type == "remove_building") {
                 RemoveBuildingCommand(id, scheduledTick, payload.toLong(), actorId)
+            } else if (type == "cancel_blueprint") {
+                CancelBlueprintCommand(id, scheduledTick, payload, actorId)
             } else if (type == "set_tower_targeting_mode") {
                 val payloadParts = payload.split(':')
                 require(payloadParts.size == 2) { "Invalid targeting mode command payload '$payload'." }

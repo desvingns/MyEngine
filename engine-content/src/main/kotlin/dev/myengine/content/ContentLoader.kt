@@ -376,6 +376,7 @@ object ContentPackLoader {
                 ?: return null,
             displayKey = fields.required(file, id, "displayKey", errors) ?: return null,
             assetRef = parseVisualAssetRef(id, fields, errors, file),
+            buildWorkTicks = fields.optionalPositiveInt(file, id, "buildWorkTicks", errors) ?: 1,
         )
     }
 

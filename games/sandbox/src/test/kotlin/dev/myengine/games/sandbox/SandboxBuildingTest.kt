@@ -113,7 +113,7 @@ class SandboxBuildingTest {
         session.step(5)
         val save = session.save()
 
-        assertTrue(save.contains("saveVersion=15"))
+        assertTrue(save.contains("saveVersion=${SandboxSaveCodec.SAVE_VERSION}"))
         val restored = SandboxSession.restore(save, registry)
         assertEquals(listOf(pending), restored.runtime.pendingCommands())
         assertEquals(session.stableHash(), restored.stableHash())

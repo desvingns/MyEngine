@@ -126,6 +126,33 @@ class JobExecutionSystemTest {
     }
 
     @Test
+    fun completionSinkEmitsSpawnBuildingEffectWithJobTarget() {
+        val effects = mutableListOf<JobCompletionEffect>()
+        val jobs = JobBoard(
+            listOf(
+                Job(
+                    id = "construction-build:1",
+                    type = "construction_build",
+                    target = TilePosition(0, 0),
+                    priority = 1,
+                    completionEffects = listOf(JobCompletionEffect.SpawnBuilding("wall", "construction:1")),
+                ),
+            ),
+        )
+        val entities = entities(worker(1, TilePosition(0, 0)))
+
+        JobExecutionSystem(
+            completionEffectSink = JobCompletionEffectSink { _, _, effect -> effects += effect },
+        ).tick(openWorld(), entities, jobs)
+
+        assertEquals(JobStatus.DONE, jobs.get("construction-build:1")?.status)
+        assertEquals(
+            listOf<JobCompletionEffect>(JobCompletionEffect.SpawnBuilding("wall", "construction:1")),
+            effects,
+        )
+    }
+
+    @Test
     fun invalidTargetReleasesAndCannotBeReclaimedByAnotherWorkerInTheSameTick() {
         val jobs = JobBoard(
             listOf(

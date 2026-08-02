@@ -7,7 +7,7 @@ two or more games outranks single-game gaps of the same severity.
 Updated by: the `/me-spec` backlog bridge (new gaps / new demand) and `/me`
 close-out (status changes).
 
-Last updated: 2026-08-02 (ENG-004 close-out)
+Last updated: 2026-08-02 (ENG-032 close-out)
 
 ## Capabilities
 
@@ -50,7 +50,7 @@ Last updated: 2026-08-02 (ENG-004 close-out)
 | Job execution system (JobBoard wired into tick) | ENG-003 | vision:rimworld-like, vision:mindustry-like | 2 | **done** (2026-08-02; deterministic v13 job execution with worker assignment/lifecycle, pathfinding movement, work ticks, typed resource-delta effects, invalid-target release, save migration, and replay/full-gate verification) |
 | First worker agent MVP (hauling) | ENG-004 | vision:rimworld-like, vision:mindustry-like | 2 | **done** (2026-08-02; data-defined worker speed/capacity, deterministic source reservations, source-to-stockpile carry/deposit, positioned producer outputs, stockpile contents, v15 save with v1-v14 migration, and full gates pass) |
 | Stockpile zones + designations | ENG-031 | vision:rimworld-like, vision:mindustry-like | 2 | **done** (2026-08-02; accepted Option A: deterministic zone commands/store, validated resource filters, one-shot harvest-node JobBoard jobs, immutable snapshot projection, v14 save with v1-v13 migration; hauling, quantities/capacity, depletion/repeated harvest, and Android overlay consumption deferred) |
-| Construction system (blueprint, haul, build) | ENG-032 | vision:rimworld-like, vision:mindustry-like | 2 | backlog |
+| Construction system (blueprint, haul, build) | ENG-032 | vision:rimworld-like, vision:mindustry-like | 2 | **done** (2026-08-02; non-blocking blueprints, deterministic sourceId-ordered hauling/retry, build jobs, source refunds on cancel, save v16 with v1-v15 migration, and full gates pass) |
 | Colonist needs MVP (hunger/rest) | ENG-033 | vision:rimworld-like | 1 | backlog |
 | Incident execution pipeline + RNG fix | ENG-016 | vision:rimworld-like, vision:mindustry-like, vision:td | 3 | **done** (2026-08-02; stateful deterministic director with persistent RNG cursor, cadence/pacing/cooldown selection, atomic typed spawn-wave/resource-event/modifier interpreter, v10 save with v1-v9 migration, remediation replay/save/overflow diagnostics and benchmark gates pass) |
 | Research/tech tree + unlock gating | ENG-017 | vision:mindustry-like, vision:td | 2 | backlog |
@@ -116,10 +116,11 @@ Last updated: 2026-08-02 (ENG-004 close-out)
    -> ENG-012 (done 2026-08-02) -> ENG-007 (done 2026-08-02) -> ENG-018 (done 2026-08-02)
    -> ENG-011 (done 2026-08-02) -> ENG-019 (done 2026-08-02) -> ENG-001 (done 2026-08-02)
    -> ENG-003 (done 2026-08-02) -> ENG-031 (done 2026-08-02) -> ENG-004 (done 2026-08-02)
-   -> ENG-032 (next exact item).
-   ENG-001, ENG-003, ENG-031, and ENG-004 are complete; ENG-032 is the next colony-slice card with demand 2.
-   The remaining colony slice (ENG-004 -> ENG-032) remains deferred until a colony/MySD spec
-   supplies named FRs (see Plane/15). Colony demand remains vision-only.
+   -> ENG-032 (done 2026-08-02).
+   ENG-001, ENG-003, ENG-031, ENG-004, and ENG-032 are complete; ENG-033 is the next candidate
+   colony card, with demand remaining vision-only.
+   The adopted colony slice is complete; further colony work remains deferred until a colony/MySD
+   spec supplies named FRs (see Plane/15). Colony demand remains vision-only.
 4. DX-008 is done: use its hybrid-format ADR for ENG-017/ENG-028 schema work. Other high-leverage
    pipeline cards remain DX-002, DX-006, and DX-005.
 5. MySD foundation: PROC-002 / ADR-0004 is done. After MySD Gate 2, implement ENG-036 before the

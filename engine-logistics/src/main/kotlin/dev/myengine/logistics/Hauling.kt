@@ -3,7 +3,9 @@ package dev.myengine.logistics
 import dev.myengine.ai.AgentPathPlan
 import dev.myengine.ai.AgentPathPlanner
 import dev.myengine.ai.HaulPhase
+import dev.myengine.ai.HaulDestinationKind
 import dev.myengine.ai.JobBoard
+import dev.myengine.ai.Job
 import dev.myengine.entities.EntityId
 import dev.myengine.entities.EntityStore
 import dev.myengine.entities.InventoryComponent
@@ -16,6 +18,7 @@ data class HaulSource(
     val position: TilePosition,
     val resources: Map<String, Int> = emptyMap(),
     val reservations: Map<String, Int> = emptyMap(),
+    val reservationResources: Map<String, String> = emptyMap(),
 ) {
     init {
         require(id.isNotBlank()) { "Haul source id cannot be blank." }
@@ -25,13 +28,31 @@ data class HaulSource(
         reservations.forEach { (jobId, amount) ->
             require(jobId.isNotBlank() && amount > 0) { "Invalid haul source reservation '$jobId'." }
         }
-        require(reservations.values.sumOf { it.toLong() } <= resources.values.sumOf { it.toLong() }) {
-            "Haul source reservations cannot exceed source resources."
+        reservationResources.forEach { (jobId, resourceId) ->
+            require(jobId in reservations && resourceId.isNotBlank() && resourceId in resources) {
+                "Invalid haul source reservation resource '$jobId'."
+            }
+        }
+        val knownReserved = reservationResources.entries
+            .groupBy({ it.value }, { reservations.getValue(it.key) })
+            .mapValues { (_, amounts) -> amounts.sumOf { it.toLong() } }
+        require(knownReserved.all { (resourceId, amount) -> amount <= (resources[resourceId] ?: 0).toLong() }) {
+            "Haul source reservations cannot exceed their resource quantities."
+        }
+        val unknownReserved = reservations.keys
+            .filter { it !in reservationResources }
+            .sumOf { reservations.getValue(it).toLong() }
+        require(unknownReserved <= resources.values.sumOf { it.toLong() }) {
+            "Legacy haul source reservations cannot exceed source resources."
         }
     }
 
-    fun available(resourceId: String): Int =
-        (resources[resourceId] ?: 0) - reservations.values.sum()
+    fun available(resourceId: String): Int {
+        val reserved = reservations.entries.sumOf { (jobId, amount) ->
+            if (reservationResources[jobId] == null || reservationResources[jobId] == resourceId) amount else 0
+        }
+        return (resources[resourceId] ?: 0) - reserved
+    }
 }
 
 /** Authoritative deterministic item sources, including positioned producer outputs. */
@@ -67,7 +88,10 @@ class HaulSourceStore(initialSources: List<HaulSource> = emptyList()) {
     fun reserve(sourceId: String, jobId: String, resourceId: String, amount: Int): Boolean {
         val source = sources[sourceId] ?: return false
         if (source.reservations.containsKey(jobId) || source.available(resourceId) < amount) return false
-        sources[sourceId] = source.copy(reservations = source.reservations + (jobId to amount))
+        sources[sourceId] = source.copy(
+            reservations = source.reservations + (jobId to amount),
+            reservationResources = source.reservationResources + (jobId to resourceId),
+        )
         return true
     }
 
@@ -75,30 +99,55 @@ class HaulSourceStore(initialSources: List<HaulSource> = emptyList()) {
 
     fun pickup(sourceId: String, jobId: String, resourceId: String, amount: Int): Boolean {
         val source = sources[sourceId] ?: return false
-        if (source.reservations[jobId] != amount || source.resources[resourceId] ?: 0 < amount) return false
+        if (source.reservations[jobId] != amount ||
+            (source.reservationResources[jobId] != null && source.reservationResources[jobId] != resourceId) ||
+            source.resources[resourceId] ?: 0 < amount
+        ) return false
         val remaining = (source.resources[resourceId] ?: 0) - amount
         val nextResources = if (remaining == 0) source.resources - resourceId else source.resources + (resourceId to remaining)
-        sources[sourceId] = source.copy(resources = nextResources, reservations = source.reservations - jobId)
+        sources[sourceId] = source.copy(
+            resources = nextResources,
+            reservations = source.reservations - jobId,
+            reservationResources = source.reservationResources - jobId,
+        )
         return true
     }
 
     fun release(jobId: String) {
         sources.entries.forEach { (id, source) ->
-            if (jobId in source.reservations) sources[id] = source.copy(reservations = source.reservations - jobId)
+            if (jobId in source.reservations) {
+                sources[id] = source.copy(
+                    reservations = source.reservations - jobId,
+                    reservationResources = source.reservationResources - jobId,
+                )
+            }
         }
+    }
+
+    /** Returns material to its original source after a carried or delivered haul is cancelled. */
+    fun refund(sourceId: String, resourceId: String, amount: Int): Boolean {
+        require(amount > 0) { "Refund amount must be positive." }
+        val source = sources[sourceId] ?: return false
+        sources[sourceId] = source.copy(
+            resources = source.resources + (resourceId to ((source.resources[resourceId] ?: 0) + amount)),
+        )
+        return true
     }
 
     fun appendHash(hash: StableHash) {
         all().forEach { source ->
             hash.add("haul-source").add(source.id).add(source.position.x).add(source.position.y)
             source.resources.toSortedMap().forEach { (id, amount) -> hash.add(id).add(amount) }
-            source.reservations.toSortedMap().forEach { (jobId, amount) -> hash.add("reservation").add(jobId).add(amount) }
+            source.reservations.toSortedMap().forEach { (jobId, amount) ->
+                hash.add("reservation").add(jobId).add(amount).add(source.reservationResources[jobId] ?: "")
+            }
         }
     }
 
     private fun canonical(source: HaulSource): HaulSource = source.copy(
         resources = source.resources.toSortedMap(),
         reservations = source.reservations.toSortedMap(),
+        reservationResources = source.reservationResources.toSortedMap(),
     )
 }
 
@@ -106,6 +155,18 @@ data class HaulingReport(
     val completedJobIds: List<String> = emptyList(),
     val releasedJobIds: List<String> = emptyList(),
 )
+
+fun interface HaulDestinationSink {
+    fun deposit(job: Job, position: TilePosition, resourceId: String, amount: Int): Boolean
+}
+
+private class StockpileDestinationSink(private val zones: ZoneStore) : HaulDestinationSink {
+    override fun deposit(job: Job, position: TilePosition, resourceId: String, amount: Int): Boolean {
+        val spec = job.haul ?: return false
+        return spec.destinationKind == HaulDestinationKind.STOCKPILE &&
+            zones.deposit(spec.destinationZoneId, position, resourceId, amount)
+    }
+}
 
 /** Deterministic source-to-stockpile worker execution. */
 class HaulingSystem(
@@ -118,6 +179,7 @@ class HaulingSystem(
         sources: HaulSourceStore,
         zones: ZoneStore,
         workers: Map<String, dev.myengine.content.WorkerContent>,
+        destinationSink: HaulDestinationSink = StockpileDestinationSink(zones),
     ): HaulingReport {
         val completed = mutableListOf<String>()
         val released = mutableListOf<String>()
@@ -129,6 +191,12 @@ class HaulingSystem(
                 var worker = entities.require(initial.id)
                 val actor = worker.jobActor ?: return@forEach
                 val assignedJobId = actor.assignedJobId
+                if (assignedJobId != null && jobs.get(assignedJobId)?.haul == null) {
+                    // Generic jobs share the same worker actor and are executed immediately
+                    // after hauling in the sandbox tick. Leave their assignment untouched so
+                    // JobExecutionSystem can advance it in its own deterministic phase.
+                    return@forEach
+                }
                 val job = if (assignedJobId == null) {
                     jobs.assignNext(worker.id, releasedThisTick) { it.haul != null }?.job
                 } else {
@@ -187,7 +255,7 @@ class HaulingSystem(
                 if (!move(world, entities, worker, job.target, content.speedTilesPerTick)) return@forEach
                 worker = entities.require(worker.id)
                 if (worker.position?.tile != job.target) return@forEach
-                if (!zones.deposit(spec.destinationZoneId, job.target, spec.resourceId, spec.amount)) {
+                if (!destinationSink.deposit(job, job.target, spec.resourceId, spec.amount)) {
                     release(entities, jobs, sources, worker.id, job.id, "invalid_stockpile", releasedThisTick, released)
                     return@forEach
                 }

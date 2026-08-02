@@ -138,16 +138,26 @@ content values. Boss state is exposed to immutable render snapshots for presenta
 
 Worker capability is content metadata; the authoritative entity stores only the worker id and
 current carry. Typed haul jobs reserve source quantities by job id, pick up at the source, and
-deposit into a permitted tile of the referenced stockpile. Source quantities, reservations,
-worker carry, haul phase, and stockpile contents are persisted in sandbox save v15; v1-v14 saves
-migrate with empty hauling state. Positioned producer outputs are materialized as deterministic
+deposit through an injectable destination sink. Stockpile destinations retain the existing
+zone/filter behavior; construction destinations record delivery by original source id. Source
+quantities, reservations, worker carry, haul phase, stockpile contents, and in-progress
+construction ledgers are persisted in sandbox save v16; v1-v15 saves migrate with empty
+construction state. Positioned producer outputs are materialized as deterministic
 `producer:<producerId>` sources and are not also credited to global inventory.
 
 ### Buildings
 
-`buildings.properties` is optional and intentionally contains no gameplay fields yet. It uses the
-same `<id>.<field>=<value>` format and provides a smallest data-driven home for future building
-definitions:
+`buildings.properties` is optional and uses the same `<id>.<field>=<value>` format. Building
+definitions are data-driven and currently support:
+
+- `costResource`: resource id consumed by the legacy immediate placement flow and construction
+  hauling
+- `costAmount`: positive material amount
+- `maxHealth`: positive completed-building health
+- `footprintWidth` and `footprintHeight`: currently both must be `1`
+- `sellRefundRatio`: decimal from `0` through `1` for completed-building removal
+- `displayKey`: localization key
+- `buildWorkTicks`: optional positive integer for construction work; omitted defaults to `1`
 
 - `spritePath`: optional pack-relative file path, or
 - `atlasPath` + `atlasKey`: optional pair

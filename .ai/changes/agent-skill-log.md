@@ -512,3 +512,20 @@ by: claude
 - Verification: full tests/projects/content validation/replay/save-compat/benchmark/Android assemble
   and diff-check passed. Replay hashes remain `e4892bcc18f9d8dc` / `a763da4ac32b15b4`.
 - No plugin version bump; no ADR.
+
+## 2026-08-02 - MyEngine ENG-032 feature run
+
+- Owner: Codex
+- Change type: normal feature run; no agent/skill/adapter/pipeline contract change.
+- Summary: `/me --feature --next` selected ENG-032 and added deterministic construction blueprints,
+  ENG-004 haul delivery to construction sites, build jobs, source refunds on cancellation, save v16
+  migration, and focused replay/save coverage. User gate decisions: refund to the original
+  `HaulSourceStore`; automatic source selection by ascending `sourceId` with retry.
+- Pipeline: selfcheck/scout/architect intake passed. Developer/tester/reviewer subagents timed out
+  after bounded waits; the orchestrator completed the scoped implementation, tests, runner gates,
+  and local boundary review. A late simulation review found and the orchestrator fixed resource-
+  specific reservation accounting, mixed worker-cargo refund handling, and effect tie-breakers.
+- Verification: full tests/projects/content validation/replay/save-compat/benchmark/selfcheck,
+  Android assembleDebug, focused construction tests, and `git diff --check` passed.
+- No plugin version bump; no ADR. Reviewer timeouts are recorded as a non-blocking infrastructure
+  note in the close-out docs and telemetry.

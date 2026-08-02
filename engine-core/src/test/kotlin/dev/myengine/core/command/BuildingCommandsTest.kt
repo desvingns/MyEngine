@@ -21,12 +21,31 @@ class BuildingCommandsTest {
     }
 
     @Test
+    fun blueprintCommandsExposeStablePayloads() {
+        val place = PlaceBlueprintCommand(CommandId(9), Tick(14), "wall", TileCoordinate(4, 5), actorId = 101L)
+        val cancel = CancelBlueprintCommand(CommandId(10), Tick(15), "construction:9", actorId = 102L)
+
+        assertEquals("place_blueprint", place.type)
+        assertEquals("wall:4:5", place.stablePayload())
+        assertEquals(101L, place.actorId)
+        assertEquals("cancel_blueprint", cancel.type)
+        assertEquals("construction:9", cancel.stablePayload())
+        assertEquals(102L, cancel.actorId)
+    }
+
+    @Test
     fun buildingCommandsRejectInvalidIdentity() {
         assertFailsWith<IllegalArgumentException> {
             PlaceBuildingCommand(CommandId(1), Tick(1), "", TileCoordinate(1, 1))
         }
         assertFailsWith<IllegalArgumentException> {
             RemoveBuildingCommand(CommandId(1), Tick(1), 0L)
+        }
+        assertFailsWith<IllegalArgumentException> {
+            PlaceBlueprintCommand(CommandId(1), Tick(1), "", TileCoordinate(1, 1))
+        }
+        assertFailsWith<IllegalArgumentException> {
+            CancelBlueprintCommand(CommandId(1), Tick(1), "")
         }
     }
 }

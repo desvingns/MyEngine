@@ -194,6 +194,7 @@ data class BuildingContent(
     val sellRefundRatio: BigDecimal,
     val displayKey: String,
     val assetRef: VisualAssetRef? = null,
+    val buildWorkTicks: Int = 1,
 ) : ContentDefinition {
     init {
         require(costResource.isNotBlank()) { "Building cost resource cannot be blank." }
@@ -204,6 +205,7 @@ data class BuildingContent(
             "Building sell refund ratio must be between 0 and 1."
         }
         require(displayKey.isNotBlank()) { "Building display key cannot be blank." }
+        require(buildWorkTicks > 0) { "Building work ticks must be positive." }
     }
 }
 

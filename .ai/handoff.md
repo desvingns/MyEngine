@@ -1,6 +1,6 @@
 # MyEngine Handoff
 
-Last updated: 2026-08-02 (ENG-004 close-out; next ENG-032)
+Last updated: 2026-08-02 (ENG-032 close-out; next ENG-033 candidate)
 Owner: Codex
 
 ## DONE
@@ -1433,3 +1433,47 @@ was pushed.
   `.\gradlew.bat :android:assembleDebug`, selfcheck, and `git diff --check` passed.
 - Replay hashes: `e4892bcc18f9d8dc`, `a763da4ac32b15b4`; benchmark: `sim=559 ms`, `kill=111 ms`,
   GoalField rebuild `7144000 ns`, spatial index `7.7432 ms`.
+
+## ENG-032 close-out
+
+### DONE
+
+- Added `PlaceBlueprintCommand` and `CancelBlueprintCommand`, `ConstructionSiteStore`, and a
+  construction-specific haul destination while retaining the existing immediate `PlaceBuilding`
+  flow.
+- Blueprints stay non-blocking until completion. Placement checks prospective route safety;
+  delivery uses ENG-004 hauling; a generic build job applies content-defined `buildWorkTicks`;
+  completion spawns the building and rebuilds `GoalField`.
+- Source choice is automatic and deterministic: eligible sources are considered in ascending
+  `sourceId` order and retried when a source cannot currently satisfy the remaining material.
+- Cancellation returns delivered and worker-carried in-transit material to the original
+  `HaulSourceStore`, releases reservations, and clears assignments.
+- Save format is v16; construction sites and source-aware delivery ledgers roundtrip, while v1-v15
+  saves migrate with empty construction state. Pending blueprint/cancel commands roundtrip too.
+
+### DECISIONS
+
+- User-approved refund sink is the original `HaulSourceStore`; global `Inventory` is not used for
+  construction refunds. User-approved source selection is automatic sorted `sourceId` selection.
+- One existing `BuildingContent` material cost is persisted by source; `buildWorkTicks` is an
+  additive optional field defaulting to 1. No multi-material schema, blueprint overlay, or Android
+  renderer change is included. No ADR or plugin version bump was needed.
+
+### NEXT
+
+- ENG-032 is complete. ENG-033 is the next candidate, but remaining colony demand is vision-only
+  and should wait for MySD Gate 1 or an authored colony game spec with named FRs.
+
+### BLOCKERS
+
+- No implementation blocker. Developer/tester/reviewer subagent envelopes timed out after bounded
+  waits; the orchestrator completed local implementation, tests, gates, and boundary review. No
+  device/emulator or visual-golden proof is claimed beyond Android `assembleDebug`. The required
+  read-only `me-reflect` retry also timed out; no reflection proposal was applied.
+
+### VERIFICATION
+
+- `gradlew test`, `gradlew projects`, content validation, replay, save-compat, benchmark, selfcheck,
+  `:android:assembleDebug`, focused construction tests, and `git diff --check` passed.
+- Replay hashes: canonical `e4892bcc18f9d8dc`, kill `a763da4ac32b15b4`; save compatibility is v16
+  with v1-v15 migration.

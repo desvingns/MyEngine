@@ -468,7 +468,8 @@ class ContentPackLoaderTest {
         valid.resolve("buildings.properties").writeText(
             "wall.displayKey=building.wall\n" +
                 "wall.costResource=bolt\nwall.costAmount=3\nwall.maxHealth=20\n" +
-                "wall.footprintWidth=1\nwall.footprintHeight=1\nwall.sellRefundRatio=0.5\n",
+                "wall.footprintWidth=1\nwall.footprintHeight=1\nwall.sellRefundRatio=0.5\n" +
+                "wall.buildWorkTicks=3\n",
         )
         valid.resolve("strings.properties").writeText(
             valid.resolve("strings.properties").toFile().readText() + "\nbuilding.wall=Wall\n",
@@ -487,6 +488,7 @@ class ContentPackLoaderTest {
                 footprintHeight = 1,
                 sellRefundRatio = BigDecimal("0.5"),
                 displayKey = "building.wall",
+                buildWorkTicks = 3,
             ),
             loaded.registry!!.requireBuilding("wall"),
         )
