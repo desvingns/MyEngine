@@ -1,9 +1,14 @@
 # MyEngine Handoff
 
-Last updated: 2026-08-02 (ENG-032 close-out; next ENG-033 candidate)
+Last updated: 2026-08-03 (ENG-033 scope unblock; next ENG-033 feature run)
 Owner: Codex
 
 ## DONE
+
+- ENG-033 scope unblock (2026-08-03): the backlog card is now an authored colony feature scope with
+  accepted named `COL-FR-001..004` and `COL-NFR-001`, traceable `COL-AC`/`COL-GATE` entries, and an
+  explicit boundary that MySD's TD Gate 1 evidence does not prove colony behavior. The card remains
+  in backlog; the next action is the separate `/me --feature --next` implementation run.
 
 - ENG-019 is done: the 1x1 wall MVP is content-defined and localized with validated cost, health,
   footprint, visual reference, and refund metadata. Render-free place/remove commands perform atomic
@@ -75,8 +80,8 @@ Owner: Codex
 
 - PROC-003 is done: `Plane/15_domain_systems_sequencing.md` sequences the domain systems —
   flow-field/pathfinding already done via ENG-002 (MyTD FR-003/FR-009/FR-013), colony slice
-  ordered ENG-001 -> ENG-003 -> ENG-031 -> ENG-004 -> ENG-032 (vision-only demand; re-entry via
-  MySD Gate 1 / PROC-015 or an authored colony game spec), storyteller incidents = ENG-016
+  ordered ENG-001 -> ENG-003 -> ENG-031 -> ENG-004 -> ENG-032 -> ENG-033 (ENG-033 now has an
+  authored named-FR scope; MySD TD evidence is not used as colony evidence), storyteller incidents = ENG-016
   (vision-only demand plus defect fix F4). Card moved to `.claude/specs/done/`; roadmap row,
   recommended order, and demand tags synced.
 
@@ -660,15 +665,16 @@ Owner: Codex
 
 ## NEXT
 
-Run `/me --feature --next` for ENG-032 (construction blueprints), the next item in the deferred
-colony slice. ENG-004 is closed; the earlier commit blocker is resolved: PROC-013 commit 5eaaa78
+Run `/me --feature --next` for ENG-033 (colonist needs MVP), now that its authored named-FR scope
+satisfies the Phase 15 colony re-entry trigger. ENG-004 is closed; the earlier commit blocker is resolved: PROC-013 commit 5eaaa78
 was pushed.
 
 ## BLOCKERS
 
 - ENG-001 has no implementation blocker. Full Movement/job tick integration is intentionally
   deferred to ENG-003/ENG-004, and wave enemies remain on the ENG-002 `GoalField`. Colony demand
-  remains vision-only until MySD Gate 1 or an authored colony game spec supplies named FRs.
+  is now eligible through the authored ENG-033 scope; MySD TD evidence remains outside the colony
+  evidence boundary.
 - ENG-003 has no implementation blocker. Non-blocking follow-ups: add the two-worker replay to
   `DevtoolReports.replayInspect`; invoke `SandboxJobExecutionTest` separately from
   `scripts/me-save-compat.ps1`; and add a job-heavy benchmark for large worker/job counts and

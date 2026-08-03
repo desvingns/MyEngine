@@ -24,7 +24,7 @@ system is tied to demand recorded in `.claude/specs/ENGINE_ROADMAP.md`.
 - Tied to named MyTD requirements: FR-003 (path layouts), FR-009 (tick-keyed wave
   schedule), FR-013 (deterministic targeting). Reference: `D:/Pet/MyTD/spec/requirements.md`.
 
-### 15.2 Colony slice: ordered, vision-only demand
+### 15.2 Colony slice: ordered, authored demand
 
 Order:
 
@@ -33,10 +33,13 @@ Order:
 3. ENG-031 - Stockpile zones + designations mint jobs.
 4. ENG-004 - First worker agent MVP (hauling); depends on ENG-031 per its card.
 5. ENG-032 - Construction system (blueprint, haul, build); consumes hauling.
+6. ENG-033 - Colonist needs MVP (hunger/rest); consumes the completed job, worker, and save/snapshot foundations.
 
-Caveat: demand is vision-only (`vision:rimworld-like`, `vision:mindustry-like`); NO
-named game FR exists yet. Entry trigger: MySD Gate 1 evidence via PROC-015, or an
-authored colony game spec that supplies named FRs.
+Entry trigger is satisfied for ENG-033 by the human-authored, named-FR scope in
+`.claude/specs/backlog/ENG-033-colonist-needs-mvp.md` (accepted 2026-08-03).
+MySD Gate 1 is accepted for its TD reference inventory, but its evidence is not
+treated as evidence for colony behavior. Future colony cards still require their
+own named FRs or a confirmed MySD/PROC-015 bridge.
 
 ### 15.3 Storyteller incidents: ENG-016, vision-only demand
 

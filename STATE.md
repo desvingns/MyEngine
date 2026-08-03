@@ -1,10 +1,14 @@
 # MyEngine State
 
-Last updated: 2026-08-02 (ENG-032 close-out)
-Active phase: Phase 00-14 complete; Phase 15 sequencing adopted; Signal Garden SG-001..005 complete; MyTD MTD-001..005 complete; DX-008, ENG-001, ENG-002, ENG-003, ENG-004, ENG-005, ENG-007, ENG-008, ENG-009, ENG-010, ENG-011, ENG-012, ENG-013, ENG-014, ENG-015, ENG-016, ENG-018, ENG-019, ENG-020, ENG-021, ENG-026, ENG-027, ENG-028, ENG-029, ENG-030, ENG-031, PROC-002, PROC-003, PROC-007, and PROC-013 complete; pipeline at v0.2.0; next exact item ENG-032
-Owner of last update: Codex (2026-08-02: ENG-032 construction close-out; next candidate ENG-033)
+Last updated: 2026-08-03 (ENG-033 scope unblock)
+Active phase: Phase 00-14 complete; Phase 15 sequencing adopted; Signal Garden SG-001..005 complete; MyTD MTD-001..005 complete; DX-008, ENG-001, ENG-002, ENG-003, ENG-004, ENG-005, ENG-007, ENG-008, ENG-009, ENG-010, ENG-011, ENG-012, ENG-013, ENG-014, ENG-015, ENG-016, ENG-018, ENG-019, ENG-020, ENG-021, ENG-026, ENG-027, ENG-028, ENG-029, ENG-030, ENG-031, PROC-002, PROC-003, PROC-007, and PROC-013 complete; pipeline at v0.2.0; next exact item ENG-033
+Owner of last update: Codex (2026-08-03: human-authored ENG-033 scope accepted; next feature candidate ENG-033)
 
 ## Current Status
+
+- ENG-033 is scope-unblocked: its card now contains accepted named `COL-FR`/`COL-NFR` requirements,
+  traceability, and implementation gates. The card remains in backlog until `/me --feature --next`
+  starts the implementation pipeline. MySD TD Gate 1 evidence remains outside the colony evidence boundary.
 
 - Phase 00-03 foundation, stack, and architecture contracts are complete.
 - Phase 04 agentic pipeline bootstrap is complete.

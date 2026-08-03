@@ -3,6 +3,23 @@
 Append-only log for changes to agent prompts, skills, adapters, workflow contracts, and pipeline
 rules. Project docs can change without an entry here unless they alter agent behavior.
 
+## 2026-08-03 - ENG-033 Authored Colony Scope Unblock
+
+- Owner: Codex
+- Change type: spec/gate documentation
+- Changed:
+  - `.claude/specs/backlog/ENG-033-colonist-needs-mvp.md`
+  - `.claude/specs/ENGINE_ROADMAP.md`
+  - `Plane/15_domain_systems_sequencing.md`
+  - `STATE.md`
+  - `.ai/handoff.md`
+  - `.ai/DIGEST.md`
+- Summary: Formalized the existing ENG-033 acceptance as a human-authored colony scope with named
+  COL-FR/COL-NFR requirements, traceable acceptance/gates, and an explicit boundary excluding MySD's
+  TD evidence from colony claims. ENG-033 is now eligible for a separate implementation run while
+  remaining in backlog.
+- Human gate: explicit user request to unlock MyEngine specs on 2026-08-03.
+
 ## 2026-07-02 - Phase 01 Foundation
 
 - Owner: Codex
