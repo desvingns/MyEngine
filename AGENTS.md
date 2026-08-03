@@ -18,6 +18,10 @@ Read in this order:
 Use `rg`/`rg --files` for repository search. If a file already exists, read it before editing it.
 Do not overwrite user or agent changes you did not make.
 
+For common implementation tasks, load the matching on-demand recipe from `docs/COOKBOOK.md` after
+intake and before editing. The cookbook is deliberately not part of the always-loaded checklist;
+it is a token-economical guide for tower, content-field, save-field, tick-loop, and snapshot work.
+
 For the default headless debugging step, run `.\gradlew.bat --quiet :engine-devtools:run --args "inspect sandbox default games/sandbox/content/sandbox 35"`.
 The generic form is `inspect <factory> <scenario> <pack> <ticks> [script] [seed]`.
 The optional inspection command script uses one command per line in the form

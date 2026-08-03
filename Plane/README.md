@@ -81,6 +81,7 @@
 | [x] | ENG-033 Colonist needs MVP | [ENG-033](../.claude/specs/done/ENG-033-colonist-needs-mvp.md) | Content-defined hunger/rest decay and thresholds, deterministic recovery jobs/arbitration, immutable HUD need bars, save v17 with v1-v16 migration, and 10k determinism coverage | 2026-08-03 |
 | [x] | ENG-017 Research/tech tree + unlock gating | [ENG-017](../.claude/specs/done/ENG-017-research-tech-tree.md) | Optional validated `tech-tree.json`, deterministic atomic research spending, tower/building/recipe gating, immutable tree snapshot, save v18/v1-v17 migration, and replay/save/content/full-gate verification | 2026-08-03 |
 | [x] | DX-002 Headless state inspector | [DX-002](../.claude/specs/done/DX-002-headless-state-inspector.md) | Provider-based deterministic ASCII/JSON inspection with entities, inventories, defense metrics, stable hash, optional scripts, and AGENTS default-debug reference | 2026-08-03 |
+| [x] | DX-006 Engine cookbook | [DX-006](../.claude/specs/done/DX-006-engine-cookbook.md) | Five on-demand recipes with exact file lists, gates, and historical commit references; AGENTS intake link stays token-economical | 2026-08-03 |
 | [x] | ENG-006 Seeded procedural map generation | [ENG-006](../.claude/specs/done/ENG-006-procgen-maps.md) | Bounded seeded generation from validated content parameters, guaranteed spawn-to-core connectivity, deterministic fallback, ASCII devtools report, and seed-preserving sandbox save/reload | 2026-08-03 |
 
 ## Глобальные инварианты
@@ -1588,3 +1589,18 @@
   save-compat/benchmark/selfcheck, Android `assembleDebug`, and `git diff --check` passed. The
   verifier worker timed out; local boundary review found no blocker.
 - NEXT: Review remaining accepted backlog; DX-006 is the next high-leverage DX candidate.
+
+### 2026-08-03 - DX-006 (engine cookbook)
+
+- Status: Done / accepted; no new phase was created.
+- DONE: Added `docs/COOKBOOK.md` with five on-demand recipes for tower, content-field, save-field,
+  tick-loop, and snapshot work. Each recipe has exact file lists, gates, and a real historical
+  commit reference. `AGENTS.md` links the cookbook after intake without loading it always.
+- DECISIONS: Documentation-only scope; no ADR, save version, Android production change, or plugin /
+  skill / pipeline contract change.
+- NEXT: Review the remaining accepted backlog before the next `/me --feature --next` run.
+- BLOCKERS: No implementation blocker. The known untracked `.ai/retro/retro-2026-08-03.md` baseline
+  was left untouched and excluded from the feature scope.
+- VERIFICATION: Selfcheck, full tests/projects, content validation, replay, save-compat, benchmark,
+  Android `assembleDebug`, and `git diff --check` passed. The first Gradle test call lacked a valid
+  `JAVA_HOME`; the confirmation run used Android Studio JBR and passed.

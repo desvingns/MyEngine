@@ -1,7 +1,41 @@
 # MyEngine Handoff
 
-Last updated: 2026-08-03 (DX-002 close-out; next backlog review)
+Last updated: 2026-08-03 (DX-006 close-out; next backlog review)
 Owner: Codex
+
+## DX-006 close-out
+
+### DONE
+
+- Added `docs/COOKBOOK.md` with five on-demand recipes: tower type, content field, save field,
+  tick-loop system, and snapshot field. Every recipe has exact file lists, verification gates, and
+  a real historical commit reference.
+- Added the `AGENTS.md` on-demand intake link; the cookbook is not part of the always-loaded list.
+- Moved `DX-006-engine-cookbook.md` to `.claude/specs/done/` and synchronized the roadmap.
+
+### DECISIONS
+
+- Documentation-only scope. No production code, content values, save version, Android production
+  path, ADR, or plugin/skill/pipeline contract changed.
+- Recipes explicitly preserve Android-free simulation, external content, deterministic ordering,
+  snapshot-only presentation, and migration-aware saves.
+
+### NEXT
+
+- Review the remaining accepted backlog before the next `/me --feature --next` run.
+
+### BLOCKERS
+
+- No implementation blocker. No device/emulator, visual-golden, or frame-budget proof is claimed;
+  this run changed no Android production code.
+
+### VERIFICATION
+
+- `scripts/me-selfcheck.ps1`, full `gradlew test`, `gradlew projects`, content validation, replay,
+  save-compat, benchmark, `:android:assembleDebug`, and `git diff --check` passed.
+- The first test invocation stopped on an invalid `JAVA_HOME`; confirmation with the Android Studio
+  JBR passed. The known untracked `.ai/retro/retro-2026-08-03.md` baseline was left untouched and
+  excluded from the feature scope.
 
 ## DX-002 close-out
 

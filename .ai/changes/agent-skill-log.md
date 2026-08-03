@@ -573,3 +573,23 @@ by: claude
 - Verification: focused inspector tests, confirmed full tests/projects/content validation/replay/
   save-compat/benchmark/selfcheck, Android assembleDebug, and diff-check passed.
 - No plugin version bump; no ADR.
+
+## 2026-08-03 - MyEngine DX-006 feature run
+
+- Owner: Codex
+- Change type: normal documentation feature run; no agent/skill/adapter/pipeline contract change.
+- Summary: `/me --feature --next` selected DX-006 and added `docs/COOKBOOK.md` with five on-demand
+  task recipes (tower, content field, save field, tick-loop system, snapshot field), exact file
+  lists, gates, and historical commit references. `AGENTS.md` now links the cookbook after intake
+  without expanding the always-loaded checklist. The card moved to `.claude/specs/done/` and the
+  roadmap/state/handoff/Plane/digest were synchronized.
+- Pipeline: selfcheck passed; scout, architect, and developer workers did not return within the
+  initial bounded waits, so the orchestrator completed/reviewed the bounded documentation scope
+  locally; their later valid contracts confirmed the same scope. The final verifier worker was
+  requested but timed out; local boundary review found no blocker. No malformed JSON envelope was
+  returned by a completed worker.
+- Verification: full tests/projects, content validation, replay, save-compat, benchmark, selfcheck,
+  Android `assembleDebug`, and `git diff --check` passed. The first Gradle test invocation lacked a
+  valid `JAVA_HOME`; the confirmation run used Android Studio JBR and passed.
+- Baseline: known untracked `.ai/retro/retro-2026-08-03.md` was preserved and excluded from scope.
+- No plugin version bump; no ADR or human gate.

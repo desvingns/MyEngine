@@ -1,20 +1,37 @@
 # MyEngine Intake Digest
 
-Regenerated at close-out. Last updated: 2026-08-03 (DX-002 close-out).
+Regenerated at close-out. Last updated: 2026-08-03 (DX-006 close-out).
 
 ## Current next action
 
-DX-002 (headless state inspector) is complete. Review the remaining accepted backlog before the next
+DX-006 (engine cookbook) is complete. Review the remaining accepted backlog before the next
 `/me --feature --next` run.
 
 ## Active specs / roadmap
 
-- DX-002, ENG-001, ENG-003, ENG-031, ENG-004, ENG-032, ENG-033, ENG-006, and ENG-017 are done.
+- DX-002, DX-006, ENG-001, ENG-003, ENG-031, ENG-004, ENG-032, ENG-033, ENG-006, and ENG-017 are done.
 - ENG-003 is a post-Phase-14/Phase-15 feature close-out; no new phase was created.
 - ENG-002 remains the wave-enemy GoalField path; ENG-003 is the deterministic JobBoard/job-actor tick capability.
 - ENG-033's authored scope is implemented with no game-bundle traceability update. MySD TD Gate 1 is
   accepted for its TD reference inventory but is not treated as evidence for colony behavior.
 - No ADR or plugin/skill/pipeline contract change was needed.
+
+## DX-006 close-out
+
+### DONE
+
+- `docs/COOKBOOK.md` contains five on-demand recipes with exact file lists, required gates, and
+  historical commit references for tower, content, save, tick-loop, and snapshot work.
+- `AGENTS.md` points to the cookbook after intake without loading it into the always-read context;
+  the card is in `.claude/specs/done/` and the roadmap is synchronized.
+
+### VERIFICATION
+
+- Selfcheck, full tests/projects, content validation, replay, save-compat, benchmark, Android
+  `assembleDebug`, and `git diff --check` passed. The first Gradle test call lacked a valid
+  `JAVA_HOME`; the confirmation run used Android Studio JBR and passed.
+- Documentation-only boundary review found no production, save, Android, or plugin changes. The
+  known untracked retro baseline remains excluded.
 
 ## DX-002 close-out
 

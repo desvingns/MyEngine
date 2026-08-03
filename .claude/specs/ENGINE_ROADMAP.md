@@ -63,7 +63,7 @@ Last updated: 2026-08-03 (ENG-017 close-out)
 | Replay divergence bisector | DX-003 | agent pipeline | - | backlog |
 | Desktop content hot-reload | DX-004 | agent pipeline | - | backlog |
 | Schema-docs drift gate | DX-005 | agent pipeline | - | backlog |
-| Engine cookbook (agent task recipes) | DX-006 | agent pipeline | - | backlog |
+| Engine cookbook (agent task recipes) | DX-006 | agent pipeline | - | **done** (2026-08-03; `docs/COOKBOOK.md` has five on-demand recipes with exact file lists, gates, and historical commit references; `AGENTS.md` links it without adding it to always-loaded intake) |
 | Fuzz tests for ContentLoader + SaveCodec | DX-007 | agent pipeline | - | backlog |
 | ADR: JSON vs properties content format | DX-008 | agent pipeline | - | **done** (2026-07-16; ADR-0003 accepts `.properties` for flat definitions and JSON for nested assets) |
 | Spec board backsync | PROC-001 | process | - | backlog |
