@@ -87,6 +87,7 @@ Definition files use `<id>.<field>=<value>`.
   `weakest`; omitted schema-v1 content defaults deterministically to `nearest`, while an authored
   invalid value is rejected
 - `effectId`: optional status-effect id resolving to a definition in `effects.properties`
+- `maxHealth`: optional positive int for structure attacks; defaults to `10`
 - `splashRadius`: optional positive integer Manhattan radius centered on the selected primary
   target; omitted means the tower damages only that primary target
 - `falloff`: optional integer percentage from `0` through `100` of base damage removed per
@@ -169,6 +170,8 @@ result half-up. Multipliers are parsed as decimal values and never through binar
 - `rewardResource`: resource id
 - `rewardAmount`: non-negative int
 - `coreDamage`: positive int
+- `attacksStructures`: optional boolean; defaults to `false`. When `true`, a blocked enemy deals
+  its `coreDamage` to the adjacent live tower or building with the lowest entity id once per tick.
 - `isElite`: optional boolean; defaults to `false`
 - `isBoss`: optional boolean; defaults to `false`; an enemy cannot be both elite and boss
 - `healthScalePercent`: optional positive percentage from `1` through `10000`; defaults to `100`

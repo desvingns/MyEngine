@@ -240,6 +240,8 @@ data class BalancePackSummary(
     val bossWaveEnemies: Int,
     val enemyHealthTotal: Int,
     val coreDamagePotential: Int,
+    val structureAttackTypes: Int,
+    val structureDamagePotential: Int,
     val rewardTotal: Int,
     val resourceTypes: Int,
     val recipeOutputPerTick: Double,
@@ -264,6 +266,8 @@ data class BalancePackSummary(
         "boss_wave_enemies" to bossWaveEnemies,
         "enemy_health_total" to enemyHealthTotal,
         "core_damage_potential" to coreDamagePotential,
+        "structure_attack_types" to structureAttackTypes,
+        "structure_damage_potential" to structureDamagePotential,
         "reward_total" to rewardTotal,
         "resource_types" to resourceTypes,
         "recipe_output_per_tick" to recipeOutputPerTick,
@@ -652,6 +656,10 @@ object DevtoolReports {
             .coerceAtMost(Int.MAX_VALUE.toLong()).toInt()
         val coreDamagePotential = waveEntries.sumOf { it.first.coreDamage.toLong() }
             .coerceAtMost(Int.MAX_VALUE.toLong()).toInt()
+        val structureAttackTypes = registry.enemies.values.count { it.attacksStructures }
+        val structureDamagePotential = waveEntries.sumOf {
+            if (it.first.attacksStructures) it.first.coreDamage.toLong() else 0L
+        }.coerceAtMost(Int.MAX_VALUE.toLong()).toInt()
         val rewardTotal = waveEntries.sumOf { it.second.rewardAmount.toLong() }
             .coerceAtMost(Int.MAX_VALUE.toLong()).toInt()
         val recipeOutputPerTick = registry.recipes.values.sumOf { recipe ->
@@ -668,6 +676,8 @@ object DevtoolReports {
             bossWaveEnemies = bossWaveEnemies,
             enemyHealthTotal = enemyHealthTotal,
             coreDamagePotential = coreDamagePotential,
+            structureAttackTypes = structureAttackTypes,
+            structureDamagePotential = structureDamagePotential,
             rewardTotal = rewardTotal,
             resourceTypes = registry.resources.size,
             recipeOutputPerTick = recipeOutputPerTick,
@@ -792,6 +802,8 @@ object DevtoolReports {
             delta("enemy", "boss_wave_enemies", baseline.bossWaveEnemies.toDouble(), changed.bossWaveEnemies.toDouble()),
             delta("enemy", "enemy_health_total", baseline.enemyHealthTotal.toDouble(), changed.enemyHealthTotal.toDouble()),
             delta("core", "core_damage_potential", baseline.coreDamagePotential.toDouble(), changed.coreDamagePotential.toDouble()),
+            delta("structure", "structure_attack_types", baseline.structureAttackTypes.toDouble(), changed.structureAttackTypes.toDouble()),
+            delta("structure", "structure_damage_potential", baseline.structureDamagePotential.toDouble(), changed.structureDamagePotential.toDouble()),
             delta("resource", "reward_total", baseline.rewardTotal.toDouble(), changed.rewardTotal.toDouble()),
             delta("resource", "resource_types", baseline.resourceTypes.toDouble(), changed.resourceTypes.toDouble()),
             delta("resource", "recipe_output_per_tick", baseline.recipeOutputPerTick, changed.recipeOutputPerTick),

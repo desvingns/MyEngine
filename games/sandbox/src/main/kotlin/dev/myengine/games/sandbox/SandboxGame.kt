@@ -345,7 +345,14 @@ class SandboxRuntime(
                 state.lastCommandOrError = deposit.dropped.entries
                     .joinToString(",", prefix = "reward_dropped:") { "${it.key}:${it.value}" }
             }
-            state.defense = defenseRuntime.updateEnemies(state.registry, state.defense, state.entities, goalField)
+            state.defense = defenseRuntime.updateEnemies(
+                registry = state.registry,
+                state = state.defense,
+                entities = state.entities,
+                goalField = goalField,
+                world = state.world,
+                onStructureDestroyed = { goalField = rebuildAfterWalkabilityChange() },
+            )
             evaluateTerminalState()
             if (state.run.isTerminal) {
                 combatEvents = aggregateGameplayEvents(
@@ -2292,7 +2299,12 @@ object SandboxSaveCodec {
                     else -> emptySet()
                 },
                 position = if (x != null && y != null) PositionComponent(TilePosition(x, y)) else null,
-                health = if (health != null && maxHealth != null) HealthComponent(health, maxHealth) else null,
+                health = if (health != null && maxHealth != null) {
+                    HealthComponent(health, maxHealth)
+                } else if (towerId != null && registry.enemies.values.any { it.attacksStructures }) {
+                    val towerHealth = registry.requireTower(towerId).maxHealth
+                    HealthComponent(towerHealth, towerHealth)
+                } else null,
                 tower = if (towerId != null && cooldown != null) TowerComponent(towerId, cooldown, upgradeBranch, upgradeTier, targetingMode) else null,
                 attack = if (range != null && damage != null && cooldownTicks != null) AttackComponent(range, damage, cooldownTicks) else null,
                 inventory = entityInventory,

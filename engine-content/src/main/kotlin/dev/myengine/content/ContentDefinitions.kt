@@ -77,7 +77,13 @@ data class TowerContent(
     val assetRef: VisualAssetRef? = null,
     val effectId: String? = null,
     val damageTypeId: String? = null,
-) : ContentDefinition
+    /** Optional structure health used when an enemy pack enables structure attacks. */
+    val maxHealth: Int = 10,
+) : ContentDefinition {
+    init {
+        require(maxHealth > 0) { "Tower max health must be positive." }
+    }
+}
 
 enum class StatusEffectKind(val id: String) {
     SLOW("slow"),
@@ -155,6 +161,8 @@ data class EnemyContent(
     val rewardResource: String,
     val rewardAmount: Int,
     val coreDamage: Int,
+    /** When true, a blocked enemy attacks an adjacent live tower or building. */
+    val attacksStructures: Boolean = false,
     val assetRef: VisualAssetRef? = null,
     val isElite: Boolean = false,
     val isBoss: Boolean = false,

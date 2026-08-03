@@ -7,7 +7,7 @@ two or more games outranks single-game gaps of the same severity.
 Updated by: the `/me-spec` backlog bridge (new gaps / new demand) and `/me`
 close-out (status changes).
 
-Last updated: 2026-08-03 (DX-005 + PROC-006 close-out)
+Last updated: 2026-08-03 (ENG-034 close-out)
 
 ## Capabilities
 
@@ -55,7 +55,7 @@ Last updated: 2026-08-03 (DX-005 + PROC-006 close-out)
 | Incident execution pipeline + RNG fix | ENG-016 | vision:rimworld-like, vision:mindustry-like, vision:td | 3 | **done** (2026-08-02; stateful deterministic director with persistent RNG cursor, cadence/pacing/cooldown selection, atomic typed spawn-wave/resource-event/modifier interpreter, v10 save with v1-v9 migration, remediation replay/save/overflow diagnostics and benchmark gates pass) |
 | Research/tech tree + unlock gating | ENG-017 | vision:mindustry-like, vision:td | 2 | **done** (2026-08-03; optional validated `tech-tree.json`, deterministic atomic research and unlock gating, immutable snapshot, save v18/v1-v17 migration, replay/save/content/full-gate verification) |
 | Seeded procedural map generation | ENG-006 | vision:rimworld-like, vision:mindustry-like, vision:td | 3 | **done** (2026-08-03; bounded deterministic generator from validated content params, guaranteed spawn-to-core path, ASCII devtools report, seed-preserving sandbox save/reload) |
-| Enemy attacks on structures | ENG-034 | vision:mindustry-like | 1 | backlog |
+| Enemy attacks on structures | ENG-034 | vision:mindustry-like | 1 | **done** (2026-08-03; content-flagged blocked enemy attacks use stable adjacent-structure selection, lethal occupancy/GoalField invalidation, persisted building health, and balance-report structure metrics) |
 | Resource extractor building | ENG-035 | vision:mindustry-like, vision:rimworld-like | 2 | backlog |
 | Conveyor transport MVP | ENG-023 | vision:mindustry-like | 1 | backlog |
 | New-game scaffolder script | DX-001 | agent pipeline | - | backlog |

@@ -29,6 +29,37 @@ class ContentPackLoaderTest {
     }
 
     @Test
+    fun structureAttackFlagAndTowerHealthUseCompatibilityDefaults() {
+        val root = createPack()
+        val defaultResult = ContentPackLoader.load(root)
+
+        assertTrue(defaultResult.isValid, defaultResult.errors.joinToString("\n"))
+        assertFalse(defaultResult.registry!!.requireEnemy("scout").attacksStructures)
+        assertEquals(10, defaultResult.registry!!.requireTower("basic").maxHealth)
+
+        root.resolve("enemies.properties").toFile().appendText("\nscout.attacksStructures=true\n")
+        root.resolve("towers.properties").toFile().appendText("\nbasic.maxHealth=17\n")
+        val enabledResult = ContentPackLoader.load(root)
+
+        assertTrue(enabledResult.isValid, enabledResult.errors.joinToString("\n"))
+        assertTrue(enabledResult.registry!!.requireEnemy("scout").attacksStructures)
+        assertEquals(17, enabledResult.registry!!.requireTower("basic").maxHealth)
+    }
+
+    @Test
+    fun structureAttackAndTowerHealthFieldsRejectInvalidValues() {
+        val root = createPack()
+        root.resolve("enemies.properties").toFile().appendText("\nscout.attacksStructures=maybe\n")
+        root.resolve("towers.properties").toFile().appendText("\nbasic.maxHealth=0\n")
+
+        val result = ContentPackLoader.load(root)
+
+        assertFalse(result.isValid)
+        assertTrue(result.errors.any { it.file == "enemies.properties" && it.field == "attacksStructures" })
+        assertTrue(result.errors.any { it.file == "towers.properties" && it.field == "maxHealth" })
+    }
+
+    @Test
     fun waveSpawnSelectionSupportsDefaultAllAndNamedIdsPreservingAuthoredOrder() {
         val twoSpawnMap = listOf(
             "entry" to MapCoordinate(0, 0),

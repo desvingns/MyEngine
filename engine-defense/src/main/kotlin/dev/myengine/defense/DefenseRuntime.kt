@@ -134,6 +134,12 @@ class DefenseRuntime(private val pathfinder: GridPathfinder = GridPathfinder()) 
                 position = PositionComponent(position),
                 tower = TowerComponent(towerId, targetingMode = tower.targetingMode),
                 attack = AttackComponent(tower.range, tower.damage, tower.cooldownTicks, tower.damageTypeId),
+                // Legacy packs do not opt into structure attacks, so retaining null here keeps
+                // their entity hashes and save rows byte-for-byte compatible. Packs that enable
+                // the mechanic receive a deterministic health pool for tower targets.
+                health = if (registry.enemies.values.any { it.attacksStructures }) {
+                    HealthComponent(tower.maxHealth, tower.maxHealth)
+                } else null,
             )
         }
         world.occupy(position, entity.id.value)
@@ -548,6 +554,8 @@ class DefenseRuntime(private val pathfinder: GridPathfinder = GridPathfinder()) 
         state: DefenseState,
         entities: EntityStore,
         goalField: GoalField? = null,
+        world: TileWorld? = null,
+        onStructureDestroyed: () -> Unit = {},
     ): DefenseState {
         var nextState = state
         entities.byTag("enemy").sortedBy { it.id.value }.forEach { enemy ->
@@ -564,6 +572,15 @@ class DefenseRuntime(private val pathfinder: GridPathfinder = GridPathfinder()) 
                 entities.markRemove(enemy.id)
                 nextState = nextState.copy(coreHealth = (nextState.coreHealth - damage).coerceAtLeast(0))
                     .record(DefenseMetrics(enemiesLeaked = 1, coreDamage = damage))
+            } else if (goalField != null && goalField.nextStep(position) == null && attacksStructures(registry, enemy)) {
+                attackBlockingStructure(
+                    enemy = enemy,
+                    position = position,
+                    registry = registry,
+                    entities = entities,
+                    world = world,
+                    onStructureDestroyed = onStructureDestroyed,
+                )
             } else if (speed > 0 && goalField != null) {
                 var nextPosition = position
                 repeat(speed) {
@@ -585,6 +602,41 @@ class DefenseRuntime(private val pathfinder: GridPathfinder = GridPathfinder()) 
         }
         entities.flushRemovals()
         return nextState
+    }
+
+    private fun attacksStructures(registry: ContentRegistry, enemy: Entity): Boolean {
+        val enemyId = enemy.enemy?.enemyId ?: enemy.type.substringAfter("enemy:")
+        return registry.enemies[enemyId]?.attacksStructures == true
+    }
+
+    private fun attackBlockingStructure(
+        enemy: Entity,
+        position: TilePosition,
+        registry: ContentRegistry,
+        entities: EntityStore,
+        world: TileWorld?,
+        onStructureDestroyed: () -> Unit,
+    ) {
+        val target = entities.all()
+            .asSequence()
+            .filter { candidate ->
+                ("building" in candidate.tags || "tower" in candidate.tags) &&
+                    candidate.position?.tile?.let { position.manhattanDistance(it) == 1 } == true &&
+                    candidate.health?.isAlive() == true
+            }
+            .sortedBy { it.id.value }
+            .firstOrNull()
+            ?: return
+        val enemyId = enemy.enemy?.enemyId ?: enemy.type.substringAfter("enemy:")
+        val damage = enemy.enemy?.coreDamage ?: registry.enemies[enemyId]?.coreDamage ?: return
+        val currentHealth = target.health ?: return
+        val damagedHealth = currentHealth.damage(damage)
+        entities.update(target.id) { it.copy(health = damagedHealth) }
+        if (!damagedHealth.isAlive()) {
+            target.position?.tile?.let { world?.clearOccupancy(it, target.id.value) }
+            entities.markRemove(target.id)
+            onStructureDestroyed()
+        }
     }
 
     private fun effectiveMovementSpeed(registry: ContentRegistry, enemy: Entity): Int {

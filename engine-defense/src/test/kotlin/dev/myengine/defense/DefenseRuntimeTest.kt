@@ -57,6 +57,161 @@ class DefenseRuntimeTest {
     }
 
     @Test
+    fun blockedStructureAttackerDamagesLowestIdAdjacentStructureOncePerTickAndRebuildsOnDeath() {
+        val registry = testRegistry().copy(
+            enemies = testRegistry().enemies.mapValues { (_, enemy) -> enemy.copy(attacksStructures = true) },
+        )
+        val terrain = mapOf(
+            "floor" to TerrainRule("floor", buildable = true, blocksMovement = false),
+            "core" to TerrainRule("core", buildable = false, blocksMovement = false, isCore = true),
+            "wall" to TerrainRule("wall", buildable = false, blocksMovement = true),
+        )
+        val world = TileWorld.filled(WorldSize(3, 3), terrain, "wall")
+        world.setTile(TilePosition(0, 0), WorldTile("core"))
+        world.setTile(TilePosition(1, 1), WorldTile("floor"))
+        world.setTile(TilePosition(2, 1), WorldTile("floor", occupiedBy = 2L))
+        world.setTile(TilePosition(1, 2), WorldTile("floor", occupiedBy = 3L))
+        val entities = EntityStore()
+        val enemy = Entity(
+            id = EntityId(1), type = "enemy:scout", tags = setOf("enemy"),
+            position = PositionComponent(TilePosition(1, 1)), health = HealthComponent(5, 5),
+            movement = MovementComponent(), enemy = dev.myengine.entities.EnemyComponent("scout", 1, 2, "bolt", 1),
+        )
+        entities.upsert(enemy)
+        entities.upsert(Entity(
+            id = EntityId(2), type = "building:wall", tags = setOf("building"),
+            position = PositionComponent(TilePosition(2, 1)), health = HealthComponent(5, 5),
+        ))
+        entities.upsert(Entity(
+            id = EntityId(3), type = "building:wall", tags = setOf("building"),
+            position = PositionComponent(TilePosition(1, 2)), health = HealthComponent(5, 5),
+        ))
+        val field = GoalField.build(world, TilePosition(0, 0))
+        val runtime = DefenseRuntime()
+        var rebuilds = 0
+
+        runtime.updateEnemies(registry, DefenseState(3), entities, field, world) { rebuilds++ }
+
+        assertEquals(3, entities.require(EntityId(2)).health!!.current)
+        assertEquals(5, entities.require(EntityId(3)).health!!.current)
+        assertEquals(0, rebuilds)
+        runtime.updateEnemies(registry, DefenseState(3), entities, field, world) { rebuilds++ }
+        runtime.updateEnemies(registry, DefenseState(3), entities, field, world) { rebuilds++ }
+
+        assertEquals(1, rebuilds)
+        assertEquals(null, entities.get(EntityId(2)))
+        assertEquals(null, world.tileAt(TilePosition(2, 1)).tile.occupiedBy)
+        assertEquals(5, entities.require(EntityId(3)).health!!.current)
+    }
+
+    @Test
+    fun structureBreachReroutesDeterministicallyAcrossReplayRuns() {
+        fun runOnce(): Pair<List<TilePosition?>, DefenseState> {
+            val base = testRegistry()
+            val registry = base.copy(
+                enemies = base.enemies.mapValues { (_, enemy) -> enemy.copy(attacksStructures = true) },
+            )
+            val terrain = mapOf(
+                "floor" to TerrainRule("floor", buildable = true, blocksMovement = false),
+                "core" to TerrainRule("core", buildable = false, blocksMovement = false, isCore = true),
+                "wall" to TerrainRule("wall", buildable = false, blocksMovement = true),
+            )
+            val world = TileWorld.filled(WorldSize(3, 3), terrain, "wall")
+            val core = TilePosition(0, 1)
+            val enemyPosition = TilePosition(2, 1)
+            val structurePosition = TilePosition(1, 1)
+            world.setTile(core, WorldTile("core"))
+            world.setTile(structurePosition, WorldTile("floor", occupiedBy = 2L))
+            world.setTile(enemyPosition, WorldTile("floor"))
+            val entities = EntityStore()
+            val enemy = Entity(
+                id = EntityId(1), type = "enemy:scout", tags = setOf("enemy"),
+                position = PositionComponent(enemyPosition), health = HealthComponent(5, 5),
+                movement = MovementComponent(),
+                enemy = dev.myengine.entities.EnemyComponent("scout", 1, 2, "bolt", 1),
+            )
+            entities.upsert(enemy)
+            entities.upsert(
+                Entity(
+                    id = EntityId(2), type = "building:wall", tags = setOf("building"),
+                    position = PositionComponent(structurePosition), health = HealthComponent(2, 2),
+                ),
+            )
+            var goalField = GoalField.build(world, core)
+            assertEquals(null, goalField.nextStep(enemyPosition), "the intact structure must block the route")
+            var state = DefenseState(coreHealth = 3)
+            val positions = mutableListOf<TilePosition?>(enemyPosition)
+            repeat(4) {
+                state = DefenseRuntime().updateEnemies(
+                    registry = registry,
+                    state = state,
+                    entities = entities,
+                    goalField = goalField,
+                    world = world,
+                    onStructureDestroyed = { goalField = GoalField.build(world, core) },
+                )
+                positions += entities.get(enemy.id)?.position?.tile
+            }
+            assertEquals(null, entities.get(EntityId(2)))
+            assertEquals(null, world.tileAt(structurePosition).tile.occupiedBy)
+            return positions to state
+        }
+
+        val first = runOnce()
+        val second = runOnce()
+
+        assertEquals(first, second)
+        assertEquals(
+            listOf(
+                TilePosition(2, 1), TilePosition(2, 1), TilePosition(1, 1),
+                TilePosition(0, 1), null,
+            ),
+            first.first,
+        )
+        assertEquals(1, first.second.metrics.enemiesLeaked)
+        assertEquals(1, first.second.coreHealth)
+    }
+
+    @Test
+    fun unflaggedBlockedEnemyDoesNotDamageStructures() {
+        val registry = testRegistry()
+        val terrain = mapOf(
+            "floor" to TerrainRule("floor", buildable = true, blocksMovement = false),
+            "core" to TerrainRule("core", buildable = false, blocksMovement = false, isCore = true),
+            "wall" to TerrainRule("wall", buildable = false, blocksMovement = true),
+        )
+        val world = TileWorld.filled(WorldSize(3, 3), terrain, "wall")
+        world.setTile(TilePosition(0, 0), WorldTile("core"))
+        world.setTile(TilePosition(1, 1), WorldTile("floor"))
+        world.setTile(TilePosition(2, 1), WorldTile("floor", occupiedBy = 2L))
+        val entities = EntityStore()
+        entities.upsert(Entity(EntityId(1), "enemy:scout", setOf("enemy"), PositionComponent(TilePosition(1, 1)), HealthComponent(5, 5), MovementComponent(), enemy = dev.myengine.entities.EnemyComponent("scout", 1, 2, "bolt", 1)))
+        entities.upsert(Entity(EntityId(2), "building:wall", setOf("building"), PositionComponent(TilePosition(2, 1)), HealthComponent(5, 5)))
+
+        DefenseRuntime().updateEnemies(registry, DefenseState(3), entities, GoalField.build(world, TilePosition(0, 0)), world)
+
+        assertEquals(5, entities.require(EntityId(2)).health!!.current)
+    }
+
+    @Test
+    fun structureAttackContentAddsHealthToTowerTargetsWithoutChangingLegacyTowers() {
+        val base = testRegistry()
+        val enabled = base.copy(
+            enemies = base.enemies.mapValues { (_, enemy) -> enemy.copy(attacksStructures = true) },
+        )
+        val terrain = mapOf("floor" to TerrainRule("floor", buildable = true, blocksMovement = false))
+        val world = TileWorld.filled(WorldSize(2, 1), terrain, "floor")
+        val enabledEntities = EntityStore()
+        val legacyEntities = EntityStore()
+
+        DefenseRuntime().placeTower("basic", TilePosition(0, 0), enabled, world, enabledEntities)
+        DefenseRuntime().placeTower("basic", TilePosition(1, 0), base, world, legacyEntities)
+
+        assertEquals(10, enabledEntities.require(EntityId(1)).health!!.max)
+        assertEquals(null, legacyEntities.require(EntityId(1)).health)
+    }
+
+    @Test
     fun endlessWavesConsumeSuppliedRngAndApplyContentScaling() {
         val base = testRegistry()
         val registry = base.copy(

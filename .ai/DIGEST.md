@@ -1,20 +1,43 @@
 # MyEngine Intake Digest
 
-Regenerated at close-out. Last updated: 2026-08-03 (DX-005 + PROC-006 close-out).
+Regenerated at close-out. Last updated: 2026-08-03 (ENG-034 close-out).
 
 ## Current next action
 
-DX-005 + PROC-006 (schema drift and pre-push lane) are complete. Review the remaining accepted backlog before the next
-`/me --feature --next` run.
+ENG-034 (enemy attacks on structures) is complete. Review the remaining accepted backlog before the next
+`/me --feature --next` run; ENG-035 is the next roadmap-ordered engine candidate.
 
 ## Active specs / roadmap
 
-- DX-002, DX-005, DX-006, ENG-001, ENG-003, ENG-031, ENG-004, ENG-032, ENG-033, ENG-006, ENG-017, and PROC-006 are done.
+- DX-002, DX-005, DX-006, ENG-001, ENG-003, ENG-031, ENG-004, ENG-032, ENG-033, ENG-006, ENG-017,
+  ENG-034, and PROC-006 are done.
 - ENG-003 is a post-Phase-14/Phase-15 feature close-out; no new phase was created.
 - ENG-002 remains the wave-enemy GoalField path; ENG-003 is the deterministic JobBoard/job-actor tick capability.
 - ENG-033's authored scope is implemented with no game-bundle traceability update. MySD TD Gate 1 is
   accepted for its TD reference inventory but is not treated as evidence for colony behavior.
 - No ADR or plugin/skill/pipeline contract change was needed.
+
+## ENG-034 close-out
+
+### DONE
+
+- Added optional `attacksStructures`/`maxHealth` content fields, deterministic blocked-enemy attacks,
+  lethal occupancy and GoalField invalidation, save-compatible building health, and balance-report
+  structure metrics. The card is in `.claude/specs/done/`.
+
+### DECISIONS
+
+- The flag defaults off; attack target order is ascending entity id and damage is the existing
+  content-defined `coreDamage` once per fixed tick. Legacy packs preserve null tower health and
+  unchanged save/replay shape; save version remains v18.
+
+### VERIFICATION
+
+- Focused and full tests, projects, content validation, replay, save compatibility, benchmark,
+  selfcheck, Android `assembleDebug`, required headless inspect, and diff-check passed.
+- Conditional reviewer workers hit the bounded subagent-thread limit. The final verifier returned
+  `partial` after its bounded wait; its missing breach-reroute replay-test finding was remediated by
+  a focused deterministic test. No device/emulator or visual-golden proof is claimed.
 
 ## DX-005 + PROC-006 close-out
 

@@ -126,6 +126,23 @@ class SandboxBuildingTest {
     }
 
     @Test
+    fun nonLethalStructureDamageRoundTripsThroughExistingSaveHealthFields() {
+        val runtime = runtimeWithInventory(6)
+        runtime.submit(place(1, 1, TilePosition(4, 1)))
+        runtime.step()
+        runtime.state.entities.update(EntityId(1)) { entity ->
+            entity.copy(health = entity.health!!.damage(3))
+        }
+
+        val restored = SandboxRuntime(SandboxSaveCodec.decode(
+            SandboxSaveCodec.encode(runtime.state, seed = 7L),
+            runtime.state.registry,
+        ))
+
+        assertEquals(17, restored.state.entities.require(EntityId(1)).health!!.current)
+    }
+
+    @Test
     fun forcedCorridorReplayHashIsDeterministicAcrossRuns() {
         fun run(): String {
             val registry = forcedCorridorRegistry()

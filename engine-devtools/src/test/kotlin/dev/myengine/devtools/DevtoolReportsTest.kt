@@ -205,6 +205,8 @@ class DevtoolReportsTest {
         assertEquals("signal-garden", report.changed?.packId)
         assertTrue(report.deltas.any { it.metric == "enemy_health_total" }, json)
         assertTrue(report.deltas.any { it.metric == "core_damage_potential" }, json)
+        assertTrue(report.deltas.any { it.metric == "structure_attack_types" }, json)
+        assertTrue(report.deltas.any { it.metric == "structure_damage_potential" }, json)
         assertTrue(report.deltas.any { it.metric == "reward_total" }, json)
         assertTrue(json.contains("\"baseline_root\""), json)
         assertTrue(json.contains("\"changed_root\""), json)
@@ -238,6 +240,25 @@ class DevtoolReportsTest {
         assertTrue(changed.enemyHealthTotal > report.baseline!!.enemyHealthTotal)
         assertTrue(changed.rewardTotal > report.baseline.rewardTotal)
         assertTrue(report.deltas.any { it.metric == "boss_enemy_types" })
+    }
+
+    @Test
+    fun balanceReportExposesContentDefinedStructureAttackPotential() {
+        val changedRoot = Files.createTempDirectory("myengine-balance-structure")
+        copyFlatPack(SandboxGame.contentRoot(), changedRoot)
+        Files.writeString(
+            changedRoot.resolve("enemies.properties"),
+            Files.readString(changedRoot.resolve("enemies.properties")) +
+                "\ndrift.attacksStructures=true\n",
+        )
+
+        val report = DevtoolReports.balanceDeltaReport(SandboxGame.contentRoot(), changedRoot)
+
+        assertTrue(report.valid, report.toJson())
+        assertEquals(1, report.changed!!.structureAttackTypes)
+        assertTrue(report.changed!!.structureDamagePotential > 0, report.toJson())
+        assertTrue(report.deltas.any { it.metric == "structure_damage_potential" }, report.toJson())
+        assertTrue(report.toJson().contains("structure_damage_potential"), report.toJson())
     }
 
     @Test

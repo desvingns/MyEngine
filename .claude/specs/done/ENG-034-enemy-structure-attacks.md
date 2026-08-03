@@ -1,6 +1,6 @@
 id: ENG-034
 title: Enemy attacks on structures
-status: backlog
+status: done
 phase: engine
 source: engine gap sweep 2026-07-06 (project review)
 

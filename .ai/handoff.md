@@ -1,7 +1,50 @@
 # MyEngine Handoff
 
-Last updated: 2026-08-03 (DX-005 + PROC-006 close-out; next backlog review)
+Last updated: 2026-08-03 (ENG-034 close-out; next backlog review)
 Owner: Codex
+
+## ENG-034 close-out (2026-08-03)
+
+### DONE
+
+- Implemented optional content-flagged enemy attacks against adjacent towers/buildings. Blocked
+  attackers select the lowest live adjacent entity id and apply the existing enemy `coreDamage`
+  once per fixed tick.
+- Added lethal structure cleanup: occupancy is cleared, the structure is removed, and the sandbox
+  rebuilds GoalField. Nonlethal building health persists through the existing save fields.
+- Added optional tower `maxHealth`, compatibility defaults in content loading/save decode, and
+  balance-report structure attack count/damage-potential metrics. The card moved to
+  `.claude/specs/done/` and roadmap/Plane/state/digest were synchronized.
+
+### DECISIONS
+
+- `EnemyContent.attacksStructures` defaults to `false`; unflagged enemies preserve existing
+  movement behavior and canonical replay/save shape.
+- Structure targeting is deterministic by adjacent live structure then ascending entity id. Tower
+  health is materialized only when the loaded registry contains an attack-enabled enemy, preserving
+  legacy tower rows. `SandboxSaveCodec.SAVE_VERSION` remains v18; no ADR or plugin contract change.
+
+### NEXT
+
+- Review the remaining accepted backlog; `ENG-035` is the next roadmap-ordered engine candidate.
+
+### BLOCKERS
+
+- No implementation blocker. Tester and conditional simulation/save/balance workers could not be
+  started after the bounded subagent-thread limit. The final verifier started but returned `partial`
+  after its bounded wait, identifying the missing dedicated breach-reroute replay test; the test was
+  added and passed locally. No device/emulator or visual-golden proof is claimed beyond Android
+  `assembleDebug`.
+- The known untracked `.ai/retro/retro-2026-08-03.md` baseline was preserved and excluded.
+
+### VERIFICATION
+
+- Focused content/defense/sandbox/devtools tests and full `gradlew test` passed, plus projects,
+  content validation, replay, save compatibility, benchmark, selfcheck, Android `assembleDebug`,
+  required headless inspect, and `git diff --check`.
+- Replay hashes remained `e4892bcc18f9d8dc`, `a763da4ac32b15b4`, and `3f02607020d48668`.
+- The added `structureBreachReroutesDeterministicallyAcrossReplayRuns` test covers destruction,
+  GoalField rebuild, rerouting, core arrival, and deterministic replay trace equality.
 
 ## DX-005 + PROC-006 close-out
 

@@ -613,3 +613,23 @@ by: claude
   `git diff --check` passed.
 - Baseline: known untracked `.ai/retro/retro-2026-08-03.md` was preserved and excluded.
 - No plugin version bump; no ADR.
+
+## 2026-08-03 - MyEngine ENG-034 feature run
+
+- Owner: Codex / `me-dev:me`
+- Change type: normal engine feature run; no agent, skill, adapter, plugin, or pipeline contract
+  change.
+- Summary: `/me --feature --next` reviewed the accepted backlog, selected roadmap-ordered ENG-034,
+  and added content-flagged blocked-enemy attacks against structures, deterministic target ordering,
+  lethal occupancy/GoalField invalidation, save-compatible building health, and balance metrics.
+  The card moved to `.claude/specs/done/` and state/hand-off/Plane/digest documents were synced.
+- Pipeline: selfcheck, scout, architect, implementation, local tests, runner gates, and final review
+  completed. Conditional tester/simulation/save/balance workers could not start after the bounded
+  subagent-thread limit. The final verifier returned `partial` after its bounded wait and identified
+  a missing dedicated breach-reroute replay test; the orchestrator added that test and reran the
+  focused/full gates. No malformed JSON envelope was returned by a completed worker.
+- Verification: focused tests, full tests/projects, content validation, replay, save compatibility,
+  benchmark, selfcheck, Android `assembleDebug`, required headless inspect, and `git diff --check`
+  passed. Replay hashes remained `e4892bcc18f9d8dc`, `a763da4ac32b15b4`, and `3f02607020d48668`.
+- Baseline: known untracked `.ai/retro/retro-2026-08-03.md` was preserved and excluded.
+- No plugin version bump; no ADR; no `SAVE_VERSION` bump.

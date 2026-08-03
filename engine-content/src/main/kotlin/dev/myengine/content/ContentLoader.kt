@@ -222,6 +222,7 @@ object ContentPackLoader {
                 } else value
             },
             damageTypeId = fields.optionalNonBlank(file, id, "damageTypeId", errors),
+            maxHealth = fields.optionalPositiveInt(file, id, "maxHealth", errors) ?: 10,
         )
 
     private fun parseTowerUpgradeTiers(
@@ -285,6 +286,7 @@ object ContentPackLoader {
             rewardResource = fields.required(file, id, "rewardResource", errors) ?: return null,
             rewardAmount = fields.requiredNonNegativeInt(file, id, "rewardAmount", errors) ?: return null,
             coreDamage = fields.requiredPositiveInt(file, id, "coreDamage", errors) ?: return null,
+            attacksStructures = fields.optionalBool(file, id, "attacksStructures", errors) ?: false,
             assetRef = parseVisualAssetRef(id, fields, errors, file),
             isElite = isElite,
             isBoss = isBoss && !isElite,

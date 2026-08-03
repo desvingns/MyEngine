@@ -1,8 +1,8 @@
 # MyEngine State
 
-Last updated: 2026-08-03 (DX-005 + PROC-006 close-out)
-Active phase: Phase 00-14 complete; Phase 15 sequencing adopted; Signal Garden SG-001..005 complete; MyTD MTD-001..005 complete; DX-002, DX-005, DX-006, DX-008, ENG-001, ENG-002, ENG-003, ENG-004, ENG-005, ENG-006, ENG-007, ENG-008, ENG-009, ENG-010, ENG-011, ENG-012, ENG-013, ENG-014, ENG-015, ENG-016, ENG-017, ENG-018, ENG-019, ENG-020, ENG-021, ENG-026, ENG-027, ENG-028, ENG-029, ENG-030, ENG-031, ENG-032, ENG-033, PROC-002, PROC-003, PROC-006, PROC-007, and PROC-013 complete; pipeline at v0.2.0; next exact action is review of the remaining accepted backlog
-Owner of last update: Codex (2026-08-03: DX-005 + PROC-006 close-out)
+Last updated: 2026-08-03 (ENG-034 close-out)
+Active phase: Phase 00-14 complete; Phase 15 sequencing adopted; Signal Garden SG-001..005 complete; MyTD MTD-001..005 complete; DX-002, DX-005, DX-006, DX-008, ENG-001, ENG-002, ENG-003, ENG-004, ENG-005, ENG-006, ENG-007, ENG-008, ENG-009, ENG-010, ENG-011, ENG-012, ENG-013, ENG-014, ENG-015, ENG-016, ENG-017, ENG-018, ENG-019, ENG-020, ENG-021, ENG-026, ENG-027, ENG-028, ENG-029, ENG-030, ENG-031, ENG-032, ENG-033, ENG-034, PROC-002, PROC-003, PROC-006, PROC-007, and PROC-013 complete; pipeline at v0.2.0; next exact action is review of the remaining accepted backlog
+Owner of last update: Codex (2026-08-03: ENG-034 close-out)
 
 ## Current Status
 
@@ -33,6 +33,30 @@ Owner of last update: Codex (2026-08-03: DX-005 + PROC-006 close-out)
   unlock references; deterministic atomic research spends resources and gates tower/building/recipe
   availability; immutable tree state is exposed in snapshots; `SandboxSaveCodec` v18 persists
   researched ids and pending research commands, with v1-v17 migration.
+
+- ENG-034 is complete: content-flagged blocked enemies attack the stable lowest-id adjacent
+  tower/building once per fixed tick, lethal damage clears occupancy and invalidates GoalField,
+  building health round-trips through the existing save fields, and balance reports expose
+  structure-attack metrics. Legacy packs keep null tower health and unchanged replay/save shape;
+  no save version bump was needed.
+
+## ENG-034 Close-out
+
+- DONE: Added optional `EnemyContent.attacksStructures` and `TowerContent.maxHealth`, deterministic
+  adjacent-structure targeting, fixed-tick `coreDamage`, lethal occupancy cleanup/GoalField rebuild,
+  sandbox health decode compatibility, and balance-report structure metrics with focused coverage.
+- DECISIONS: Structure attacks occur only when a content flag is enabled and the enemy is blocked by
+  GoalField; target ordering is ascending entity id. Existing tower health remains absent for legacy
+  packs unless an attack-enabled enemy is loaded. `SandboxSaveCodec.SAVE_VERSION` remains v18.
+- NEXT: Review the remaining accepted backlog; ENG-035 is the next roadmap-ordered engine candidate.
+- BLOCKERS: No implementation blocker. Conditional tester/simulation/save/balance workers could not
+  start after the bounded subagent-thread limit. The final verifier started but returned `partial`
+  after its bounded wait; it identified the missing dedicated breach-reroute replay test, which was
+  added and passed locally. The known untracked `.ai/retro/retro-2026-08-03.md` baseline remains
+  excluded.
+- VERIFICATION: Focused module tests, full `gradlew test`, `projects`, content validation, replay,
+  save compatibility, benchmark, selfcheck, Android `assembleDebug`, headless inspect, and
+  `git diff --check` passed. No device/emulator or visual-golden proof is claimed.
 
 ## DX-005 + PROC-006 Close-out
 
