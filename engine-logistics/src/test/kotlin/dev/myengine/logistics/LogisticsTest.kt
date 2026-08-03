@@ -33,4 +33,22 @@ class LogisticsTest {
             assertEquals(2, it.inventory.amount("plate"))
         }
     }
+
+    @Test
+    fun outputOnlyProducerReportsFinitePartialBatchAndInfiniteFullBatch() {
+        val recipe = RecipeContent("extract", null, 0, "bolt", 7, durationTicks = 2)
+        val system = ProducerSystem(mapOf(recipe.id to recipe))
+        val producer = Producer("extractor-1", "extract")
+
+        val finiteProgress = system.tick(producer, Inventory(), ProductionSource("bolt", 3))
+        val finite = system.tick(finiteProgress.producer, finiteProgress.inventory, ProductionSource("bolt", 3))
+        assertTrue(finite.completed)
+        assertEquals(3, finite.producedAmount)
+        assertEquals(mapOf("bolt" to 3), finite.inventory.resources)
+
+        val infiniteProgress = system.tick(producer, Inventory(), ProductionSource("bolt", 3, infinite = true))
+        val infinite = system.tick(infiniteProgress.producer, infiniteProgress.inventory, ProductionSource("bolt", 3, infinite = true))
+        assertEquals(7, infinite.producedAmount)
+        assertEquals(mapOf("bolt" to 7), infinite.inventory.resources)
+    }
 }

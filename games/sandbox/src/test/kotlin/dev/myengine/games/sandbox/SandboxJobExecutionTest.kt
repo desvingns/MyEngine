@@ -104,8 +104,8 @@ class SandboxJobExecutionTest {
         val save = SandboxSaveCodec.encode(state, seed = 41L)
         val restored = SandboxSaveCodec.decode(save, registry)
 
-        assertEquals(18, SandboxSaveCodec.SAVE_VERSION)
-        assertEquals("18", saveProperty(save, "saveVersion"))
+        assertEquals(19, SandboxSaveCodec.SAVE_VERSION)
+        assertEquals("19", saveProperty(save, "saveVersion"))
         assertEquals(job, restored.jobBoard.get("in-flight"))
         assertEquals(worker, restored.entities.require(EntityId(7)))
         assertEquals(state.stableHash(), restored.stableHash())

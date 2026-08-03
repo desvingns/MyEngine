@@ -5,6 +5,7 @@ import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.contentOrNull
+import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.intOrNull
 import java.nio.file.Files
 import java.nio.file.Path
@@ -483,6 +484,7 @@ object ContentPackLoader {
             displayKey = fields.required(file, id, "displayKey", errors) ?: return null,
             assetRef = parseVisualAssetRef(id, fields, errors, file),
             buildWorkTicks = fields.optionalPositiveInt(file, id, "buildWorkTicks", errors) ?: 1,
+            producerRecipeId = fields.optionalNonBlank(file, id, "producerRecipeId", errors),
         )
     }
 
@@ -992,7 +994,15 @@ object ContentPackLoader {
         }
         val resourceId = objectValue.requiredString("id", file, id, "$field.id", errors) ?: return null
         val amount = objectValue.requiredInt("amount", file, id, "$field.amount", errors) ?: return null
-        return MapResourceNode(resourceId, amount)
+        val infinite = objectValue["infinite"]?.let { raw ->
+            (raw as? JsonPrimitive)?.booleanOrNull ?: errors.addAndNull(
+                file,
+                id,
+                "$field.infinite",
+                "Expected boolean.",
+            )
+        } ?: false
+        return MapResourceNode(resourceId, amount, infinite)
     }
 
     private fun parseSpawns(
@@ -1386,6 +1396,24 @@ object ContentPackLoader {
                     "costResource",
                     "Unknown resource '${building.costResource}'.",
                 )
+            }
+            building.producerRecipeId?.let { recipeId ->
+                val recipe = recipes[recipeId]
+                if (recipe == null) {
+                    errors += ContentValidationError(
+                        "buildings.properties",
+                        building.id,
+                        "producerRecipeId",
+                        "Unknown recipe '$recipeId'.",
+                    )
+                } else if (recipe.inputResource != null || recipe.inputAmount != 0) {
+                    errors += ContentValidationError(
+                        "buildings.properties",
+                        building.id,
+                        "producerRecipeId",
+                        "Extractor recipes must not require input resources.",
+                    )
+                }
             }
         }
         recipes.values.forEach {

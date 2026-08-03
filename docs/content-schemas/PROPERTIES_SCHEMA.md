@@ -227,6 +227,9 @@ definitions are data-driven and currently support:
 - `sellRefundRatio`: decimal from `0` through `1` for completed-building removal
 - `displayKey`: localization key
 - `buildWorkTicks`: optional positive integer for construction work; omitted defaults to `1`
+- `producerRecipeId`: optional output-only recipe id; when present the building is an extractor.
+  The recipe's output resource and amount define the extraction batch, and `durationTicks` defines
+  its rate. The recipe must not declare an input resource or input amount.
 
 - `spritePath`: optional pack-relative file path, or
 - `atlasPath` + `atlasKey`: optional pair
@@ -399,7 +402,9 @@ content-defined world. It contains a top-level `maps` array. Each map has:
 - `width` and `height`: positive grid dimensions.
 - `terrainRows`: exactly `height` strings, each exactly `width` characters.
 - `terrainMapping`: one-character symbol keys mapped to `{ "tile": "<tile id>" }`; a mapping may
-  add `{ "resource": { "id": "<resource id>", "amount": <non-negative integer> } }`.
+  add `{ "resource": { "id": "<resource id>", "amount": <non-negative integer>, "infinite": <boolean> } }`.
+  `infinite` is optional and defaults to `false`; finite nodes decrement as extractors produce,
+  while infinite nodes retain their authored amount.
 - `spawns`: one-or-more `{ "id", "x", "y" }` named spawn objects.
 - `core`: one `{ "x", "y" }` coordinate that points to the single terrain cell whose referenced
   tile has `isCore=true`.

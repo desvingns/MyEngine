@@ -1,21 +1,42 @@
 # MyEngine Intake Digest
 
-Regenerated at close-out. Last updated: 2026-08-03 (ENG-034 close-out).
+Regenerated at close-out. Last updated: 2026-08-03 (ENG-035 close-out).
 
 ## Current next action
 
-ENG-034 (enemy attacks on structures) is complete. Review the remaining accepted backlog before the next
-`/me --feature --next` run; ENG-035 is the next roadmap-ordered engine candidate.
+ENG-035 (resource extractor building) is complete. Review the remaining accepted backlog before the next
+`/me --feature --next` run; ENG-023 belt transport is the separate follow-up.
 
 ## Active specs / roadmap
 
 - DX-002, DX-005, DX-006, ENG-001, ENG-003, ENG-031, ENG-004, ENG-032, ENG-033, ENG-006, ENG-017,
-  ENG-034, and PROC-006 are done.
+  ENG-034, ENG-035, and PROC-006 are done.
 - ENG-003 is a post-Phase-14/Phase-15 feature close-out; no new phase was created.
 - ENG-002 remains the wave-enemy GoalField path; ENG-003 is the deterministic JobBoard/job-actor tick capability.
 - ENG-033's authored scope is implemented with no game-bundle traceability update. MySD TD Gate 1 is
   accepted for its TD reference inventory but is not treated as evidence for colony behavior.
 - No ADR or plugin/skill/pipeline contract change was needed.
+
+## ENG-035 close-out
+
+### DONE
+
+- Added output-only extractor buildings, finite/infinite resource-node content, deterministic
+  underlying/adjacent binding, partial final batches, stable `producer:<id>` haul sources, and
+  ENG-004 hauling consumption.
+- `SandboxSaveCodec` v19 persists depleted node state and extractor binding/progress with v1-v18
+  migration fixtures; the ENG-023 belt system remains out of scope.
+
+### DECISIONS
+
+- `PlaceBuildingCommand` is unchanged. An extractor occupying its node publishes output from the
+  first stable reachable adjacent stand position; source identity remains `producer:<id>`.
+- No Android/UI, new jobs, belts, or ADR were added.
+
+### VERIFICATION
+
+- Full tests, content validation, replay, save compatibility, benchmark, selfcheck, required
+  headless inspect, Android `assembleDebug`, and diff-check passed.
 
 ## ENG-034 close-out
 

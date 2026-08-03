@@ -85,6 +85,13 @@ class HaulSourceStore(initialSources: List<HaulSource> = emptyList()) {
 
     fun all(): List<HaulSource> = sources.values.toList()
 
+    fun remove(sourceId: String): Boolean {
+        val source = sources[sourceId] ?: return false
+        require(source.reservations.isEmpty()) { "Cannot remove haul source '$sourceId' with reservations." }
+        sources.remove(sourceId)
+        return true
+    }
+
     fun reserve(sourceId: String, jobId: String, resourceId: String, amount: Int): Boolean {
         val source = sources[sourceId] ?: return false
         if (source.reservations.containsKey(jobId) || source.available(resourceId) < amount) return false

@@ -1,7 +1,45 @@
 # MyEngine Handoff
 
-Last updated: 2026-08-03 (ENG-034 close-out; next backlog review)
+Last updated: 2026-08-03 (ENG-035 close-out; next backlog review)
 Owner: Codex
+
+## ENG-035 close-out (2026-08-03)
+
+### DONE
+
+- Implemented output-only extractor buildings through the existing `ProducerSystem`. Content now
+  supports `BuildingContent.producerRecipeId` and map resource-node `infinite`; loader validation
+  rejects unknown or input-consuming extractor recipes.
+- Extractors bind an underlying matching node first, then adjacent matching nodes in stable tile
+  order. Finite nodes deplete and emit a partial final batch; infinite nodes remain unchanged.
+  Output is exposed as stable `producer:<id>` source data and is consumable by ENG-004 hauling.
+- Bumped `SandboxSaveCodec` v18 -> v19. v1-v18 migrate from map content; v19 persists resource
+  node state and extractor producer binding/progress. Added v18/v19 fixtures and focused tests.
+- The card moved to `.claude/specs/done/`; roadmap, Plane, STATE, DIGEST, and this handoff were
+  synchronized.
+
+### DECISIONS
+
+- `PlaceBuildingCommand` remains unchanged. When an extractor occupies its node, its haul source
+  uses the first stable reachable adjacent stand position; the source id remains `producer:<id>`.
+- No ENG-023 belts, new jobs, Android/UI work, or ADR were introduced; belt transport remains the
+  separate ENG-023 feature.
+
+### NEXT
+
+- Review the remaining accepted backlog; ENG-023 is the separate belt-transport follow-up.
+
+### BLOCKERS
+
+- No implementation blocker. The known untracked `.ai/retro/retro-2026-08-03.md` baseline was
+  preserved and excluded. No device/emulator or visual-golden proof is claimed.
+
+### VERIFICATION
+
+- Focused content/logistics/sandbox tests and full `gradlew test` passed.
+- `me-content-validate.ps1`, `me-sim-replay.ps1`, `me-save-compat.ps1`, `me-benchmark.ps1`,
+  `me-selfcheck.ps1`, required headless inspect, Android `assembleDebug`, and `git diff --check`
+  passed. Save compatibility covers the v1-v19 migration matrix.
 
 ## ENG-034 close-out (2026-08-03)
 

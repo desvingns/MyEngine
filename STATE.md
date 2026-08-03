@@ -1,8 +1,8 @@
 # MyEngine State
 
-Last updated: 2026-08-03 (ENG-034 close-out)
-Active phase: Phase 00-14 complete; Phase 15 sequencing adopted; Signal Garden SG-001..005 complete; MyTD MTD-001..005 complete; DX-002, DX-005, DX-006, DX-008, ENG-001, ENG-002, ENG-003, ENG-004, ENG-005, ENG-006, ENG-007, ENG-008, ENG-009, ENG-010, ENG-011, ENG-012, ENG-013, ENG-014, ENG-015, ENG-016, ENG-017, ENG-018, ENG-019, ENG-020, ENG-021, ENG-026, ENG-027, ENG-028, ENG-029, ENG-030, ENG-031, ENG-032, ENG-033, ENG-034, PROC-002, PROC-003, PROC-006, PROC-007, and PROC-013 complete; pipeline at v0.2.0; next exact action is review of the remaining accepted backlog
-Owner of last update: Codex (2026-08-03: ENG-034 close-out)
+Last updated: 2026-08-03 (ENG-035 close-out)
+Active phase: Phase 00-14 complete; Phase 15 sequencing adopted; Signal Garden SG-001..005 complete; MyTD MTD-001..005 complete; DX-002, DX-005, DX-006, DX-008, ENG-001, ENG-002, ENG-003, ENG-004, ENG-005, ENG-006, ENG-007, ENG-008, ENG-009, ENG-010, ENG-011, ENG-012, ENG-013, ENG-014, ENG-015, ENG-016, ENG-017, ENG-018, ENG-019, ENG-020, ENG-021, ENG-026, ENG-027, ENG-028, ENG-029, ENG-030, ENG-031, ENG-032, ENG-033, ENG-034, ENG-035, PROC-002, PROC-003, PROC-006, PROC-007, and PROC-013 complete; pipeline at v0.2.0; next exact action is review of the remaining accepted backlog
+Owner of last update: Codex (2026-08-03: ENG-035 close-out)
 
 ## Current Status
 
@@ -39,6 +39,27 @@ Owner of last update: Codex (2026-08-03: ENG-034 close-out)
   building health round-trips through the existing save fields, and balance reports expose
   structure-attack metrics. Legacy packs keep null tower health and unchanged replay/save shape;
   no save version bump was needed.
+
+- ENG-035 is complete: content-defined finite/infinite resource nodes support deterministic
+  underlying/adjacent extractor placement, output-only ProducerSystem batches, stable ENG-004
+  haul sources, and v19 save persistence for depleted nodes plus extractor binding/progress.
+
+## ENG-035 Close-out
+
+- DONE: Added `producerRecipeId` and map-node `infinite` content fields with validation; extractor
+  placement binds the underlying node first, then adjacent matching nodes in stable tile order.
+  Extractors use the existing `ProducerSystem`, emit stable `producer:<id>` haul sources, and
+  finite nodes emit a partial final batch while infinite nodes do not deplete.
+- DECISIONS: `PlaceBuildingCommand` remains unchanged; the extractor source is a reachable stable
+  stand position when the building occupies its own tile. `SandboxSaveCodec.SAVE_VERSION` is v19;
+  v1-v18 migrate from map content, while v19 persists node state and extractor bindings/progress.
+  ENG-023 belt transport, Android/UI, and new jobs remain out of scope; no ADR was required.
+- NEXT: Review the remaining accepted backlog; ENG-023 is the separate belt-transport follow-up.
+- BLOCKERS: No implementation blocker. The known untracked `.ai/retro/retro-2026-08-03.md`
+  baseline remains excluded. No device/emulator or visual-golden proof is claimed.
+- VERIFICATION: Focused tests, full `gradlew test`, content validation, replay, save compatibility,
+  benchmark, selfcheck, required headless inspect, Android `assembleDebug`, and `git diff --check`
+  passed.
 
 ## ENG-034 Close-out
 

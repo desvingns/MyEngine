@@ -47,9 +47,9 @@
    PROC-007 -> ENG-021 -> ENG-029 -> ENG-012 -> ENG-007 -> ENG-018 (done 2026-08-02)
    -> ENG-011 (done 2026-08-02) -> ENG-019 (done 2026-08-02) -> ENG-001 (done 2026-08-02)
    -> ENG-003 (done 2026-08-02) -> ENG-031 (done 2026-08-02) -> ENG-004 (done 2026-08-02)
-   -> ENG-032 (done 2026-08-02) -> ENG-033 (done 2026-08-03) -> ENG-017 (done 2026-08-03) -> ENG-034 (done 2026-08-03); ENG-010, ENG-016, PROC-007, ENG-021,
+   -> ENG-032 (done 2026-08-02) -> ENG-033 (done 2026-08-03) -> ENG-017 (done 2026-08-03) -> ENG-034 (done 2026-08-03) -> ENG-035 (done 2026-08-03); ENG-010, ENG-016, PROC-007, ENG-021,
    ENG-029, ENG-012, ENG-007, ENG-018, ENG-011, ENG-019, ENG-001, ENG-003, ENG-031, ENG-004,
-   ENG-032, ENG-033, ENG-006, and ENG-034 are closed; ENG-006 and ENG-034 were selected from the remaining accepted
+   ENG-032, ENG-033, ENG-006, ENG-034, and ENG-035 are closed; ENG-006, ENG-034, and ENG-035 were selected from the remaining accepted
    backlog after the colony slice.
 4. Hardening gaps из `docs/HARDENING_AUDIT.md` закрывать по одному, с тестами и обновлением handoff.
 
@@ -86,6 +86,7 @@
 | [x] | PROC-006 CI pre-push lane | [PROC-006](../.claude/specs/done/PROC-006-ci-prepush.md) | `.githooks/pre-push` aggregates tests, content validation, replay, save compatibility and schema drift into one blocking JSON result | 2026-08-03 |
 | [x] | ENG-006 Seeded procedural map generation | [ENG-006](../.claude/specs/done/ENG-006-procgen-maps.md) | Bounded seeded generation from validated content parameters, guaranteed spawn-to-core connectivity, deterministic fallback, ASCII devtools report, and seed-preserving sandbox save/reload | 2026-08-03 |
 | [x] | ENG-034 Enemy attacks on structures | [ENG-034](../.claude/specs/done/ENG-034-enemy-structure-attacks.md) | Content-flagged blocked enemies damage the stable lowest-id adjacent tower/building, lethal damage clears occupancy and rebuilds GoalField, building health round-trips, and balance reports expose structure attack potential | 2026-08-03 |
+| [x] | ENG-035 Resource extractor building | [ENG-035](../.claude/specs/done/ENG-035-resource-extractor.md) | Deterministic finite/infinite resource nodes, underlying/adjacent output-only extractor production, stable ENG-004 haul sources, partial final batch, and save v19/v1-v18 migration; ENG-023 belts remain separate | 2026-08-03 |
 
 ## Глобальные инварианты
 
@@ -1651,3 +1652,19 @@
   content validation, replay (`e4892bcc18f9d8dc`, `a763da4ac32b15b4`, `3f02607020d48668`),
   save-compat, benchmark, selfcheck, headless inspect, Android `assembleDebug`, and
   `git diff --check` passed.
+
+### 2026-08-03 - ENG-035 (resource extractor building)
+
+- Status: Done / accepted; no new phase was created.
+- Owner: Codex / `me-dev:me`
+- DONE: Added output-only extractor recipes, finite/infinite resource nodes, deterministic
+  underlying/adjacent binding, partial final batches, stable `producer:<id>` haul sources, and
+  ENG-004 hauling consumption. `SandboxSaveCodec` is v19 with v1-v18 migration fixtures.
+- DECISIONS: `PlaceBuildingCommand` remains unchanged. When an extractor occupies its node, its
+  source uses the first stable reachable adjacent stand position. ENG-023 belts, Android/UI,
+  new jobs, and ADR work remain out of scope.
+- NEXT: Review the remaining accepted backlog; ENG-023 is the separate belt-transport follow-up.
+- BLOCKERS: No implementation blocker. The known untracked `.ai/retro/retro-2026-08-03.md`
+  baseline remains excluded. No device/emulator or visual-golden proof is claimed.
+- VERIFICATION: Focused and full tests, content validation, replay, save-compat, benchmark,
+  selfcheck, required headless inspect, Android `assembleDebug`, and `git diff --check` passed.

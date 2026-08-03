@@ -36,6 +36,7 @@ data class TerrainRule(
 data class ResourceNode(
     val resourceId: String,
     val amount: Int,
+    val infinite: Boolean = false,
 ) {
     init {
         require(amount >= 0) { "Resource node amount must be non-negative." }
@@ -90,6 +91,28 @@ class TileWorld(
         return view.terrain.buildable && view.tile.occupiedBy == null && view.tile.resourceNode == null
     }
 
+    /** Returns the underlying node first, then adjacent matching nodes in stable tile order. */
+    fun extractorNode(position: TilePosition, resourceId: String): TilePosition? {
+        val candidates = buildList {
+            add(position)
+            addAll(position.neighbors4().sorted())
+        }
+        return candidates.firstOrNull { candidate ->
+            inBounds(candidate) && tileAt(candidate).tile.resourceNode?.resourceId == resourceId
+        }
+    }
+
+    /** Removes up to [amount] from a finite node; infinite nodes report the full amount unchanged. */
+    fun extractResource(position: TilePosition, amount: Int): Int {
+        require(amount > 0) { "Extracted amount must be positive." }
+        val current = tileAt(position).tile.resourceNode ?: return 0
+        val extracted = if (current.infinite) amount else minOf(amount, current.amount)
+        if (!current.infinite && extracted > 0) {
+            setTile(position, tileAt(position).tile.copy(resourceNode = current.copy(amount = current.amount - extracted)))
+        }
+        return extracted
+    }
+
     fun canOccupy(position: TilePosition): Boolean {
         val view = tileAt(position)
         return !view.terrain.blocksMovement && view.tile.occupiedBy == null
@@ -122,6 +145,7 @@ class TileWorld(
             hash.add(position.x).add(position.y).add(tile.terrainId)
             hash.add(tile.resourceNode?.resourceId ?: "")
             hash.add(tile.resourceNode?.amount ?: -1)
+            if (tile.resourceNode?.infinite == true) hash.add("resource-node-infinite")
             hash.add(tile.occupiedBy ?: -1L)
         }
     }

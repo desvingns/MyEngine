@@ -223,6 +223,8 @@ data class BuildingContent(
     val displayKey: String,
     val assetRef: VisualAssetRef? = null,
     val buildWorkTicks: Int = 1,
+    /** Optional output-only recipe; when present this building is a resource extractor. */
+    val producerRecipeId: String? = null,
 ) : ContentDefinition {
     init {
         require(costResource.isNotBlank()) { "Building cost resource cannot be blank." }
@@ -234,6 +236,9 @@ data class BuildingContent(
         }
         require(displayKey.isNotBlank()) { "Building display key cannot be blank." }
         require(buildWorkTicks > 0) { "Building work ticks must be positive." }
+        require(producerRecipeId == null || producerRecipeId.isNotBlank()) {
+            "Producer recipe id cannot be blank."
+        }
     }
 }
 
@@ -431,6 +436,7 @@ data class MapCoordinate(
 data class MapResourceNode(
     val resourceId: String,
     val amount: Int,
+    val infinite: Boolean = false,
 )
 
 data class MapTerrainSymbol(

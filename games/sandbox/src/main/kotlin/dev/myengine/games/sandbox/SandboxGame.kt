@@ -75,6 +75,7 @@ import dev.myengine.entities.TowerComponent
 import dev.myengine.logistics.Inventory
 import dev.myengine.logistics.Producer
 import dev.myengine.logistics.ProducerSystem
+import dev.myengine.logistics.ProductionSource
 import dev.myengine.logistics.HarvestDesignation
 import dev.myengine.logistics.HaulSource
 import dev.myengine.logistics.HaulSourceStore
@@ -171,6 +172,9 @@ data class SandboxState(
         producers.sortedBy { it.id }.forEach {
             hash.add(it.id).add(it.recipeId).add(it.progressTicks)
             it.position?.let { position -> hash.add("producer-position").add(position.x).add(position.y) }
+            it.resourceNodePosition?.let { position ->
+                hash.add("producer-node").add(position.x).add(position.y)
+            }
         }
         hash.add(defense.coreHealth)
         defense.spawnedWaveIds.sorted().forEach(hash::add)
@@ -966,7 +970,8 @@ class SandboxRuntime(
             state.lastCommandOrError = "position_out_of_bounds"
             return
         }
-        if (!state.world.canBuild(position)) {
+        val resourceNodePosition = extractorNodePosition(building, position)
+        if (!canPlaceBuilding(building, position, resourceNodePosition)) {
             state.lastCommandOrError = "tile_not_buildable"
             return
         }
@@ -1086,7 +1091,10 @@ class SandboxRuntime(
             state.lastCommandOrError = "construction_completion_rejected:${effect.siteId}"
             return
         }
-        if (!state.world.canBuild(site.position) || state.entities.byTag("enemy").any { it.position?.tile == site.position && it.health?.isAlive() == true }) {
+        val resourceNodePosition = extractorNodePosition(building, site.position)
+        if (!canPlaceBuilding(building, site.position, resourceNodePosition) ||
+            state.entities.byTag("enemy").any { it.position?.tile == site.position && it.health?.isAlive() == true }
+        ) {
             state.jobBoard.remove(job.id)
             state.lastCommandOrError = "construction_tile_unavailable:${effect.siteId}"
             return
@@ -1101,6 +1109,7 @@ class SandboxRuntime(
             )
         }
         state.world.occupy(site.position, entity.id.value)
+        addExtractorProducer(building, entity.id.value, site.position, resourceNodePosition)
         goalField = rebuildAfterWalkabilityChange()
         state.constructionSites.remove(site.id)
         state.jobBoard.all()
@@ -1196,6 +1205,55 @@ class SandboxRuntime(
 
     private fun constructionBuildJobId(siteId: String): String = "construction-build:$siteId"
 
+    private fun extractorNodePosition(
+        building: dev.myengine.content.BuildingContent,
+        position: TilePosition,
+    ): TilePosition? {
+        val recipeId = building.producerRecipeId ?: return null
+        val recipe = state.registry.recipes[recipeId] ?: return null
+        return state.world.extractorNode(position, recipe.outputResource)
+    }
+
+    private fun canPlaceBuilding(
+        building: dev.myengine.content.BuildingContent,
+        position: TilePosition,
+        resourceNodePosition: TilePosition?,
+    ): Boolean {
+        if (building.producerRecipeId == null) return state.world.canBuild(position)
+        if (resourceNodePosition == null) return false
+        val view = state.world.tileAt(position)
+        return if (resourceNodePosition == position) {
+            view.tile.occupiedBy == null && !view.terrain.blocksMovement
+        } else {
+            state.world.canBuild(position)
+        }
+    }
+
+    private fun addExtractorProducer(
+        building: dev.myengine.content.BuildingContent,
+        entityId: Long,
+        position: TilePosition,
+        resourceNodePosition: TilePosition?,
+    ) {
+        val recipeId = building.producerRecipeId ?: return
+        require(resourceNodePosition != null) { "Extractor '${building.id}' requires a resource node." }
+        state.producers = (state.producers + Producer(
+            id = "extractor:$entityId",
+            recipeId = recipeId,
+            position = position,
+            resourceNodePosition = resourceNodePosition,
+        )).sortedBy { it.id }
+    }
+
+    /** Keeps a building's producer source reachable by ENG-004 hauling when the building occupies its own tile. */
+    private fun extractorOutputPosition(producerPosition: TilePosition): TilePosition {
+        val view = state.world.tileAt(producerPosition)
+        if (!view.terrain.blocksMovement && view.tile.occupiedBy == null) return producerPosition
+        return producerPosition.neighbors4().sorted().firstOrNull { candidate ->
+            state.world.inBounds(candidate) && state.world.canOccupy(candidate)
+        } ?: producerPosition
+    }
+
     private fun placeBuilding(command: PlaceBuildingCommand, eventSink: MutableList<GameplayEvent>) {
         val building = state.registry.buildings[command.buildingId]
         if (building == null) {
@@ -1219,7 +1277,8 @@ class SandboxRuntime(
             state.lastCommandOrError = "position_out_of_bounds"
             return
         }
-        if (!state.world.canBuild(position)) {
+        val resourceNodePosition = extractorNodePosition(building, position)
+        if (!canPlaceBuilding(building, position, resourceNodePosition)) {
             state.lastCommandOrError = "tile_not_buildable"
             return
         }
@@ -1251,6 +1310,7 @@ class SandboxRuntime(
             )
         }
         state.world.occupy(position, entity.id.value)
+        addExtractorProducer(building, entity.id.value, position, resourceNodePosition)
         goalField = rebuildAfterWalkabilityChange()
         state.inventory = state.inventory.remove(building.costResource, building.costAmount)
         state.lastCommandOrError = "placed:${entity.id.value}"
@@ -1376,6 +1436,12 @@ class SandboxRuntime(
             state.lastCommandOrError = "unknown_building:$buildingId"
             return
         }
+        val extractorProducerId = "extractor:${entityId.value}"
+        val extractorSource = state.haulSources.get("producer:$extractorProducerId")
+        if (extractorSource != null && (extractorSource.resources.isNotEmpty() || extractorSource.reservations.isNotEmpty())) {
+            state.lastCommandOrError = "extractor_output_pending:${entityId.value}"
+            return
+        }
         val refund = calculateBuildingRefund(building)
         var refundedInventory = state.inventory
         for ((resourceId, amount) in refund) {
@@ -1388,6 +1454,8 @@ class SandboxRuntime(
 
         state.world.clearOccupancy(position, entityId.value)
         state.entities.remove(entityId)
+        state.producers = state.producers.filterNot { it.id == extractorProducerId }
+        extractorSource?.let { state.haulSources.remove(it.id) }
         goalField = rebuildAfterWalkabilityChange()
         state.inventory = refundedInventory
         state.lastCommandOrError = "removed:${command.buildingEntityId}"
@@ -1507,20 +1575,48 @@ class SandboxRuntime(
     )
 
     private fun updateProduction() {
-        state.producers = state.producers.map { producer ->
-            val result = producerSystem.tick(producer, state.inventory)
+        state.producers = state.producers.sortedBy { it.id }.map { producer ->
             val recipe = state.registry.recipes[producer.recipeId]
-            val producerPosition = producer.position
-            state.inventory = if (result.completed && producerPosition != null && recipe != null) {
-                state.haulSources.addOutput(
-                    sourceId = "producer:${producer.id}",
-                    position = producerPosition,
-                    resourceId = recipe.outputResource,
-                    amount = recipe.outputAmount,
-                )
-                result.inventory.remove(recipe.outputResource, recipe.outputAmount)
+            val nodePosition = producer.resourceNodePosition
+            val result = if (nodePosition != null && recipe != null) {
+                val node = state.world.tileAt(nodePosition).tile.resourceNode
+                if (node == null) {
+                    dev.myengine.logistics.ProductionResult(producer, Inventory(), completed = false)
+                } else {
+                    producerSystem.tick(
+                        producer,
+                        Inventory(),
+                        ProductionSource(node.resourceId, node.amount, node.infinite),
+                    )
+                }
             } else {
-                result.inventory
+                producerSystem.tick(producer, state.inventory)
+            }
+            val producerPosition = producer.position
+            if (nodePosition != null) {
+                if (result.producedAmount > 0 && producerPosition != null && recipe != null) {
+                    val extracted = state.world.extractResource(nodePosition, result.producedAmount)
+                    if (extracted > 0) {
+                        state.haulSources.addOutput(
+                            sourceId = "producer:${producer.id}",
+                            position = extractorOutputPosition(producerPosition),
+                            resourceId = recipe.outputResource,
+                            amount = extracted,
+                        )
+                    }
+                }
+            } else {
+                state.inventory = if (result.completed && producerPosition != null && recipe != null) {
+                    state.haulSources.addOutput(
+                        sourceId = "producer:${producer.id}",
+                        position = producerPosition,
+                        resourceId = recipe.outputResource,
+                        amount = recipe.outputAmount,
+                    )
+                    result.inventory.remove(recipe.outputResource, recipe.outputAmount)
+                } else {
+                    result.inventory
+                }
             }
             result.producer
         }
@@ -1534,7 +1630,7 @@ class SandboxRuntime(
 private fun VisualAssetRef.toRenderAssetRef(): RenderAssetRef = RenderAssetRef(path = path, atlasKey = atlasKey)
 
 object SandboxSaveCodec {
-    const val SAVE_VERSION: Int = 18
+    const val SAVE_VERSION: Int = 19
 
     fun encode(state: SandboxState, seed: Long, pendingCommands: List<EngineCommand> = emptyList()): String {
         val props = Properties()
@@ -1586,9 +1682,28 @@ object SandboxSaveCodec {
             "$entityId|${metrics.actualDamage}|${metrics.kills}"
         }
         props["inventory"] = state.inventory.resources.toSortedMap().entries.joinToString(";") { "${it.key}:${it.value}" }
+        props["resourceNodes"] = state.world.positions().mapNotNull { position ->
+            state.world.tileAt(position).tile.resourceNode?.let { node ->
+                listOf(
+                    position.x,
+                    position.y,
+                    encodeToken(node.resourceId),
+                    node.amount,
+                    node.infinite,
+                ).joinToString("|")
+            }
+        }.joinToString(";")
         props["researchedTechIds"] = state.researchedTechIds.sorted().joinToString(",") { encodeToken(it) }
         props["producers"] = state.producers.sortedBy { it.id }.joinToString(";") {
-            listOf(it.id, it.recipeId, it.progressTicks, it.position?.x ?: "", it.position?.y ?: "").joinToString("|")
+            listOf(
+                it.id,
+                it.recipeId,
+                it.progressTicks,
+                it.position?.x ?: "",
+                it.position?.y ?: "",
+                it.resourceNodePosition?.x ?: "",
+                it.resourceNodePosition?.y ?: "",
+            ).joinToString("|")
         }
         props["jobs"] = state.jobBoard.all().joinToString(";") { job -> encodeJob(job) }
         props["stockpileZones"] = state.zones.allStockpiles().joinToString(";") { zone ->
@@ -1720,6 +1835,7 @@ object SandboxSaveCodec {
             towerMetrics = if (version >= 6) parseTowerMetrics(props.getProperty("towerMetrics", "")) else emptyMap(),
         )
         state.inventory = Inventory(parseResources(props.getProperty("inventory", "")))
+        if (version >= 19) restoreResourceNodes(state, props.getProperty("resourceNodes", ""))
         state.researchedTechIds = if (version >= 18) {
             parseResearchedTechIds(props.getProperty("researchedTechIds", ""), registry)
         } else emptySet()
@@ -1732,6 +1848,9 @@ object SandboxSaveCodec {
                     parts[0], parts[1], parts[2].toInt(),
                     if (version >= 15 && parts.getOrNull(3)?.isNotBlank() == true && parts.getOrNull(4)?.isNotBlank() == true) {
                         TilePosition(parts[3].toInt(), parts[4].toInt())
+                    } else null,
+                    if (version >= 19 && parts.getOrNull(5)?.isNotBlank() == true && parts.getOrNull(6)?.isNotBlank() == true) {
+                        TilePosition(parts[5].toInt(), parts[6].toInt())
                     } else null,
                 )
             }
@@ -2188,6 +2307,33 @@ object SandboxSaveCodec {
             }
         }
 
+    private fun restoreResourceNodes(state: SandboxState, text: String) {
+        text.split(';').filter { it.isNotBlank() }.forEach { encoded ->
+            val parts = encoded.split('|')
+            require(parts.size == 5) { "Invalid resource node entry '$encoded'." }
+            val position = TilePosition(parts[0].toInt(), parts[1].toInt())
+            require(state.world.inBounds(position)) { "Resource node $position is outside the saved world." }
+            val current = state.world.tileAt(position).tile.resourceNode
+                ?: error("Save resource node $position does not exist in the loaded map.")
+            val resourceId = decodeToken(parts[2])
+            require(resourceId in state.registry.resources) { "Unknown resource '$resourceId' in save." }
+            require(resourceId == current.resourceId) {
+                "Save resource node '$resourceId' does not match the loaded map at $position."
+            }
+            val amount = parts[3].toIntOrNull()
+                ?: error("Invalid resource node amount '$encoded'.")
+            val infinite = parts[4].toBooleanStrictOrNull()
+                ?: error("Invalid resource node infinite flag '$encoded'.")
+            require(amount >= 0) { "Resource node amount cannot be negative." }
+            state.world.setTile(
+                position,
+                state.world.tileAt(position).tile.copy(
+                    resourceNode = ResourceNode(resourceId, amount, infinite),
+                ),
+            )
+        }
+    }
+
     private fun parseResearchedTechIds(text: String, registry: ContentRegistry): Set<String> {
         val ids = text.split(',').filter { it.isNotBlank() }.map(::decodeToken).toSortedSet()
         ids.forEach { id -> require(id in registry.techNodes) { "Unknown researched tech '$id' in save." } }
@@ -2556,7 +2702,7 @@ object SandboxGame {
                 val mapping = map.terrainMapping.getValue(symbol)
                 WorldTile(
                     terrainId = mapping.terrainId,
-                    resourceNode = mapping.resourceNode?.let { ResourceNode(it.resourceId, it.amount) },
+                    resourceNode = mapping.resourceNode?.let { ResourceNode(it.resourceId, it.amount, it.infinite) },
                 )
             }
         }

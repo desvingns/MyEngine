@@ -633,3 +633,22 @@ by: claude
   passed. Replay hashes remained `e4892bcc18f9d8dc`, `a763da4ac32b15b4`, and `3f02607020d48668`.
 - Baseline: known untracked `.ai/retro/retro-2026-08-03.md` was preserved and excluded.
 - No plugin version bump; no ADR; no `SAVE_VERSION` bump.
+
+## 2026-08-03 - MyEngine ENG-035 feature run
+
+- Owner: Codex / `me-dev:me`
+- Change type: normal engine feature run; no agent, skill, adapter, plugin, or pipeline contract
+  change.
+- Summary: `/me --feature --next` selected ENG-035 after the accepted-backlog review. Added
+  content-defined finite/infinite resource nodes, output-only extractor building production,
+  deterministic underlying/adjacent binding, stable ENG-004 haul sources, partial final batches,
+  v19 save persistence with v1-v18 migration, and focused content/logistics/sandbox coverage.
+  The card moved to `.claude/specs/done/`; ENG-023 belt transport remains a separate follow-up.
+- Pipeline: user confirmed the architect's human-gated scope. The bounded developer worker returned
+  no edits, so implementation continued locally under the same approved scope. Runner gates and
+  final local boundary review passed; no malformed JSON envelope was returned.
+- Verification: full `gradlew test`, content validation, replay, save compatibility, benchmark,
+  selfcheck, required headless inspect, Android `assembleDebug`, and `git diff --check` passed.
+  Save compatibility covers v1-v19 fixtures; replay hashes remained stable.
+- Baseline: known untracked `.ai/retro/retro-2026-08-03.md` was preserved and excluded.
+- No plugin version bump; no ADR.

@@ -47,3 +47,7 @@ Do not store facts that are easy to rediscover from the repository.
   a dedicated save-compat invocation are updated together.
 - Add focused acceptance tests before the full runner so content, command, and save regressions are
   localized before integration gates.
+
+- Building-owned logistics sources need a deterministic reachable stand position when the producer
+  tile is occupied; persist that source position and reject removal while output or reservations
+  are pending so material is never silently lost.

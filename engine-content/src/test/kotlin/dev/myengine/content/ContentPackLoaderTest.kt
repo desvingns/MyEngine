@@ -555,6 +555,54 @@ class ContentPackLoaderTest {
     }
 
     @Test
+    fun extractorBuildingRequiresOutputOnlyRecipeAndLoadsInfiniteMapNodes() {
+        val valid = createPack()
+        valid.resolve("buildings.properties").writeText(
+            "extractor.displayKey=building.extractor\n" +
+                "extractor.costResource=bolt\nextractor.costAmount=2\nextractor.maxHealth=12\n" +
+                "extractor.footprintWidth=1\nextractor.footprintHeight=1\nextractor.sellRefundRatio=0.5\n" +
+                "extractor.producerRecipeId=extract\n",
+        )
+        valid.resolve("recipes.properties").writeText(
+            valid.resolve("recipes.properties").toFile().readText() +
+                "\nextract.outputResource=bolt\nextract.outputAmount=7\nextract.durationTicks=3\n",
+        )
+        valid.resolve("strings.properties").writeText(
+            valid.resolve("strings.properties").toFile().readText() + "\nbuilding.extractor=Extractor\n",
+        )
+        valid.resolve("maps.json").writeText(
+            mapJson().replace("\"id\": \"bolt\", \"amount\": 9", "\"id\": \"bolt\", \"amount\": 9, \"infinite\": true"),
+        )
+
+        val loaded = ContentPackLoader.load(valid)
+
+        assertTrue(loaded.isValid, loaded.errors.joinToString("\n"))
+        assertEquals("extract", loaded.registry!!.requireBuilding("extractor").producerRecipeId)
+        assertTrue(loaded.registry.requireMap().terrainMapping.getValue('R').resourceNode!!.infinite)
+
+        val invalid = createPack()
+        invalid.resolve("buildings.properties").writeText(
+            "extractor.displayKey=building.extractor\n" +
+                "extractor.costResource=bolt\nextractor.costAmount=2\nextractor.maxHealth=12\n" +
+                "extractor.footprintWidth=1\nextractor.footprintHeight=1\nextractor.sellRefundRatio=0.5\n" +
+                "extractor.producerRecipeId=generator\n",
+        )
+        invalid.resolve("recipes.properties").writeText(
+            invalid.resolve("recipes.properties").toFile().readText() +
+                "\ngenerator.inputResource=bolt\ngenerator.inputAmount=1\n",
+        )
+        invalid.resolve("strings.properties").writeText(
+            invalid.resolve("strings.properties").toFile().readText() + "\nbuilding.extractor=Extractor\n",
+        )
+        val invalidResult = ContentPackLoader.load(invalid)
+        assertFalse(invalidResult.isValid)
+        assertTrue(
+            invalidResult.errors.any { it.id == "extractor" && it.field == "producerRecipeId" && it.message.contains("input") },
+            invalidResult.errors.joinToString("\n"),
+        )
+    }
+
+    @Test
     fun zeroCostBuildingReturnsStructuredValidationError() {
         val root = createPack()
         root.resolve("buildings.properties").writeText(

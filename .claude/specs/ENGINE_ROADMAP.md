@@ -7,7 +7,7 @@ two or more games outranks single-game gaps of the same severity.
 Updated by: the `/me-spec` backlog bridge (new gaps / new demand) and `/me`
 close-out (status changes).
 
-Last updated: 2026-08-03 (ENG-034 close-out)
+Last updated: 2026-08-03 (ENG-035 close-out)
 
 ## Capabilities
 
@@ -56,7 +56,7 @@ Last updated: 2026-08-03 (ENG-034 close-out)
 | Research/tech tree + unlock gating | ENG-017 | vision:mindustry-like, vision:td | 2 | **done** (2026-08-03; optional validated `tech-tree.json`, deterministic atomic research and unlock gating, immutable snapshot, save v18/v1-v17 migration, replay/save/content/full-gate verification) |
 | Seeded procedural map generation | ENG-006 | vision:rimworld-like, vision:mindustry-like, vision:td | 3 | **done** (2026-08-03; bounded deterministic generator from validated content params, guaranteed spawn-to-core path, ASCII devtools report, seed-preserving sandbox save/reload) |
 | Enemy attacks on structures | ENG-034 | vision:mindustry-like | 1 | **done** (2026-08-03; content-flagged blocked enemy attacks use stable adjacent-structure selection, lethal occupancy/GoalField invalidation, persisted building health, and balance-report structure metrics) |
-| Resource extractor building | ENG-035 | vision:mindustry-like, vision:rimworld-like | 2 | backlog |
+| Resource extractor building | ENG-035 | vision:mindustry-like, vision:rimworld-like | 2 | **done** (2026-08-03; deterministic finite/infinite extractor nodes, output-only ProducerSystem path, ENG-004 haul-source output, and save v19/v1-v18 migration; ENG-023 belt transport remains separate) |
 | Conveyor transport MVP | ENG-023 | vision:mindustry-like | 1 | backlog |
 | New-game scaffolder script | DX-001 | agent pipeline | - | backlog |
 | Headless state inspector (agent eyes) | DX-002 | agent pipeline | - | **done** (2026-08-03; provider-based deterministic ASCII/JSON inspector, sandbox ServiceLoader adapter, optional command scripts, focused/full gates) |
