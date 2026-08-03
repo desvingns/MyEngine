@@ -1,21 +1,46 @@
 # MyEngine Intake Digest
 
-Regenerated at close-out. Last updated: 2026-08-03 (ENG-035 close-out).
+Regenerated at close-out. Last updated: 2026-08-03 (ENG-023 close-out).
 
 ## Current next action
 
-ENG-035 (resource extractor building) is complete. Review the remaining accepted backlog before the next
-`/me --feature --next` run; ENG-023 belt transport is the separate follow-up.
+ENG-023 (conveyor transport MVP) is complete. Review the remaining accepted backlog before the next
+`/me --feature --next` run; ENG-036 and PROC-015 remain human-owned start-gated work.
 
 ## Active specs / roadmap
 
 - DX-002, DX-005, DX-006, ENG-001, ENG-003, ENG-031, ENG-004, ENG-032, ENG-033, ENG-006, ENG-017,
-  ENG-034, ENG-035, and PROC-006 are done.
+  ENG-023, ENG-034, ENG-035, and PROC-006 are done.
 - ENG-003 is a post-Phase-14/Phase-15 feature close-out; no new phase was created.
 - ENG-002 remains the wave-enemy GoalField path; ENG-003 is the deterministic JobBoard/job-actor tick capability.
 - ENG-033's authored scope is implemented with no game-bundle traceability update. MySD TD Gate 1 is
   accepted for its TD reference inventory but is not treated as evidence for colony behavior.
 - No ADR or plugin/skill/pipeline contract change was needed.
+
+## ENG-023 close-out
+
+### DONE
+
+- Added Android-free straight/corner belt cells with content-defined ticks-per-cell, deterministic
+  sink-to-source movement, full-belt backpressure, producer/core/entity endpoints, persisted items,
+  save v20/v1-v19 migration, and a 100-belt x 1000-tick devtools benchmark.
+
+### DECISIONS
+
+- Belts and items are ordered by stable ids; production runs before belts, and a delivered item
+  suppresses same-tick refill. Legacy replay hashes remain unchanged. No Android/UI, jobs,
+  split/merge, priority, loop, ADR, or visual-golden scope was added.
+
+### BLOCKERS
+
+- Conditional roster reviewer/verifier workers could not start after the bounded subagent thread
+  limit; local boundary review and all deterministic gates passed. The known untracked
+  `.ai/retro/retro-2026-08-03.md` baseline remains excluded.
+
+### VERIFICATION
+
+- Full tests/projects/content/schema/replay/save-compat/benchmark/selfcheck/headless inspect,
+  Android `assembleDebug`, focused belt tests, and `git diff --check` passed.
 
 ## ENG-035 close-out
 

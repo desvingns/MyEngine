@@ -124,12 +124,12 @@ class SandboxResearchTest {
         assertEquals(uninterrupted.state.stableHash(), resumed.state.stableHash())
         assertEquals(setOf("engineering"), resumed.state.researchedTechIds)
 
-        val v19ResearchSave = SandboxSaveCodec.encode(uninterrupted.state, seed = 7)
-        assertTrue(v19ResearchSave.lines().any { it.startsWith("researchedTechIds=") && it != "researchedTechIds=" })
-        val legacy = v19ResearchSave.replace("saveVersion=19", "saveVersion=17")
+        val v20ResearchSave = SandboxSaveCodec.encode(uninterrupted.state, seed = 7)
+        assertTrue(v20ResearchSave.lines().any { it.startsWith("researchedTechIds=") && it != "researchedTechIds=" })
+        val legacy = v20ResearchSave.replace("saveVersion=${SandboxSaveCodec.SAVE_VERSION}", "saveVersion=17")
         assertTrue(SandboxSaveCodec.decode(legacy, registry).researchedTechIds.isEmpty())
 
-        val invalid = v19ResearchSave.replace(
+        val invalid = v20ResearchSave.replace(
             Regex("researchedTechIds=.*"),
             "researchedTechIds=${java.util.Base64.getUrlEncoder().withoutPadding().encodeToString("unknown".toByteArray())}",
         )

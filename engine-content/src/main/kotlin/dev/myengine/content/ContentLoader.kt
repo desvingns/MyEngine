@@ -485,6 +485,19 @@ object ContentPackLoader {
             assetRef = parseVisualAssetRef(id, fields, errors, file),
             buildWorkTicks = fields.optionalPositiveInt(file, id, "buildWorkTicks", errors) ?: 1,
             producerRecipeId = fields.optionalNonBlank(file, id, "producerRecipeId", errors),
+            beltGeometry = fields.optionalNonBlank(file, id, "beltGeometry", errors)?.let { value ->
+                BeltGeometryContent.fromId(value) ?: run {
+                    errors += ContentValidationError(file, id, "beltGeometry", "Expected straight or corner.")
+                    null
+                }
+            },
+            beltDirection = fields.optionalNonBlank(file, id, "beltDirection", errors)?.let { value ->
+                BeltDirectionContent.fromId(value) ?: run {
+                    errors += ContentValidationError(file, id, "beltDirection", "Expected north, east, south, or west.")
+                    null
+                }
+            },
+            beltTicksPerCell = fields.optionalPositiveInt(file, id, "beltTicksPerCell", errors),
         )
     }
 

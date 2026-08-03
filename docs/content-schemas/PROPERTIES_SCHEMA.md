@@ -230,6 +230,11 @@ definitions are data-driven and currently support:
 - `producerRecipeId`: optional output-only recipe id; when present the building is an extractor.
   The recipe's output resource and amount define the extraction batch, and `durationTicks` defines
   its rate. The recipe must not declare an input resource or input amount.
+- `beltGeometry`: optional `straight` or `corner`; when present the building is a conveyor cell
+  and must also declare `beltDirection` and `beltTicksPerCell`
+- `beltDirection`: optional `north`, `east`, `south`, or `west`; the direction items travel through
+  the conveyor cell
+- `beltTicksPerCell`: optional positive integer defining the content-authored cell travel time
 
 - `spritePath`: optional pack-relative file path, or
 - `atlasPath` + `atlasKey`: optional pair

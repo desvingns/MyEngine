@@ -57,7 +57,7 @@ Last updated: 2026-08-03 (ENG-035 close-out)
 | Seeded procedural map generation | ENG-006 | vision:rimworld-like, vision:mindustry-like, vision:td | 3 | **done** (2026-08-03; bounded deterministic generator from validated content params, guaranteed spawn-to-core path, ASCII devtools report, seed-preserving sandbox save/reload) |
 | Enemy attacks on structures | ENG-034 | vision:mindustry-like | 1 | **done** (2026-08-03; content-flagged blocked enemy attacks use stable adjacent-structure selection, lethal occupancy/GoalField invalidation, persisted building health, and balance-report structure metrics) |
 | Resource extractor building | ENG-035 | vision:mindustry-like, vision:rimworld-like | 2 | **done** (2026-08-03; deterministic finite/infinite extractor nodes, output-only ProducerSystem path, ENG-004 haul-source output, and save v19/v1-v18 migration; ENG-023 belt transport remains separate) |
-| Conveyor transport MVP | ENG-023 | vision:mindustry-like | 1 | backlog |
+| Conveyor transport MVP | ENG-023 | vision:mindustry-like | 1 | **done** (2026-08-03; deterministic straight/corner belts, content-defined ticks-per-cell, producer/core/entity endpoints, v20 save migration, replay and 100-belt benchmark) |
 | New-game scaffolder script | DX-001 | agent pipeline | - | backlog |
 | Headless state inspector (agent eyes) | DX-002 | agent pipeline | - | **done** (2026-08-03; provider-based deterministic ASCII/JSON inspector, sandbox ServiceLoader adapter, optional command scripts, focused/full gates) |
 | Replay divergence bisector | DX-003 | agent pipeline | - | backlog |

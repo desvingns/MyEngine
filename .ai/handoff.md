@@ -1,7 +1,47 @@
 # MyEngine Handoff
 
-Last updated: 2026-08-03 (ENG-035 close-out; next backlog review)
+Last updated: 2026-08-03 (ENG-023 close-out; next backlog review)
 Owner: Codex
+
+## ENG-023 close-out (2026-08-03)
+
+### DONE
+
+- Added Android-free `BeltCell`, `BeltLine`, `BeltItem`, `BeltTransportState`, and
+  `BeltTransportSystem` for straight/corner cells, authored ticks-per-cell, deterministic
+  sink-to-source movement, stable item order, full-belt backpressure, and endpoint callbacks.
+- Added optional validated `beltGeometry`, `beltDirection`, and `beltTicksPerCell` building content;
+  the sandbox pack contains straight and corner authored belt definitions.
+- Wired producer-source pull and core/entity inventory delivery after production in the sandbox tick;
+  belt state/items are hashed and persisted by `SandboxSaveCodec` v20. v1-v19 saves migrate with
+  empty belt state, and legacy replay hashes remain unchanged.
+- Added focused conveyor/sandbox tests, v20 fixture, 100-belt x 1000-tick devtools benchmark, and
+  the `me-benchmark.ps1` benchmark lane.
+
+### DECISIONS
+
+- The conveyor system processes belts by ascending belt id, each belt sink-to-source by cell index,
+  then item id. A successful endpoint delivery suppresses same-tick refill on that belt.
+- Core delivery uses the sandbox global inventory; entity endpoints use capacity-checked entity
+  inventories. No Android/UI, new jobs, splitting/merging, priorities, loops, or ADR work was added.
+
+### NEXT
+
+- Review the remaining accepted backlog; ENG-036 and PROC-015 remain human-owned start-gated work.
+
+### BLOCKERS
+
+- Conditional roster reviewer/verifier workers could not start after the bounded subagent thread limit.
+  Local boundary review found no implementation blocker. The known untracked
+  `.ai/retro/retro-2026-08-03.md` baseline was preserved and excluded. No device/emulator or
+  visual-golden proof is claimed.
+
+### VERIFICATION
+
+- Focused tests, full `gradlew test`, `gradlew projects`, content validation/schema drift, replay,
+  save-compat, benchmark, selfcheck, required headless inspect, Android `assembleDebug`, and
+  `git diff --check` passed. Replay hashes: `e4892bcc18f9d8dc` / `a763da4ac32b15b4` /
+  `3f02607020d48668`.
 
 ## ENG-035 close-out (2026-08-03)
 

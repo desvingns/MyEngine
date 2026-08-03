@@ -189,7 +189,7 @@ class SandboxIncidentTest {
         val restored = SandboxRuntime(SandboxSaveCodec.decode(save, registry), seed = 41)
         restored.step(4)
 
-        assertEquals(19, SandboxSaveCodec.SAVE_VERSION)
+        assertEquals(20, SandboxSaveCodec.SAVE_VERSION)
         assertEquals(uninterrupted.state.stableHash(), restored.state.stableHash())
         assertEquals(uninterrupted.state.incidentState, restored.state.incidentState)
         assertEquals(uninterrupted.state.randomCursor, restored.state.randomCursor)

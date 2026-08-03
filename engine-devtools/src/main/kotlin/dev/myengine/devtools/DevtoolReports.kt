@@ -23,6 +23,13 @@ import dev.myengine.entities.MovementComponent
 import dev.myengine.entities.PositionComponent
 import dev.myengine.entities.TowerComponent
 import dev.myengine.games.sandbox.SandboxGame
+import dev.myengine.logistics.BeltCell
+import dev.myengine.logistics.BeltDirection
+import dev.myengine.logistics.BeltGeometry
+import dev.myengine.logistics.BeltItem
+import dev.myengine.logistics.BeltLine
+import dev.myengine.logistics.BeltTransportState
+import dev.myengine.logistics.BeltTransportSystem
 import dev.myengine.world.TilePosition
 import java.nio.file.Files
 import java.nio.file.Path
@@ -126,6 +133,24 @@ data class SpatialIndexBenchmarkReport(
         "query_count" to queryCount,
         "tower_shots" to towerShots,
         "alive_enemies_after" to aliveEnemiesAfter,
+        "elapsed_ns" to elapsedNanos,
+        "sim_ms" to elapsedNanos / 1_000_000.0,
+    )
+}
+
+data class BeltTransportBenchmarkReport(
+    val beltCount: Int,
+    val cellsPerBelt: Int,
+    val ticks: Int,
+    val deliveredItems: Int,
+    val elapsedNanos: Long,
+) {
+    fun toJson(): String = buildJson(
+        "scenario" to "belt-transport-100",
+        "belt_count" to beltCount,
+        "cells_per_belt" to cellsPerBelt,
+        "ticks" to ticks,
+        "delivered_items" to deliveredItems,
         "elapsed_ns" to elapsedNanos,
         "sim_ms" to elapsedNanos / 1_000_000.0,
     )
@@ -486,7 +511,8 @@ object DevtoolReports {
         val reports = listOf(runSandboxScenario(), runSandboxKillScenario())
         return "{\"scenarios\":[${reports.joinToString(",") { it.toJson() }}]," +
             "\"goal_field_rebuild\":${goalFieldRebuildBenchmark().toJson()}," +
-            "\"spatial_index\":${spatialIndexBenchmark().toJson()}}"
+            "\"spatial_index\":${spatialIndexBenchmark().toJson()}," +
+            "\"belt_transport\":${beltTransportBenchmark().toJson()}}"
     }
 
     /** Runs a registered game adapter to a fixed tick and emits ASCII plus a stable state dump. */
@@ -569,6 +595,47 @@ object DevtoolReports {
             towerShots = result.metrics.towerShots,
             aliveEnemiesAfter = entities.byTag("enemy").count { it.health?.isAlive() == true },
             elapsedNanos = elapsedNanos,
+        )
+    }
+
+    /** Deterministic throughput workload for the accepted 100-belt performance contract. */
+    fun beltTransportBenchmark(
+        beltCount: Int = 100,
+        cellsPerBelt: Int = 4,
+        ticks: Int = 1_000,
+    ): BeltTransportBenchmarkReport {
+        require(beltCount >= 100) { "Belt benchmark requires at least 100 belts." }
+        require(cellsPerBelt > 0) { "Belt benchmark requires at least one cell per belt." }
+        require(ticks > 0) { "Belt benchmark requires positive ticks." }
+        var state = BeltTransportState(
+            (0 until beltCount).map { beltIndex ->
+                BeltLine(
+                    id = "benchmark-belt-$beltIndex",
+                    cells = (0 until cellsPerBelt).map { cellIndex ->
+                        BeltCell(TilePosition(cellIndex, beltIndex), BeltGeometry.STRAIGHT, BeltDirection.EAST)
+                    },
+                    ticksPerCell = 1,
+                )
+            },
+        )
+        val system = BeltTransportSystem()
+        var delivered = 0
+        val started = System.nanoTime()
+        repeat(ticks) { tick ->
+            val result = system.tick(
+                state = state,
+                pull = { belt -> BeltItem("${belt.id}:$tick", "bolt", 1, cellIndex = 0) },
+                push = { _, _ -> true },
+            )
+            state = result.state
+            delivered += result.delivered.sumOf(BeltItem::amount)
+        }
+        return BeltTransportBenchmarkReport(
+            beltCount = beltCount,
+            cellsPerBelt = cellsPerBelt,
+            ticks = ticks,
+            deliveredItems = delivered,
+            elapsedNanos = System.nanoTime() - started,
         )
     }
 

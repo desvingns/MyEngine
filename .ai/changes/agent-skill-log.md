@@ -614,6 +614,26 @@ by: claude
 - Baseline: known untracked `.ai/retro/retro-2026-08-03.md` was preserved and excluded.
 - No plugin version bump; no ADR.
 
+## 2026-08-03 - MyEngine ENG-023 feature run
+
+- Owner: Codex / `me-dev:me`
+- Change type: normal engine feature run; no agent, skill, adapter, plugin, or pipeline contract
+  change.
+- Summary: `/me --feature --next` reviewed the accepted backlog and selected ENG-023. Added
+  Android-free straight/corner conveyor state and deterministic transport, authored content timing,
+  producer/core/entity endpoints, save v20 with v1-v19 migration, focused tests, and a 100-belt
+  throughput benchmark. The card moved to `.claude/specs/done/`.
+- Pipeline: scout and architect returned valid JSON; the first developer worker timed out and then
+  returned `partial` with no edits, so implementation continued locally under the approved scope.
+  The tester returned focused tests. Conditional reviewer/verifier workers could not start after
+  the bounded subagent thread limit; local boundary review found no blocker. No malformed JSON
+  envelope was returned by a completed worker.
+- Verification: full `gradlew test`, projects, content/schema drift, replay, save compatibility,
+  benchmark, selfcheck, required headless inspect, Android `assembleDebug`, and `git diff --check`
+  passed. Replay hashes remained `e4892bcc18f9d8dc`, `a763da4ac32b15b4`, and `3f02607020d48668`.
+- Baseline: known untracked `.ai/retro/retro-2026-08-03.md` was preserved and excluded.
+- No plugin version bump; no ADR.
+
 ## 2026-08-03 - MyEngine ENG-034 feature run
 
 - Owner: Codex / `me-dev:me`

@@ -172,7 +172,7 @@ class SandboxSessionLifecycleTest {
         val expectedTowerMetrics = session.runtime.state.defense.towerMetrics
         val save = session.save()
 
-        assertEquals(19, SandboxSaveCodec.SAVE_VERSION)
+        assertEquals(20, SandboxSaveCodec.SAVE_VERSION)
         assertEquals(map.id, saveProperty(save, "mapId"))
         assertEquals(registry.manifest.version, saveProperty(save, "contentVersion"))
         assertEquals(map.id, SandboxSaveCodec.decode(save, registry).mapId)
@@ -357,7 +357,7 @@ class SandboxSessionLifecycleTest {
 
         val valid = session.save()
         // Sanity: the valid save carries the codec's current version and decodes cleanly.
-        assertEquals(19, SandboxSaveCodec.SAVE_VERSION)
+        assertEquals(20, SandboxSaveCodec.SAVE_VERSION)
         SandboxSaveCodec.decode(valid, registry)
 
         val future = valid.replace("saveVersion=${SandboxSaveCodec.SAVE_VERSION}", "saveVersion=${SandboxSaveCodec.SAVE_VERSION + 1}")

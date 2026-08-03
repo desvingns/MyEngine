@@ -165,6 +165,16 @@ class DevtoolReportsTest {
     }
 
     @Test
+    fun beltTransportBenchmarkReportsOneHundredBeltContract() {
+        val report = DevtoolReports.beltTransportBenchmark()
+
+        assertEquals(100, report.beltCount)
+        assertEquals(1_000, report.ticks)
+        assertTrue(report.deliveredItems > 0)
+        assertTrue(report.toJson().contains("\"belt_count\":100"))
+    }
+
+    @Test
     fun contentReportListsSandboxIds() {
         val report = DevtoolReports.contentReport()
 

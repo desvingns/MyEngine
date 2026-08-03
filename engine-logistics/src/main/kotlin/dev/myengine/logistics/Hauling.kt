@@ -81,6 +81,18 @@ class HaulSourceStore(initialSources: List<HaulSource> = emptyList()) {
         }
     }
 
+    /** Takes unreserved producer output for an automatic conveyor input. */
+    fun takeOutput(sourceId: String, resourceId: String, amount: Int): Boolean {
+        require(amount > 0) { "Conveyor output amount must be positive." }
+        val source = sources[sourceId] ?: return false
+        if (source.available(resourceId) < amount) return false
+        val remaining = (source.resources[resourceId] ?: 0) - amount
+        sources[sourceId] = source.copy(
+            resources = if (remaining == 0) source.resources - resourceId else source.resources + (resourceId to remaining),
+        )
+        return true
+    }
+
     fun get(sourceId: String): HaulSource? = sources[sourceId]
 
     fun all(): List<HaulSource> = sources.values.toList()

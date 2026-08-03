@@ -82,6 +82,11 @@ import dev.myengine.logistics.HaulSourceStore
 import dev.myengine.logistics.ConstructionSite
 import dev.myengine.logistics.ConstructionSiteStore
 import dev.myengine.logistics.HaulDestinationSink
+import dev.myengine.logistics.BeltItem
+import dev.myengine.logistics.BeltCell
+import dev.myengine.logistics.BeltLine
+import dev.myengine.logistics.BeltTransportState
+import dev.myengine.logistics.BeltTransportSystem
 import dev.myengine.logistics.StockpileZone
 import dev.myengine.logistics.ZoneStore
 import dev.myengine.render.DebugOverlay
@@ -154,6 +159,7 @@ data class SandboxState(
     var zones: ZoneStore = ZoneStore(),
     var haulSources: HaulSourceStore = HaulSourceStore(),
     var constructionSites: ConstructionSiteStore = ConstructionSiteStore(),
+    var belts: BeltTransportState = BeltTransportState(),
     var researchedTechIds: Set<String> = emptySet(),
 ) : HashableState {
     override fun appendHash(hash: StableHash) {
@@ -165,6 +171,7 @@ data class SandboxState(
         zones.appendHash(hash)
         haulSources.appendHash(hash)
         constructionSites.appendHash(hash)
+        belts.appendHash(hash)
         if (registry.techNodes.isNotEmpty()) {
             researchedTechIds.sorted().forEach { hash.add("researched-tech").add(it) }
         }
@@ -252,6 +259,7 @@ class SandboxRuntime(
         eligibleJob = { it.haul == null },
     )
     private val haulingSystem = HaulingSystem()
+    private val beltTransportSystem = BeltTransportSystem()
     private val map = state.registry.requireMap(state.mapId)
     private val spawn = map.primarySpawn.position.let { TilePosition(it.x, it.y) }
     private val spawnRoutes: Map<String, TilePosition> = map.spawns.toSortedMap()
@@ -313,6 +321,7 @@ class SandboxRuntime(
             ensureConstructionJobs()
             executeJobs(commandEvents)
             updateProduction()
+            updateBelts()
             state.defense = defenseRuntime.spawnDueWaves(
                 state.tick,
                 state.defense,
@@ -1622,6 +1631,46 @@ class SandboxRuntime(
         }
     }
 
+    /** Moves producer output through persisted belts after production and before combat systems. */
+    private fun updateBelts() {
+        val result = beltTransportSystem.tick(
+            state = state.belts,
+            pull = pull@{ belt ->
+                val sourceId = belt.inputSourceId ?: return@pull null
+                val source = state.haulSources.get(sourceId) ?: return@pull null
+                val resourceId = source.resources.toSortedMap()
+                    .entries
+                    .firstOrNull { entry -> entry.value > 0 && source.available(entry.key) > 0 }
+                    ?.key
+                    ?: return@pull null
+                if (!state.haulSources.takeOutput(sourceId, resourceId, 1)) return@pull null
+                BeltItem(
+                    id = "${belt.id}:${state.tick.value}",
+                    resourceId = resourceId,
+                    amount = 1,
+                    cellIndex = 0,
+                )
+            },
+            push = push@{ belt, item ->
+                val destinationId = belt.destinationEntityId
+                if (destinationId == null) {
+                    if (!state.inventory.canAdd(item.resourceId, item.amount)) return@push false
+                    state.inventory = state.inventory.add(item.resourceId, item.amount)
+                    return@push true
+                }
+                val entity = state.entities.get(EntityId(destinationId)) ?: return@push false
+                val inventory = entity.inventory ?: InventoryComponent()
+                val next = Inventory(inventory.resources, inventory.capacity)
+                if (!next.canAdd(item.resourceId, item.amount)) return@push false
+                state.entities.update(entity.id) {
+                    it.copy(inventory = InventoryComponent(next.add(item.resourceId, item.amount).resources, next.capacity))
+                }
+                true
+            },
+        )
+        state.belts = result.state
+    }
+
     /** Single committed-world cache hook paired with GoalField's prospective placement probe. */
     private fun rebuildAfterWalkabilityChange(): GoalField =
         GoalField.rebuildAfterWalkabilityChange(state.world, core, spawns).field
@@ -1630,7 +1679,7 @@ class SandboxRuntime(
 private fun VisualAssetRef.toRenderAssetRef(): RenderAssetRef = RenderAssetRef(path = path, atlasKey = atlasKey)
 
 object SandboxSaveCodec {
-    const val SAVE_VERSION: Int = 19
+    const val SAVE_VERSION: Int = 20
 
     fun encode(state: SandboxState, seed: Long, pendingCommands: List<EngineCommand> = emptyList()): String {
         val props = Properties()
@@ -1742,6 +1791,26 @@ object SandboxSaveCodec {
                 site.requiredAmount,
                 site.deliveredBySource.toSortedMap().entries.joinToString(",") { (sourceId, amount) ->
                     "${encodeToken(sourceId)}:$amount"
+                },
+            ).joinToString("|")
+        }
+        props["belts"] = state.belts.canonical().belts.joinToString(";") { belt ->
+            listOf(
+                encodeToken(belt.id),
+                belt.ticksPerCell,
+                encodeToken(belt.inputSourceId.orEmpty()),
+                belt.destinationEntityId ?: "",
+                belt.cells.joinToString("~") { cell ->
+                    listOf(cell.position.x, cell.position.y, cell.geometry.name, cell.direction.name).joinToString(":")
+                },
+                belt.items.sortedWith(compareBy<BeltItem> { it.cellIndex }.thenBy { it.id }).joinToString("~") { item ->
+                    listOf(
+                        encodeToken(item.id),
+                        encodeToken(item.resourceId),
+                        item.amount,
+                        item.cellIndex,
+                        item.progressTicks,
+                    ).joinToString(":")
                 },
             ).joinToString("|")
         }
@@ -1863,6 +1932,7 @@ object SandboxSaveCodec {
         state.constructionSites = if (version >= 16) {
             parseConstructionSites(props.getProperty("constructionSites", ""), registry, state.world, state.haulSources)
         } else ConstructionSiteStore()
+        state.belts = if (version >= 20) parseBelts(props.getProperty("belts", "")) else BeltTransportState()
         val entities = parseEntities(props.getProperty("entities", ""), registry, version)
         state.world.positions().forEach { state.world.clearOccupancy(it) }
         val loadedStore = EntityStore(props.getProperty("nextEntityId").toLong(), entities)
@@ -2097,6 +2167,44 @@ object SandboxSaveCodec {
             )
         },
     )
+
+    private fun parseBelts(text: String): BeltTransportState = BeltTransportState(
+        text.split(';').filter { it.isNotBlank() }.map { encoded ->
+            val parts = encoded.split('|')
+            require(parts.size == 6) { "Invalid belt entry '$encoded'." }
+            val destinationEntityId = parts[3].toLongOrNull()?.also { require(it > 0) {
+                "Invalid belt destination entity id in '$encoded'."
+            } }
+            val cells = parts[4].split('~').filter { it.isNotBlank() }.map { cellText ->
+                val cellParts = cellText.split(':')
+                require(cellParts.size == 4) { "Invalid belt cell entry '$cellText'." }
+                BeltCell(
+                    position = TilePosition(cellParts[0].toInt(), cellParts[1].toInt()),
+                    geometry = dev.myengine.logistics.BeltGeometry.valueOf(cellParts[2]),
+                    direction = dev.myengine.logistics.BeltDirection.valueOf(cellParts[3]),
+                )
+            }
+            val items = parts[5].split('~').filter { it.isNotBlank() }.map { itemText ->
+                val itemParts = itemText.split(':')
+                require(itemParts.size == 5) { "Invalid belt item entry '$itemText'." }
+                BeltItem(
+                    id = decodeToken(itemParts[0]),
+                    resourceId = decodeToken(itemParts[1]),
+                    amount = itemParts[2].toInt(),
+                    cellIndex = itemParts[3].toInt(),
+                    progressTicks = itemParts[4].toInt(),
+                )
+            }
+            BeltLine(
+                id = decodeToken(parts[0]),
+                cells = cells,
+                ticksPerCell = parts[1].toInt(),
+                items = items,
+                inputSourceId = decodeToken(parts[2]).takeIf { it.isNotBlank() },
+                destinationEntityId = destinationEntityId,
+            )
+        },
+    ).canonical()
 
     private fun parseEncodedResources(text: String, label: String): Map<String, Int> =
         text.split(',').filter { it.isNotBlank() }.associate { encoded ->

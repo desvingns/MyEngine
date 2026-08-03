@@ -225,6 +225,12 @@ data class BuildingContent(
     val buildWorkTicks: Int = 1,
     /** Optional output-only recipe; when present this building is a resource extractor. */
     val producerRecipeId: String? = null,
+    /** Optional conveyor cell geometry; omitted for non-conveyor buildings. */
+    val beltGeometry: BeltGeometryContent? = null,
+    /** Optional conveyor travel direction; required when [beltGeometry] is present. */
+    val beltDirection: BeltDirectionContent? = null,
+    /** Content-defined number of ticks required to advance one belt cell. */
+    val beltTicksPerCell: Int? = null,
 ) : ContentDefinition {
     init {
         require(costResource.isNotBlank()) { "Building cost resource cannot be blank." }
@@ -239,6 +245,37 @@ data class BuildingContent(
         require(producerRecipeId == null || producerRecipeId.isNotBlank()) {
             "Producer recipe id cannot be blank."
         }
+        require((beltGeometry == null) == (beltDirection == null)) {
+            "Belt geometry and direction must be declared together."
+        }
+        require(beltGeometry == null || beltTicksPerCell != null) {
+            "Belt ticks per cell is required for conveyor buildings."
+        }
+        require(beltTicksPerCell == null || beltTicksPerCell > 0) {
+            "Belt ticks per cell must be positive."
+        }
+    }
+}
+
+enum class BeltGeometryContent {
+    STRAIGHT,
+    CORNER,
+    ;
+
+    companion object {
+        fun fromId(value: String): BeltGeometryContent? = entries.firstOrNull { it.name.equals(value.trim(), ignoreCase = true) }
+    }
+}
+
+enum class BeltDirectionContent {
+    NORTH,
+    EAST,
+    SOUTH,
+    WEST,
+    ;
+
+    companion object {
+        fun fromId(value: String): BeltDirectionContent? = entries.firstOrNull { it.name.equals(value.trim(), ignoreCase = true) }
     }
 }
 

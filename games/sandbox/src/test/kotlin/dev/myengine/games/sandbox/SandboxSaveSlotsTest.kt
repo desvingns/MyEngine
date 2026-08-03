@@ -32,7 +32,7 @@ class SandboxSaveSlotsTest {
         )
         assertEquals(3L, store.restore("first", registry).runtime.state.tick.value)
         assertEquals(7L, store.restore("second", registry).runtime.state.tick.value)
-        assertEquals(19, SandboxSaveCodec.SAVE_VERSION)
+        assertEquals(20, SandboxSaveCodec.SAVE_VERSION)
         assertEquals(SandboxSaveCodec.SAVE_VERSION, firstMetadata.codecVersion)
         assertTrue(Files.isRegularFile(store.pathFor("first")))
     }
@@ -124,7 +124,7 @@ class SandboxSaveSlotsTest {
         )
 
         assertEquals(session.stableHash(), restored.stableHash())
-        assertEquals(19, SandboxSaveCodec.SAVE_VERSION)
+        assertEquals(20, SandboxSaveCodec.SAVE_VERSION)
     }
 
     @Test

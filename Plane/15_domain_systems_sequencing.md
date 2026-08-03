@@ -88,5 +88,6 @@ systems that have no named game FR yet. Recorded here and on the PROC-003 card.
 
 ## Next
 
-- Run `/me --feature --next` for ENG-010 (status effects framework), the adopted
-  successor to ENG-020.
+- ENG-010 through ENG-035 and the ENG-023 conveyor follow-up are complete; review the remaining
+  accepted backlog before the next `/me --feature --next` run. ENG-036 and PROC-015 remain
+  explicitly human-owned until their start gates are accepted.

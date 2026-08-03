@@ -1,8 +1,8 @@
 # MyEngine State
 
-Last updated: 2026-08-03 (ENG-035 close-out)
-Active phase: Phase 00-14 complete; Phase 15 sequencing adopted; Signal Garden SG-001..005 complete; MyTD MTD-001..005 complete; DX-002, DX-005, DX-006, DX-008, ENG-001, ENG-002, ENG-003, ENG-004, ENG-005, ENG-006, ENG-007, ENG-008, ENG-009, ENG-010, ENG-011, ENG-012, ENG-013, ENG-014, ENG-015, ENG-016, ENG-017, ENG-018, ENG-019, ENG-020, ENG-021, ENG-026, ENG-027, ENG-028, ENG-029, ENG-030, ENG-031, ENG-032, ENG-033, ENG-034, ENG-035, PROC-002, PROC-003, PROC-006, PROC-007, and PROC-013 complete; pipeline at v0.2.0; next exact action is review of the remaining accepted backlog
-Owner of last update: Codex (2026-08-03: ENG-035 close-out)
+Last updated: 2026-08-03 (ENG-023 close-out)
+Active phase: Phase 00-14 complete; Phase 15 sequencing adopted; Signal Garden SG-001..005 complete; MyTD MTD-001..005 complete; DX-002, DX-005, DX-006, DX-008, ENG-001, ENG-002, ENG-003, ENG-004, ENG-005, ENG-006, ENG-007, ENG-008, ENG-009, ENG-010, ENG-011, ENG-012, ENG-013, ENG-014, ENG-015, ENG-016, ENG-017, ENG-018, ENG-019, ENG-020, ENG-021, ENG-023, ENG-026, ENG-027, ENG-028, ENG-029, ENG-030, ENG-031, ENG-032, ENG-033, ENG-034, ENG-035, PROC-002, PROC-003, PROC-006, PROC-007, and PROC-013 complete; pipeline at v0.2.0; next exact action is review of the remaining accepted backlog
+Owner of last update: Codex (2026-08-03: ENG-023 close-out)
 
 ## Current Status
 
@@ -43,6 +43,31 @@ Owner of last update: Codex (2026-08-03: ENG-035 close-out)
 - ENG-035 is complete: content-defined finite/infinite resource nodes support deterministic
   underlying/adjacent extractor placement, output-only ProducerSystem batches, stable ENG-004
   haul sources, and v19 save persistence for depleted nodes plus extractor binding/progress.
+
+- ENG-023 is complete: Android-free straight/corner belt cells use content-defined ticks-per-cell,
+  deterministic sink-to-source movement and full-belt backpressure, producer/core/entity endpoints,
+  persisted belt items in save v20, and a 100-belt devtools throughput benchmark. Legacy replay
+  hashes remain unchanged.
+
+## ENG-023 Close-out
+
+- DONE: Added `BeltLine`/`BeltTransportSystem` in `engine-logistics`, optional validated belt geometry,
+  direction and timing content fields, producer-source pull and core/entity inventory endpoints, and
+  deterministic sandbox tick integration after production. Belt state and items are part of the
+  authoritative hash and `SandboxSaveCodec` v20; v1-v19 migrate with empty belt state.
+- DECISIONS: Items advance in stable belt-id order, sink-to-source cell order, then item-id order.
+  A delivered item prevents same-tick refill on that belt, making endpoint throughput and backpressure
+  explicit. Core delivery targets the sandbox inventory; entity delivery creates/uses an entity
+  inventory subject to capacity. No Android/UI, job, split/merge, priority, loop, or ADR work was added.
+- NEXT: Review the remaining accepted backlog; ENG-036 and PROC-015 remain human-owned start-gated work.
+- BLOCKERS: Conditional roster reviewer/verifier workers could not start after the bounded subagent
+  thread limit. Local boundary review found no Android dependency, content/schema drift, save/replay,
+  or test blocker. The known untracked `.ai/retro/retro-2026-08-03.md` baseline remains excluded;
+  no device/emulator or visual-golden proof is claimed.
+- VERIFICATION: Focused conveyor/sandbox/devtools tests, full `gradlew test`, `gradlew projects`,
+  content validation, schema drift, replay (`e4892bcc18f9d8dc`, `a763da4ac32b15b4`,
+  `3f02607020d48668`), save-compat, benchmark (100 belts x 1000 ticks), selfcheck, required
+  headless inspect, Android `assembleDebug`, and `git diff --check` passed.
 
 ## ENG-035 Close-out
 
