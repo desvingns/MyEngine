@@ -99,6 +99,7 @@ At the end of each phase:
 
 ## Current Next Step
 
-The original Phase 00-14 plan is complete, Signal Garden kickoff cards are done, and the colony
-slice is complete through ENG-033. The next project step is to inspect the roadmap/backlog board
-and select the next accepted feature; do not use the historical SG-001 path above.
+The original Phase 00-14 plan is complete, Signal Garden kickoff cards are done, the colony slice
+is complete through ENG-033, and DX-001 is complete. The next project step is to review the
+remaining accepted backlog, assign owner/blocked_by/start gates, and select the next feature; do
+not use the historical SG-001 path above.

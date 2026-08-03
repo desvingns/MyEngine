@@ -16,7 +16,8 @@ development harness.
 - Phase 04-14: agentic pipeline, deterministic runtime, content/save, entities/jobs, logistics,
   defense, presentation boundary, sandbox slice, devtools, game-spec workflow, self-improvement,
   and hardening kickoff are complete.
-- Next step: Signal Garden first-game backlog, starting with `SG-001-content-pack`.
+- Next step: review the remaining accepted backlog, assign owner/blocked_by/start gates, and select
+  the next feature; ENG-036 and PROC-015 remain human-owned start-gated work.
 
 ## Product Direction
 

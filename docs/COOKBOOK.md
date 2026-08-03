@@ -231,6 +231,98 @@ Commit `270e667` (`feat: add HUD snapshot and UI commands`) demonstrates the fie
 `games/sandbox/src/test/kotlin/dev/myengine/games/sandbox/SandboxHudSnapshotTest.kt`, and the
 Android `SandboxRenderView.kt` plus its layout test.
 
+## Recipe 6 — Create a new game with the scaffolder
+
+Use this when a new game needs a safe repository entry point with a module, a minimal data-driven
+pack, a deterministic replay example, and the initial spec bundle.
+
+Why: the scaffolder makes the game/module/spec boundary explicit from the first generated commit.
+It provides a runnable deterministic starter without claiming gameplay, engine, save, or Android
+behavior for the new game.
+
+### Invocation
+
+From the repository root, run:
+
+```powershell
+powershell.exe -NoProfile -File scripts\me-new-game.ps1 -Slug <lower-kebab-slug>
+```
+
+Use `-Root <repo-root>` only when the target repository root is intentionally supplied; the
+generator defaults to the repository containing the script.
+
+### Exact files and generated artifacts
+
+The invocation updates only the root `settings.gradle.kts` wiring and creates exactly these 28
+files under `games/<slug>` (hyphens in `<slug>` become underscores in the Kotlin package):
+
+- `build.gradle.kts`
+- `README.md`
+- `replay-scenario.properties`
+- `src/main/kotlin/dev/myengine/games/<slug_with_underscores>/CanonicalScenario.kt`
+- `src/test/kotlin/dev/myengine/games/<slug_with_underscores>/CanonicalScenarioTest.kt`
+- `content/<slug>/manifest.properties`
+- `content/<slug>/tiles.properties`
+- `content/<slug>/resources.properties`
+- `content/<slug>/recipes.properties`
+- `content/<slug>/towers.properties`
+- `content/<slug>/enemies.properties`
+- `content/<slug>/waves.properties`
+- `content/<slug>/incidents.properties`
+- `content/<slug>/strings.properties`
+- `content/<slug>/maps.json`
+- `spec/00_manifest.yaml`
+- `spec/product-brief.md`
+- `spec/requirements.md`
+- `spec/user-stories.md`
+- `spec/acceptance/AC-001.feature`
+- `spec/design.md`
+- `spec/content-plan.md`
+- `spec/engine-gap-analysis.md`
+- `spec/balance-plan.md`
+- `spec/android-ux.md`
+- `spec/nfr.md`
+- `spec/risks.md`
+- `spec/traceability.csv`
+
+The generated module contains a JVM test with a 12-tick seeded canonical scenario and expected
+replay hash `b8a9908f5d7a8281`; the pack contains the minimal manifest, flat content definitions,
+and one canonical JSON map. The spec directory follows `docs/GAME_SPEC_PIPELINE.md` and starts as
+draft scaffolding, not as game-bundle approval or traceability evidence.
+
+### Idempotence, path, and encoding rules
+
+1. `<slug>` must match `^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$`: lower-kebab-case, starting with a
+   letter, with no uppercase, underscore, empty segment, or repeated hyphen.
+2. The generator refuses an existing `games/<slug>`, an existing `games/.<slug>.scaffold`, or
+   existing `:games:<slug>` / `projectDir` wiring. It never overwrites an existing game.
+3. All game and staging destinations are resolved through containment checks under the selected
+   repository root and its `games` directory. Files are written into `games/.<slug>.scaffold`
+   first and moved into `games/<slug>` only after generation succeeds.
+4. Generated files and the rewritten settings file use UTF-8 without BOM and end with one newline;
+   existing settings newline style is retained. Template placeholders are replaced only for the
+   requested slug and Kotlin package name.
+
+### Procedure and gates
+
+1. Run the script contract test; it uses an isolated temporary fixture and checks settings wiring,
+   all 28 generated files, existing-slug refusal, and invalid-slug refusal:
+   `powershell.exe -NoProfile -File scripts\tests\me-new-game.tests.ps1`.
+2. Generate a real `<slug>` with the invocation above, then run the generated module test:
+   `.\gradlew.bat :games:<slug>:test`.
+3. Run `powershell.exe -File scripts\me-content-validate.ps1` to validate discovered content packs.
+4. Run `powershell.exe -File scripts\me-sim-replay.ps1` to run the engine replay and generated
+   canonical scenarios discovered from `replay-scenario.properties`.
+5. Run `.\gradlew.bat projects` to verify the new module is part of the Gradle project graph.
+
+### Historical validation (current DX-001 implementation)
+
+The current `scripts/me-new-game.ps1` plus `scripts/tests/me-new-game.tests.ps1` is the historical
+validation for this recipe: the implementation establishes the exact file list, canonical hash,
+settings wiring, refusal/idempotence, path containment, and UTF-8-without-BOM contract described
+above. Keep this recipe synchronized with that implementation; no reference-game bundle or copied
+schema is part of DX-001.
+
 ## Close-out checklist
 
 - Confirm the recipe's exact file list matches the actual diff; keep unrelated files unstaged.

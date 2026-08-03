@@ -1,7 +1,44 @@
 # MyEngine Handoff
 
-Last updated: 2026-08-03 (ENG-025 close-out; next backlog review)
+Last updated: 2026-08-04 (DX-001 close-out; next backlog review)
 Owner: Codex
+
+## DX-001 close-out (2026-08-04)
+
+### DONE
+
+- Added `scripts/me-new-game.ps1`: lower-kebab slug validation, contained staging under
+  `games/.<slug>.scaffold`, refusal of existing game/stage/settings wiring, UTF-8-without-BOM
+  output, Gradle module wiring, a 28-file starter content/spec bundle, and a fixed-seed canonical
+  replay test with golden hash `b8a9908f5d7a8281`.
+- Extended `scripts/me-sim-replay.ps1` to discover generated game scenarios from
+  `replay-scenario.properties` while preserving the sandbox replay gate.
+- Added `scripts/tests/me-new-game.tests.ps1`; moved the card to `.claude/specs/done/` and added
+  Recipe 6 to `docs/COOKBOOK.md`. Temporary generated smoke fixtures were moved to
+  `archive/dx001-smoke*` and are excluded from the feature scope.
+
+### DECISIONS
+
+- The generated project is a JVM starter with engine-core/content dependencies and a minimal
+  external pack; no production engine, save, renderer, Android, or game-bundle traceability
+  behavior is claimed. No ADR or pipeline contract change was needed.
+- Replay discovery uses an explicit per-game metadata file instead of guessing test names from
+  arbitrary source trees.
+
+### NEXT
+
+- Review the remaining accepted backlog and assign owner, blocked_by, and start gates before the
+  next feature; ENG-036 and PROC-015 remain human-owned start-gated work.
+
+### BLOCKERS
+
+- No implementation blocker. No device/emulator or visual-golden proof was required or claimed.
+
+### VERIFICATION
+
+- Contract test, generated module test, full `gradlew test`, `gradlew projects`, content validation
+  (2 packs), replay, save-compat, benchmark, selfcheck, Android `assembleDebug`, and
+  `git diff --check` passed.
 
 ## ENG-025 close-out (2026-08-03)
 

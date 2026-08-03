@@ -81,6 +81,7 @@
 | [x] | ENG-033 Colonist needs MVP | [ENG-033](../.claude/specs/done/ENG-033-colonist-needs-mvp.md) | Content-defined hunger/rest decay and thresholds, deterministic recovery jobs/arbitration, immutable HUD need bars, save v17 with v1-v16 migration, and 10k determinism coverage | 2026-08-03 |
 | [x] | ENG-017 Research/tech tree + unlock gating | [ENG-017](../.claude/specs/done/ENG-017-research-tech-tree.md) | Optional validated `tech-tree.json`, deterministic atomic research spending, tower/building/recipe gating, immutable tree snapshot, save v18/v1-v17 migration, and replay/save/content/full-gate verification | 2026-08-03 |
 | [x] | DX-002 Headless state inspector | [DX-002](../.claude/specs/done/DX-002-headless-state-inspector.md) | Provider-based deterministic ASCII/JSON inspection with entities, inventories, defense metrics, stable hash, optional scripts, and AGENTS default-debug reference | 2026-08-03 |
+| [x] | DX-001 New-game scaffolder | [DX-001](../.claude/specs/done/DX-001-new-game-scaffolder.md) | Deterministic 28-file game/module/content/spec scaffold, safe settings wiring, canonical replay discovery, and idempotence/path/encoding contract test | 2026-08-04 |
 | [x] | DX-006 Engine cookbook | [DX-006](../.claude/specs/done/DX-006-engine-cookbook.md) | Five on-demand recipes with exact file lists, gates, and historical commit references; AGENTS intake link stays token-economical | 2026-08-03 |
 | [x] | DX-005 Schema-docs drift gate | [DX-005](../.claude/specs/done/DX-005-schema-docs-drift-gate.md) | Deterministic ContentLoader/properties-schema drift report, bidirectional fixtures, selfcheck and pre-push wiring | 2026-08-03 |
 | [x] | PROC-006 CI pre-push lane | [PROC-006](../.claude/specs/done/PROC-006-ci-prepush.md) | `.githooks/pre-push` aggregates tests, content validation, replay, save compatibility and schema drift into one blocking JSON result | 2026-08-03 |
@@ -1702,3 +1703,21 @@
   - Air enemies use a blocker-ignoring deterministic GoalField; legacy saves decode movement as
     ground. No Android production, renderer, or ADR changes were required.
 - Next: Review remaining accepted backlog; ENG-036 and PROC-015 remain human-owned start-gated work.
+
+### 2026-08-04 - DX-001 (new-game scaffolder)
+
+- Status: Done / accepted; no new phase was created.
+- Owner: Codex / `me-dev:me`
+- DONE: Added `scripts/me-new-game.ps1` with lower-kebab validation, contained staging, refusal of
+  existing destinations, UTF-8-without-BOM output, Gradle settings wiring, and a deterministic
+  28-file starter module/content/spec bundle. Added explicit `replay-scenario.properties` discovery
+  to `scripts/me-sim-replay.ps1` and the standalone generator contract test.
+- DECISIONS: Generated games are JVM starter modules with minimal external content and a fixed
+  canonical replay hash; no production engine, save, renderer, Android, or game-bundle behavior was
+  added. Temporary smoke fixtures were moved to `archive/dx001-smoke*` and excluded.
+- NEXT: Review remaining accepted backlog and assign owner, blocked_by, and start gates before the
+  next feature; ENG-036 and PROC-015 remain human-owned.
+- BLOCKERS: No implementation blocker. No device/emulator or visual-golden proof is claimed.
+- VERIFICATION: Contract test, generated module test, full `gradlew test`, `projects`, content
+  validation, replay, save-compat, benchmark, selfcheck, Android `assembleDebug`, and
+  `git diff --check` passed.

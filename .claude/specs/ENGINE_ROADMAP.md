@@ -7,7 +7,7 @@ two or more games outranks single-game gaps of the same severity.
 Updated by: the `/me-spec` backlog bridge (new gaps / new demand) and `/me`
 close-out (status changes).
 
-Last updated: 2026-08-03 (ENG-025 close-out)
+Last updated: 2026-08-04 (DX-001 close-out)
 
 ## Capabilities
 
@@ -58,7 +58,7 @@ Last updated: 2026-08-03 (ENG-025 close-out)
 | Enemy attacks on structures | ENG-034 | vision:mindustry-like | 1 | **done** (2026-08-03; content-flagged blocked enemy attacks use stable adjacent-structure selection, lethal occupancy/GoalField invalidation, persisted building health, and balance-report structure metrics) |
 | Resource extractor building | ENG-035 | vision:mindustry-like, vision:rimworld-like | 2 | **done** (2026-08-03; deterministic finite/infinite extractor nodes, output-only ProducerSystem path, ENG-004 haul-source output, and save v19/v1-v18 migration; ENG-023 belt transport remains separate) |
 | Conveyor transport MVP | ENG-023 | vision:mindustry-like | 1 | **done** (2026-08-03; deterministic straight/corner belts, content-defined ticks-per-cell, producer/core/entity endpoints, v20 save migration, replay and 100-belt benchmark) |
-| New-game scaffolder script | DX-001 | agent pipeline | - | backlog |
+| New-game scaffolder script | DX-001 | agent pipeline | - | **done** (2026-08-04; deterministic 28-file module/content/spec scaffold, settings wiring, canonical replay metadata, refusal/path/UTF-8 guards, contract and project/content/replay gates) |
 | Headless state inspector (agent eyes) | DX-002 | agent pipeline | - | **done** (2026-08-03; provider-based deterministic ASCII/JSON inspector, sandbox ServiceLoader adapter, optional command scripts, focused/full gates) |
 | Replay divergence bisector | DX-003 | agent pipeline | - | backlog |
 | Desktop content hot-reload | DX-004 | agent pipeline | - | backlog |
@@ -120,8 +120,8 @@ Last updated: 2026-08-03 (ENG-025 close-out)
    -> ENG-025 (done 2026-08-03).
    ENG-001, ENG-003, ENG-031, ENG-004, ENG-032, ENG-033, ENG-017, and ENG-025 are complete. MySD TD evidence is
    not used as colony evidence.
-4. DX-008 is done: use its hybrid-format ADR for ENG-017/ENG-028 schema work. DX-002, DX-006,
-   DX-005, and PROC-006 are complete (2026-08-03). Post-DX-006 recommendation: review the
+4. DX-008 is done: use its hybrid-format ADR for ENG-017/ENG-028 schema work. DX-001, DX-002,
+   DX-006, DX-005, and PROC-006 are complete (2026-08-04). Post-DX-001 recommendation: review the
    remaining accepted backlog and assign owner, blocked_by, and start gates before selecting another
    card; ENG-036 and PROC-015 remain explicitly human-owned. ENG-025 is now closed.
 5. MySD foundation: PROC-002 / ADR-0004 is done. MySD Gate 1/relaxed Gate 2 are accepted for the

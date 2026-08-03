@@ -1,21 +1,41 @@
 # MyEngine Intake Digest
 
-Regenerated at close-out. Last updated: 2026-08-03 (ENG-025 close-out).
+Regenerated at close-out. Last updated: 2026-08-04 (DX-001 close-out).
 
 ## Current next action
 
-ENG-025 (flying enemies) is complete. Review the remaining accepted backlog before the next
-`/me --feature --next` run; ENG-036 and PROC-015 remain human-owned start-gated work.
+DX-001 (new-game scaffolder) is complete. Review the remaining accepted backlog before the next
+`/me --feature --next` run and assign owner, blocked_by, and start gates; ENG-036 and PROC-015
+remain human-owned start-gated work.
 
 ## Active specs / roadmap
 
-- DX-002, DX-005, DX-006, ENG-001, ENG-003, ENG-031, ENG-004, ENG-032, ENG-033, ENG-006, ENG-017,
+- DX-001, DX-002, DX-005, DX-006, ENG-001, ENG-003, ENG-031, ENG-004, ENG-032, ENG-033, ENG-006, ENG-017,
   ENG-023, ENG-025, ENG-034, ENG-035, and PROC-006 are done.
 - ENG-003 is a post-Phase-14/Phase-15 feature close-out; no new phase was created.
 - ENG-002 remains the wave-enemy GoalField path; ENG-003 is the deterministic JobBoard/job-actor tick capability.
 - ENG-033's authored scope is implemented with no game-bundle traceability update. MySD TD Gate 1 is
   accepted for its TD reference inventory but is not treated as evidence for colony behavior.
 - No ADR or plugin/skill/pipeline contract change was needed.
+
+## DX-001 close-out
+
+### DONE
+
+- `scripts/me-new-game.ps1` generates a deterministic 28-file lower-kebab game/module/content/spec
+  scaffold, wires Gradle settings, and refuses unsafe or existing destinations.
+- `scripts/me-sim-replay.ps1` discovers generated canonical scenarios through explicit metadata;
+  the contract test, generated module, content, and replay gates pass.
+
+### NEXT
+
+- Review the remaining accepted backlog; assign owner, blocked_by, and start gates before selecting
+  another card. ENG-036 and PROC-015 remain human-owned.
+
+### BLOCKERS
+
+- No implementation blocker. Archived smoke fixtures are outside feature scope; no device or visual
+  golden proof is claimed.
 
 ## ENG-025 close-out
 

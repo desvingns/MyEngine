@@ -1,10 +1,16 @@
 # MyEngine State
 
-Last updated: 2026-08-03 (ENG-025 close-out)
-Active phase: Phase 00-14 complete; Phase 15 sequencing adopted; Signal Garden SG-001..005 complete; MyTD MTD-001..005 complete; DX-002, DX-005, DX-006, DX-008, ENG-001, ENG-002, ENG-003, ENG-004, ENG-005, ENG-006, ENG-007, ENG-008, ENG-009, ENG-010, ENG-011, ENG-012, ENG-013, ENG-014, ENG-015, ENG-016, ENG-017, ENG-018, ENG-019, ENG-020, ENG-021, ENG-023, ENG-025, ENG-026, ENG-027, ENG-028, ENG-029, ENG-030, ENG-031, ENG-032, ENG-033, ENG-034, ENG-035, PROC-002, PROC-003, PROC-006, PROC-007, and PROC-013 complete; pipeline at v0.2.0; next exact action is review of the remaining accepted backlog
-Owner of last update: Codex (2026-08-03: ENG-025 close-out)
+Last updated: 2026-08-04 (DX-001 close-out)
+Active phase: Phase 00-14 complete; Phase 15 sequencing adopted; Signal Garden SG-001..005 complete; MyTD MTD-001..005 complete; DX-001, DX-002, DX-005, DX-006, DX-008, ENG-001, ENG-002, ENG-003, ENG-004, ENG-005, ENG-006, ENG-007, ENG-008, ENG-009, ENG-010, ENG-011, ENG-012, ENG-013, ENG-014, ENG-015, ENG-016, ENG-017, ENG-018, ENG-019, ENG-020, ENG-021, ENG-023, ENG-025, ENG-026, ENG-027, ENG-028, ENG-029, ENG-030, ENG-031, ENG-032, ENG-033, ENG-034, ENG-035, PROC-002, PROC-003, PROC-006, PROC-007, and PROC-013 complete; pipeline at v0.2.0; next exact action is review of the remaining accepted backlog
+Owner of last update: Codex (2026-08-04: DX-001 close-out)
 
 ## Current Status
+
+- DX-001 is complete: `scripts/me-new-game.ps1` generates a deterministic 28-file lower-kebab
+  game/module/content/spec scaffold, wires `settings.gradle.kts`, refuses existing or unsafe
+  destinations, and writes UTF-8 without BOM. `scripts/me-sim-replay.ps1` discovers generated
+  canonical scenarios through `replay-scenario.properties`; contract/project/content/replay gates
+  pass. No engine, save, renderer, Android, or game-bundle behavior changed.
 
 - DX-005 + PROC-006 are complete: ContentLoader/property-schema drift is checked in both
   directions with deterministic fixtures, selfcheck includes the gate, and `.githooks/pre-push`
