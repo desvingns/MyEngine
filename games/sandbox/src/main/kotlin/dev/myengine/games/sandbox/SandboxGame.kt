@@ -48,6 +48,7 @@ import dev.myengine.core.command.DefineStockpileZoneCommand
 import dev.myengine.core.command.DesignateHarvestNodeCommand
 import dev.myengine.core.command.RemoveHarvestDesignationCommand
 import dev.myengine.core.command.RemoveStockpileZoneCommand
+import dev.myengine.core.command.ResearchCommand
 import dev.myengine.core.command.SellTowerCommand
 import dev.myengine.core.command.SetTowerTargetingModeCommand
 import dev.myengine.core.command.TileCoordinate
@@ -97,6 +98,9 @@ import dev.myengine.render.RenderAssetRef
 import dev.myengine.render.RenderZone
 import dev.myengine.render.RenderZoneKind
 import dev.myengine.render.RenderTile
+import dev.myengine.render.TechNodeSnapshot
+import dev.myengine.render.TechTreeSnapshot
+import dev.myengine.render.TechUnlockSnapshot
 import dev.myengine.storyteller.IncidentDirector
 import dev.myengine.storyteller.IncidentDirectorState
 import dev.myengine.storyteller.IncidentExecution
@@ -149,6 +153,7 @@ data class SandboxState(
     var zones: ZoneStore = ZoneStore(),
     var haulSources: HaulSourceStore = HaulSourceStore(),
     var constructionSites: ConstructionSiteStore = ConstructionSiteStore(),
+    var researchedTechIds: Set<String> = emptySet(),
 ) : HashableState {
     override fun appendHash(hash: StableHash) {
         hash.add(tick.value)
@@ -159,6 +164,9 @@ data class SandboxState(
         zones.appendHash(hash)
         haulSources.appendHash(hash)
         constructionSites.appendHash(hash)
+        if (registry.techNodes.isNotEmpty()) {
+            researchedTechIds.sorted().forEach { hash.add("researched-tech").add(it) }
+        }
         inventory.appendHash(hash)
         producers.sortedBy { it.id }.forEach {
             hash.add(it.id).add(it.recipeId).add(it.progressTicks)
@@ -226,7 +234,9 @@ class SandboxRuntime(
     private val commandQueue: CommandQueue = CommandQueue(),
     seed: Long = 7L,
 ) {
-    private val producerSystem = ProducerSystem(state.registry.recipes)
+    private val producerSystem = ProducerSystem(state.registry.recipes) { recipeId ->
+        isUnlockAvailable(dev.myengine.content.TechUnlockType.RECIPE, recipeId)
+    }
     private data class PendingJobEffect(val worker: EntityId, val job: Job, val effect: JobCompletionEffect)
 
     private val jobEffects = mutableListOf<PendingJobEffect>()
@@ -523,6 +533,20 @@ class SandboxRuntime(
                 )
             }
         })
+        val techTree = TechTreeSnapshot(
+            state.registry.techNodes.values.sortedBy { it.id }.map { node ->
+                val researched = node.id in state.researchedTechIds
+                TechNodeSnapshot(
+                    id = node.id,
+                    costResource = node.costResource,
+                    costAmount = node.costAmount,
+                    prerequisites = node.prerequisites,
+                    unlocks = node.unlocks.map { unlock -> TechUnlockSnapshot(unlock.type.id, unlock.id) },
+                    researched = researched,
+                    available = !researched && node.prerequisites.all { it in state.researchedTechIds },
+                )
+            },
+        )
         return EngineSnapshot(
             worldSize = state.world.size,
             tiles = renderTiles,
@@ -543,6 +567,7 @@ class SandboxRuntime(
             hud = hudSnapshot(),
             combatEvents = combatEvents,
             zones = renderZones,
+            techTree = techTree,
         )
     }
 
@@ -640,6 +665,7 @@ class SandboxRuntime(
 
     private fun applyCommand(command: EngineCommand, eventSink: MutableList<GameplayEvent>) {
         when (command) {
+            is ResearchCommand -> research(command)
             is BuildTowerCommand -> buildTower(command, eventSink)
             is PlaceBlueprintCommand -> placeBlueprint(command)
             is PlaceBuildingCommand -> placeBuilding(command, eventSink)
@@ -656,6 +682,36 @@ class SandboxRuntime(
             is RemoveHarvestDesignationCommand -> removeHarvestDesignation(command)
             else -> state.lastCommandOrError = "ignored:${command.type}"
         }
+    }
+
+    private fun isUnlockAvailable(type: dev.myengine.content.TechUnlockType, targetId: String): Boolean {
+        val refs = state.registry.techNodes.values
+            .flatMap { node -> node.unlocks.map { node.id to it } }
+            .filter { (_, ref) -> ref.type == type && ref.id == targetId }
+        return refs.isEmpty() || refs.any { (nodeId, _) -> nodeId in state.researchedTechIds }
+    }
+
+    private fun research(command: ResearchCommand) {
+        val node = state.registry.techNodes[command.nodeId]
+        if (node == null) {
+            state.lastCommandOrError = "unknown_tech:${command.nodeId}"
+            return
+        }
+        if (command.nodeId in state.researchedTechIds) {
+            state.lastCommandOrError = "already_researched:${command.nodeId}"
+            return
+        }
+        if (node.prerequisites.any { it !in state.researchedTechIds }) {
+            state.lastCommandOrError = "missing_prerequisite:${command.nodeId}"
+            return
+        }
+        if (!state.inventory.canRemove(node.costResource, node.costAmount)) {
+            state.lastCommandOrError = "missing_resource:${node.costResource}"
+            return
+        }
+        state.inventory = state.inventory.remove(node.costResource, node.costAmount)
+        state.researchedTechIds = (state.researchedTechIds + command.nodeId).toSortedSet()
+        state.lastCommandOrError = "researched:${command.nodeId}"
     }
 
     private fun defineStockpileZone(command: DefineStockpileZoneCommand) {
@@ -845,6 +901,10 @@ class SandboxRuntime(
             state.lastCommandOrError = "unknown_tower:${command.towerId}"
             return
         }
+        if (!isUnlockAvailable(dev.myengine.content.TechUnlockType.TOWER, command.towerId)) {
+            state.lastCommandOrError = "locked_tower:${command.towerId}"
+            return
+        }
         if (!state.inventory.canRemove(tower.costResource, tower.costAmount)) {
             state.lastCommandOrError = "missing_resource:${tower.costResource}"
             return
@@ -884,6 +944,10 @@ class SandboxRuntime(
         val building = state.registry.buildings[command.buildingId]
         if (building == null) {
             state.lastCommandOrError = "unknown_building:${command.buildingId}"
+            return
+        }
+        if (!isUnlockAvailable(dev.myengine.content.TechUnlockType.BUILDING, command.buildingId)) {
+            state.lastCommandOrError = "locked_building:${command.buildingId}"
             return
         }
         if (building.footprintWidth != 1 || building.footprintHeight != 1) {
@@ -1129,6 +1193,10 @@ class SandboxRuntime(
         val building = state.registry.buildings[command.buildingId]
         if (building == null) {
             state.lastCommandOrError = "unknown_building:${command.buildingId}"
+            return
+        }
+        if (!isUnlockAvailable(dev.myengine.content.TechUnlockType.BUILDING, command.buildingId)) {
+            state.lastCommandOrError = "locked_building:${command.buildingId}"
             return
         }
         if (building.footprintWidth != 1 || building.footprintHeight != 1) {
@@ -1459,7 +1527,7 @@ class SandboxRuntime(
 private fun VisualAssetRef.toRenderAssetRef(): RenderAssetRef = RenderAssetRef(path = path, atlasKey = atlasKey)
 
 object SandboxSaveCodec {
-    const val SAVE_VERSION: Int = 17
+    const val SAVE_VERSION: Int = 18
 
     fun encode(state: SandboxState, seed: Long, pendingCommands: List<EngineCommand> = emptyList()): String {
         val props = Properties()
@@ -1511,6 +1579,7 @@ object SandboxSaveCodec {
             "$entityId|${metrics.actualDamage}|${metrics.kills}"
         }
         props["inventory"] = state.inventory.resources.toSortedMap().entries.joinToString(";") { "${it.key}:${it.value}" }
+        props["researchedTechIds"] = state.researchedTechIds.sorted().joinToString(",") { encodeToken(it) }
         props["producers"] = state.producers.sortedBy { it.id }.joinToString(";") {
             listOf(it.id, it.recipeId, it.progressTicks, it.position?.x ?: "", it.position?.y ?: "").joinToString("|")
         }
@@ -1606,7 +1675,8 @@ object SandboxSaveCodec {
             ).joinToString("|")
         }
         props["pendingCommands"] = pendingCommands.joinToString(";") { cmd ->
-            listOf(cmd.type, cmd.id.value, cmd.scheduledTick.value, cmd.actorId ?: "", cmd.stablePayload()).joinToString("|")
+            val stablePayload = if (cmd is ResearchCommand) encodeToken(cmd.nodeId) else cmd.stablePayload()
+            listOf(cmd.type, cmd.id.value, cmd.scheduledTick.value, cmd.actorId ?: "", stablePayload).joinToString("|")
         }
         return StringWriter().also { props.store(it, "MyEngine sandbox save") }.toString()
     }
@@ -1643,6 +1713,9 @@ object SandboxSaveCodec {
             towerMetrics = if (version >= 6) parseTowerMetrics(props.getProperty("towerMetrics", "")) else emptyMap(),
         )
         state.inventory = Inventory(parseResources(props.getProperty("inventory", "")))
+        state.researchedTechIds = if (version >= 18) {
+            parseResearchedTechIds(props.getProperty("researchedTechIds", ""), registry)
+        } else emptySet()
         state.producers = props.getProperty("producers", "")
             .split(';')
             .filter { it.isNotBlank() }
@@ -2046,7 +2119,9 @@ object SandboxSaveCodec {
             val scheduledTick = Tick(parts[2].toLong())
             val actorId = parts[3].toLongOrNull()
             val payload = parts[4]
-            if (type == "build_tower") {
+            if (type == "research") {
+                ResearchCommand(id, scheduledTick, decodeToken(payload), actorId)
+            } else if (type == "build_tower") {
                 val payloadParts = payload.split(':')
                 BuildTowerCommand(id, scheduledTick, payloadParts[0], TileCoordinate(payloadParts[1].toInt(), payloadParts[2].toInt()), actorId)
             } else if (type == "place_building") {
@@ -2105,6 +2180,12 @@ object SandboxSaveCodec {
                 dev.myengine.core.TextCommand(id, scheduledTick, type, payload, actorId)
             }
         }
+
+    private fun parseResearchedTechIds(text: String, registry: ContentRegistry): Set<String> {
+        val ids = text.split(',').filter { it.isNotBlank() }.map(::decodeToken).toSortedSet()
+        ids.forEach { id -> require(id in registry.techNodes) { "Unknown researched tech '$id' in save." } }
+        return ids
+    }
 
     private fun parseStockpileCommandPayload(
         payload: String,

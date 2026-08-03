@@ -37,7 +37,7 @@ class SandboxColonistNeedsTest {
 
         val save = SandboxSaveCodec.encode(state, seed = 7L)
         val restored = SandboxSaveCodec.decode(save, state.registry)
-        assertEquals(17, SandboxSaveCodec.SAVE_VERSION)
+        assertEquals(18, SandboxSaveCodec.SAVE_VERSION)
         assertEquals(state.entities.require(EntityId(1)), restored.entities.require(EntityId(1)))
         assertEquals(state.stableHash(), restored.stableHash())
 
@@ -65,7 +65,7 @@ class SandboxColonistNeedsTest {
             ),
         )
         val save = SandboxSaveCodec.encode(state, seed = 7L)
-            .replace("saveVersion=17", "saveVersion=16")
+            .replace("saveVersion=18", "saveVersion=16")
         val restored = SandboxSaveCodec.decode(save, state.registry)
         assertEquals(null, restored.entities.require(EntityId(1)).needs)
     }

@@ -7,7 +7,7 @@ two or more games outranks single-game gaps of the same severity.
 Updated by: the `/me-spec` backlog bridge (new gaps / new demand) and `/me`
 close-out (status changes).
 
-Last updated: 2026-08-03 (ENG-033 scope unblock)
+Last updated: 2026-08-03 (ENG-017 close-out)
 
 ## Capabilities
 
@@ -53,7 +53,7 @@ Last updated: 2026-08-03 (ENG-033 scope unblock)
 | Construction system (blueprint, haul, build) | ENG-032 | vision:rimworld-like, vision:mindustry-like | 2 | **done** (2026-08-02; non-blocking blueprints, deterministic sourceId-ordered hauling/retry, build jobs, source refunds on cancel, save v16 with v1-v15 migration, and full gates pass) |
 | Colonist needs MVP (hunger/rest) | ENG-033 | authored-colony-scope | 1 | **done** (2026-08-03; content-defined decay/thresholds, deterministic eat/sleep jobs and arbitration, immutable HUD bars, save v17 with v1-v16 migration, 10k determinism coverage) |
 | Incident execution pipeline + RNG fix | ENG-016 | vision:rimworld-like, vision:mindustry-like, vision:td | 3 | **done** (2026-08-02; stateful deterministic director with persistent RNG cursor, cadence/pacing/cooldown selection, atomic typed spawn-wave/resource-event/modifier interpreter, v10 save with v1-v9 migration, remediation replay/save/overflow diagnostics and benchmark gates pass) |
-| Research/tech tree + unlock gating | ENG-017 | vision:mindustry-like, vision:td | 2 | backlog |
+| Research/tech tree + unlock gating | ENG-017 | vision:mindustry-like, vision:td | 2 | **done** (2026-08-03; optional validated `tech-tree.json`, deterministic atomic research and unlock gating, immutable snapshot, save v18/v1-v17 migration, replay/save/content/full-gate verification) |
 | Seeded procedural map generation | ENG-006 | vision:rimworld-like, vision:mindustry-like, vision:td | 3 | **done** (2026-08-03; bounded deterministic generator from validated content params, guaranteed spawn-to-core path, ASCII devtools report, seed-preserving sandbox save/reload) |
 | Enemy attacks on structures | ENG-034 | vision:mindustry-like | 1 | backlog |
 | Resource extractor building | ENG-035 | vision:mindustry-like, vision:rimworld-like | 2 | backlog |
@@ -116,8 +116,8 @@ Last updated: 2026-08-03 (ENG-033 scope unblock)
    -> ENG-012 (done 2026-08-02) -> ENG-007 (done 2026-08-02) -> ENG-018 (done 2026-08-02)
    -> ENG-011 (done 2026-08-02) -> ENG-019 (done 2026-08-02) -> ENG-001 (done 2026-08-02)
    -> ENG-003 (done 2026-08-02) -> ENG-031 (done 2026-08-02) -> ENG-004 (done 2026-08-02)
-   -> ENG-032 (done 2026-08-02) -> ENG-033 (done 2026-08-03).
-   ENG-001, ENG-003, ENG-031, ENG-004, ENG-032, and ENG-033 are complete. MySD TD evidence is
+   -> ENG-032 (done 2026-08-02) -> ENG-033 (done 2026-08-03) -> ENG-017 (done 2026-08-03).
+   ENG-001, ENG-003, ENG-031, ENG-004, ENG-032, ENG-033, and ENG-017 are complete. MySD TD evidence is
    not used as colony evidence.
 4. DX-008 is done: use its hybrid-format ADR for ENG-017/ENG-028 schema work. Other high-leverage
    pipeline cards remain DX-002, DX-006, and DX-005.

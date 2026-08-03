@@ -1100,6 +1100,76 @@ class ContentPackLoaderTest {
     }
 
     @Test
+    fun optionalTechTreeLoadsAndValidatesGraphAndUnlockReferences() {
+        val root = createPack()
+        root.resolve("tech-tree.json").writeText(
+            """
+            {
+              "nodes": [
+                {
+                  "id": "foundation",
+                  "cost": { "resource": "bolt", "amount": 2 },
+                  "unlocks": [ { "type": "tower", "id": "basic" } ]
+                },
+                {
+                  "id": "automation",
+                  "cost": { "resource": "bolt", "amount": 3 },
+                  "prerequisites": [ "foundation" ],
+                  "unlocks": [ { "type": "recipe", "id": "generator" } ]
+                }
+              ]
+            }
+            """.trimIndent(),
+        )
+
+        val result = ContentPackLoader.load(root)
+
+        assertTrue(result.isValid, result.errors.joinToString("\n"))
+        assertEquals(listOf("automation", "foundation"), result.registry!!.techNodes.keys.toList())
+        assertEquals(listOf("foundation"), result.registry.techNodes.getValue("automation").prerequisites)
+        assertEquals(TechUnlockRef(TechUnlockType.TOWER, "basic"), result.registry.techNodes.getValue("foundation").unlocks.single())
+    }
+
+    @Test
+    fun techTreeReportsUnknownReferencesDuplicatesAndCyclesDeterministically() {
+        val root = createPack()
+        root.resolve("tech-tree.json").writeText(
+            """
+            {
+              "nodes": [
+                {
+                  "id": "a",
+                  "cost": { "resource": "missing", "amount": 1 },
+                  "prerequisites": [ "b", "b" ],
+                  "unlocks": [
+                    { "type": "tower", "id": "missing" },
+                    { "type": "tower", "id": "missing" }
+                  ]
+                },
+                {
+                  "id": "b",
+                  "cost": { "resource": "bolt", "amount": 1 },
+                  "prerequisites": [ "a" ],
+                  "unlocks": [ { "type": "recipe", "id": "missing" } ]
+                }
+              ]
+            }
+            """.trimIndent(),
+        )
+
+        val result = ContentPackLoader.load(root)
+
+        assertFalse(result.isValid)
+        val diagnostics = result.errors.filter { it.file == "tech-tree.json" }
+        assertTrue(diagnostics.any { it.field == "cost.resource" && it.message.contains("Unknown resource") })
+        assertTrue(diagnostics.any { it.field == "prerequisites" && it.message.contains("Duplicate prerequisite") })
+        assertTrue(diagnostics.any { it.field == "unlocks" && it.message.contains("Duplicate unlock") })
+        assertTrue(diagnostics.any { it.field == "unlocks" && it.message.contains("Unknown tower") })
+        assertTrue(diagnostics.any { it.field == "unlocks" && it.message.contains("Unknown recipe") })
+        assertTrue(diagnostics.any { it.message.contains("Prerequisite cycle: a -> b -> a") })
+    }
+
+    @Test
     fun mapUnknownTileFailureIsActionable() {
         assertInvalidMap(
             mapJson(floorTile = "missing-tile"),

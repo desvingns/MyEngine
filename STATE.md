@@ -1,8 +1,8 @@
 # MyEngine State
 
-Last updated: 2026-08-03 (ENG-006 close-out)
-Active phase: Phase 00-14 complete; Phase 15 sequencing adopted; Signal Garden SG-001..005 complete; MyTD MTD-001..005 complete; DX-008, ENG-001, ENG-002, ENG-003, ENG-004, ENG-005, ENG-006, ENG-007, ENG-008, ENG-009, ENG-010, ENG-011, ENG-012, ENG-013, ENG-014, ENG-015, ENG-016, ENG-018, ENG-019, ENG-020, ENG-021, ENG-026, ENG-027, ENG-028, ENG-029, ENG-030, ENG-031, ENG-032, ENG-033, PROC-002, PROC-003, PROC-007, and PROC-013 complete; pipeline at v0.2.0; next exact action is review of the remaining accepted backlog
-Owner of last update: Codex (2026-08-03: ENG-006 implementation and gate close-out)
+Last updated: 2026-08-03 (ENG-017 close-out)
+Active phase: Phase 00-14 complete; Phase 15 sequencing adopted; Signal Garden SG-001..005 complete; MyTD MTD-001..005 complete; DX-008, ENG-001, ENG-002, ENG-003, ENG-004, ENG-005, ENG-006, ENG-007, ENG-008, ENG-009, ENG-010, ENG-011, ENG-012, ENG-013, ENG-014, ENG-015, ENG-016, ENG-017, ENG-018, ENG-019, ENG-020, ENG-021, ENG-026, ENG-027, ENG-028, ENG-029, ENG-030, ENG-031, ENG-032, ENG-033, PROC-002, PROC-003, PROC-007, and PROC-013 complete; pipeline at v0.2.0; next exact action is review of the remaining accepted backlog
+Owner of last update: Codex / me-docs (2026-08-03: ENG-017 documentation close-out)
 
 ## Current Status
 
@@ -14,6 +14,11 @@ Owner of last update: Codex (2026-08-03: ENG-006 implementation and gate close-o
   enqueue typed recovery jobs with stable need-vs-work arbitration, need bars project through immutable
   HUD snapshots, and `SandboxSaveCodec` v17 persists needs with v1-v16 migration. MySD TD Gate 1
   evidence remains outside the colony evidence boundary.
+
+- ENG-017 is complete: optional `tech-tree.json` content is validated as an acyclic graph with typed
+  unlock references; deterministic atomic research spends resources and gates tower/building/recipe
+  availability; immutable tree state is exposed in snapshots; `SandboxSaveCodec` v18 persists
+  researched ids and pending research commands, with v1-v17 migration.
 
 ## ENG-033 Close-out
 
@@ -431,7 +436,7 @@ Owner of last update: Codex (2026-08-03: ENG-006 implementation and gate close-o
 
 ## Next Exact Action
 
-ENG-006 is complete. Review the remaining accepted backlog and run `/me --feature --next` for the
+ENG-017 is complete. Review the remaining accepted backlog and run `/me --feature --next` for the
 next selected candidate.
 
 ## Known Blockers
@@ -1146,3 +1151,21 @@ Environment used:
   checks, benchmark, selfcheck, focused construction tests, Android assembleDebug, and
   `git diff --check` passed. `SandboxSaveCodec` is v16; v1-v15 saves migrate with empty
   construction state.
+
+## ENG-017 Close-out (2026-08-03)
+
+- DONE: Added optional DX-008 `tech-tree.json` content, deterministic graph/reference validation,
+  atomic `ResearchCommand` spending, tower/building/recipe unlock gating, immutable string-only
+  tech-tree snapshot state, and `SandboxSaveCodec` v18 with v1-v17 migration.
+- DECISIONS: Research is an atomic single-resource spend; researched node ids are sorted runtime
+  state; unlock refs are typed `tower`/`building`/`recipe`; unreferenced definitions remain
+  available for compatibility. No ADR or human gate was needed; no plugin/skill/pipeline contract
+  changed.
+- NEXT: Review the remaining accepted backlog and run `/me --feature --next` for the next selected
+  feature; no new phase is planned.
+- BLOCKERS: No implementation blocker. No device/emulator or visual-golden proof is claimed beyond
+  `:android:assembleDebug`. The generated untracked `.ai/retro/retro-2026-08-03.md` is a baseline
+  artifact and is not part of ENG-017 feature staging.
+- VERIFICATION: Focused content/research/gating/snapshot/replay/save tests, full Gradle
+  `test`/`projects`, content validation, replay, save-compat, benchmark, selfcheck, Android
+  `assembleDebug`, and `git diff --check` passed.

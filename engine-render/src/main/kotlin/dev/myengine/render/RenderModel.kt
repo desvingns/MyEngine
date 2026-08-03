@@ -153,6 +153,58 @@ enum class RenderZoneKind {
     HARVEST_DESIGNATION,
 }
 
+data class TechUnlockSnapshot(
+    val type: String,
+    val id: String,
+)
+
+class TechNodeSnapshot(
+    val id: String,
+    val costResource: String,
+    val costAmount: Int,
+    prerequisites: List<String>,
+    unlocks: List<TechUnlockSnapshot>,
+    val researched: Boolean,
+    val available: Boolean,
+) {
+    val prerequisites: List<String> = Collections.unmodifiableList(prerequisites.toList().sorted())
+    val unlocks: List<TechUnlockSnapshot> = Collections.unmodifiableList(
+        unlocks.toList().sortedWith(compareBy<TechUnlockSnapshot> { it.type }.thenBy { it.id }),
+    )
+
+    override fun equals(other: Any?): Boolean = other is TechNodeSnapshot &&
+        id == other.id &&
+        costResource == other.costResource &&
+        costAmount == other.costAmount &&
+        prerequisites == other.prerequisites &&
+        unlocks == other.unlocks &&
+        researched == other.researched &&
+        available == other.available
+
+    override fun hashCode(): Int = listOf(
+        id,
+        costResource,
+        costAmount,
+        prerequisites,
+        unlocks,
+        researched,
+        available,
+    ).hashCode()
+}
+
+/** Immutable, presentation-only projection of the content-defined research graph. */
+class TechTreeSnapshot(nodes: List<TechNodeSnapshot>) {
+    val nodes: List<TechNodeSnapshot> = Collections.unmodifiableList(nodes.toList().sortedBy { it.id })
+
+    override fun equals(other: Any?): Boolean = other is TechTreeSnapshot && nodes == other.nodes
+
+    override fun hashCode(): Int = nodes.hashCode()
+
+    companion object {
+        val EMPTY = TechTreeSnapshot(emptyList())
+    }
+}
+
 /** Immutable presentation-only zone overlay data. */
 class RenderZone(
     val id: String,
@@ -190,4 +242,5 @@ data class EngineSnapshot(
     /** Transient immutable combat events emitted during the latest simulation tick. */
     val combatEvents: CombatEvents = CombatEvents.EMPTY,
     val zones: List<RenderZone> = emptyList(),
+    val techTree: TechTreeSnapshot = TechTreeSnapshot.EMPTY,
 )

@@ -58,6 +58,7 @@ object ContentPackLoader {
             ?.associate { it.key.toString() to it.value.toString() }
             ?: emptyMap()
         val maps = parseMaps(root, tiles, resources, errors)
+        val techNodes = parseTechTree(root, errors)
 
         if (manifest != null && manifest.schemaVersion != SUPPORTED_SCHEMA_VERSION) {
             errors += ContentValidationError("manifest.properties", manifest.id, "schemaVersion", "Unsupported schema version ${manifest.schemaVersion}.")
@@ -84,6 +85,7 @@ object ContentPackLoader {
         )
         validateTerminalRules(maps, waves, endlessWave, errors)
         validateLocalization(damageTypes, resources, towers, buildings, strings, errors)
+        validateTechTree(techNodes, resources, towers, buildings, recipes, errors)
 
         if (errors.isNotEmpty() || manifest == null) {
             return ContentLoadResult(null, errors)
@@ -109,6 +111,7 @@ object ContentPackLoader {
                 damageTypes = damageTypes,
                 workers = workers,
                 needs = needs,
+                techNodes = techNodes,
             ),
             errors = emptyList(),
         )
@@ -314,6 +317,88 @@ object ContentPackLoader {
             priority = fields.requiredNonNegativeInt(file, id, "priority", errors) ?: return null,
             displayKey = fields.optionalNonBlank(file, id, "displayKey", errors) ?: "need.$id",
         )
+    }
+
+    private fun parseTechTree(root: Path, errors: MutableList<ContentValidationError>): Map<String, TechNodeContent> {
+        val file = "tech-tree.json"
+        val path = root.resolve(file)
+        if (!Files.exists(path)) return emptyMap()
+        val document = try {
+            Files.newBufferedReader(path).use { reader -> Json.parseToJsonElement(reader.readText()) as? JsonObject }
+        } catch (error: Exception) {
+            errors += ContentValidationError(file, "file", "json", "Invalid JSON: ${error.message ?: error::class.simpleName}.")
+            return emptyMap()
+        }
+        if (document == null) {
+            errors += ContentValidationError(file, "file", "json", "Expected a top-level JSON object.")
+            return emptyMap()
+        }
+        val definitions = document["nodes"] as? JsonArray
+        if (definitions == null) {
+            errors += ContentValidationError(file, "file", "nodes", "Expected a 'nodes' array.")
+            return emptyMap()
+        }
+        val parsed = linkedMapOf<String, TechNodeContent>()
+        definitions.forEachIndexed { index, value ->
+            val objectValue = value as? JsonObject
+            if (objectValue == null) {
+                errors += ContentValidationError(file, "nodes[$index]", "entry", "Expected a tech node object.")
+                return@forEachIndexed
+            }
+            val fallbackId = "nodes[$index]"
+            val id = objectValue.requiredString("id", file, fallbackId, "id", errors) ?: return@forEachIndexed
+            val cost = objectValue["cost"] as? JsonObject
+            if (cost == null) {
+                errors += ContentValidationError(file, id, "cost", "Expected an object with resource and amount.")
+                return@forEachIndexed
+            }
+            val costResource = cost.requiredString("resource", file, id, "cost.resource", errors) ?: return@forEachIndexed
+            val costAmount = cost.requiredInt("amount", file, id, "cost.amount", errors)
+            if (costAmount == null || costAmount <= 0) {
+                if (costAmount != null) errors += ContentValidationError(file, id, "cost.amount", "Expected a positive integer.")
+                return@forEachIndexed
+            }
+            val prerequisites = objectValue.optionalStringArray("prerequisites", file, id, errors)
+            val unlocks = parseTechUnlocks(objectValue["unlocks"], file, id, errors)
+            val node = TechNodeContent(id, costResource, costAmount, prerequisites, unlocks)
+            if (parsed.containsKey(id)) {
+                errors += ContentValidationError(file, id, "id", "Duplicate tech node id.")
+            } else {
+                parsed[id] = node
+            }
+        }
+        return parsed.toSortedMap()
+    }
+
+    private fun parseTechUnlocks(
+        value: kotlinx.serialization.json.JsonElement?,
+        file: String,
+        id: String,
+        errors: MutableList<ContentValidationError>,
+    ): List<TechUnlockRef> {
+        if (value == null) return emptyList()
+        val array = value as? JsonArray
+        if (array == null) {
+            errors += ContentValidationError(file, id, "unlocks", "Expected an array of typed unlock references.")
+            return emptyList()
+        }
+        return array.mapIndexedNotNull { index, item ->
+            val objectValue = item as? JsonObject
+            if (objectValue == null) {
+                errors += ContentValidationError(file, id, "unlocks[$index]", "Expected an unlock object.")
+                return@mapIndexedNotNull null
+            }
+            val typeId = objectValue.requiredString("type", file, id, "unlocks[$index].type", errors)
+                ?: return@mapIndexedNotNull null
+            val type = TechUnlockType.fromId(typeId)
+            if (type == null) {
+                errors += ContentValidationError(file, id, "unlocks[$index].type", "Expected tower, building, or recipe.")
+                return@mapIndexedNotNull null
+            }
+            val targetId = objectValue.requiredString("id", file, id, "unlocks[$index].id", errors)
+                ?: return@mapIndexedNotNull null
+            TechUnlockRef(type, targetId)
+        }
     }
 
     private fun parseEnemyResists(
@@ -1113,6 +1198,100 @@ object ContentPackLoader {
             }
             text
         }
+    }
+
+    private fun JsonObject.optionalStringArray(
+        key: String,
+        file: String,
+        id: String,
+        errors: MutableList<ContentValidationError>,
+    ): List<String> {
+        val value = this[key] ?: return emptyList()
+        val array = value as? JsonArray
+        if (array == null) {
+            errors += ContentValidationError(file, id, key, "Expected an array of strings.")
+            return emptyList()
+        }
+        return array.mapIndexedNotNull { index, item ->
+            val text = (item as? JsonPrimitive)?.contentOrNull
+            if (text == null || text.isBlank()) {
+                errors += ContentValidationError(file, id, "$key[$index]", "Expected a non-blank string.")
+                null
+            } else text
+        }
+    }
+
+    private fun validateTechTree(
+        techNodes: Map<String, TechNodeContent>,
+        resources: Map<String, ResourceContent>,
+        towers: Map<String, TowerContent>,
+        buildings: Map<String, BuildingContent>,
+        recipes: Map<String, RecipeContent>,
+        errors: MutableList<ContentValidationError>,
+    ) {
+        if (techNodes.isEmpty()) return
+        val file = "tech-tree.json"
+        val unlockOwners = mutableMapOf<String, String>()
+        techNodes.toSortedMap().forEach { (id, node) ->
+            if (node.costResource !in resources) {
+                errors += ContentValidationError(file, id, "cost.resource", "Unknown resource '${node.costResource}'.")
+            }
+            val duplicatePrerequisites = node.prerequisites.groupingBy { it }.eachCount()
+                .filterValues { it > 1 }.keys.sorted()
+            duplicatePrerequisites.forEach { prerequisite ->
+                errors += ContentValidationError(file, id, "prerequisites", "Duplicate prerequisite '$prerequisite'.")
+            }
+            node.prerequisites.sorted().forEach { prerequisite ->
+                if (prerequisite !in techNodes) {
+                    errors += ContentValidationError(file, id, "prerequisites", "Unknown prerequisite '$prerequisite'.")
+                }
+            }
+            val duplicateUnlocks = node.unlocks.groupingBy { it.stableKey }.eachCount()
+                .filterValues { it > 1 }.keys.sorted()
+            duplicateUnlocks.forEach { unlock ->
+                errors += ContentValidationError(file, id, "unlocks", "Duplicate unlock reference '$unlock'.")
+            }
+            node.unlocks.sortedBy { it.stableKey }.forEach { unlock ->
+                unlockOwners.putIfAbsent(unlock.stableKey, id)?.let { owner ->
+                    errors += ContentValidationError(
+                        file,
+                        id,
+                        "unlocks",
+                        "Duplicate unlock reference '${unlock.stableKey}' already declared by '$owner'.",
+                    )
+                }
+                val known = when (unlock.type) {
+                    TechUnlockType.TOWER -> unlock.id in towers
+                    TechUnlockType.BUILDING -> unlock.id in buildings
+                    TechUnlockType.RECIPE -> unlock.id in recipes
+                }
+                if (!known) {
+                    errors += ContentValidationError(file, id, "unlocks", "Unknown ${unlock.type.id} '${unlock.id}'.")
+                }
+            }
+        }
+
+        val states = mutableMapOf<String, Int>()
+        fun visit(id: String, path: List<String>) {
+            when (states[id]) {
+                1 -> {
+                    val cycleStart = path.indexOf(id).coerceAtLeast(0)
+                    errors += ContentValidationError(
+                        file,
+                        id,
+                        "prerequisites",
+                        "Prerequisite cycle: ${(path.drop(cycleStart) + id).joinToString(" -> ") }.",
+                    )
+                    return
+                }
+                2 -> return
+            }
+            states[id] = 1
+            val node = techNodes[id] ?: return
+            node.prerequisites.sorted().filter { it in techNodes }.forEach { visit(it, path + id) }
+            states[id] = 2
+        }
+        techNodes.keys.sorted().forEach { visit(it, emptyList()) }
     }
 
     private fun validateReferences(

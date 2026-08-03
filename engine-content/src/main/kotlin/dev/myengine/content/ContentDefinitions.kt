@@ -238,6 +238,43 @@ data class RecipeContent(
     val durationTicks: Int,
 ) : ContentDefinition
 
+enum class TechUnlockType(val id: String) {
+    TOWER("tower"),
+    BUILDING("building"),
+    RECIPE("recipe"),
+    ;
+
+    companion object {
+        fun fromId(id: String): TechUnlockType? = entries.firstOrNull { it.id == id.trim().lowercase() }
+    }
+}
+
+data class TechUnlockRef(
+    val type: TechUnlockType,
+    val id: String,
+) {
+    init {
+        require(id.isNotBlank()) { "Tech unlock id cannot be blank." }
+    }
+
+    val stableKey: String get() = "${type.id}:$id"
+}
+
+data class TechNodeContent(
+    override val id: String,
+    val costResource: String,
+    val costAmount: Int,
+    val prerequisites: List<String> = emptyList(),
+    val unlocks: List<TechUnlockRef> = emptyList(),
+) : ContentDefinition {
+    init {
+        require(id.isNotBlank()) { "Tech node id cannot be blank." }
+        require(costResource.isNotBlank()) { "Tech node cost resource cannot be blank." }
+        require(costAmount > 0) { "Tech node cost must be positive." }
+        require(prerequisites.all(String::isNotBlank)) { "Tech node prerequisites cannot be blank." }
+    }
+}
+
 data class WaveSpawn(
     val enemyId: String,
     val count: Int,
@@ -492,9 +529,12 @@ data class ContentRegistry(
     val damageTypes: Map<String, DamageTypeContent> = emptyMap(),
     val workers: Map<String, WorkerContent> = emptyMap(),
     val needs: Map<String, NeedContent> = emptyMap(),
+    val techNodes: Map<String, TechNodeContent> = emptyMap(),
 ) {
     /** Alias kept for callers that refer to the optional pack feature as simply `endless`. */
     val endless: EndlessWaveContent? get() = endlessWave
+    /** Alias for consumers that refer to the optional graph as the tech tree. */
+    val techTree: Map<String, TechNodeContent> get() = techNodes
     fun requireTile(id: String): TileContent = tiles[id] ?: error("Unknown tile '$id'.")
     fun requireResource(id: String): ResourceContent = resources[id] ?: error("Unknown resource '$id'.")
     fun requireTower(id: String): TowerContent = towers[id] ?: error("Unknown tower '$id'.")

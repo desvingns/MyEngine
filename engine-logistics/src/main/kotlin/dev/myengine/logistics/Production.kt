@@ -16,9 +16,13 @@ data class ProductionResult(
     val completed: Boolean,
 )
 
-class ProducerSystem(private val recipes: Map<String, RecipeContent>) {
+class ProducerSystem(
+    private val recipes: Map<String, RecipeContent>,
+    private val isRecipeAvailable: (String) -> Boolean = { true },
+) {
     fun tick(producer: Producer, inventory: Inventory): ProductionResult {
         val recipe = recipes[producer.recipeId] ?: error("Unknown recipe '${producer.recipeId}'.")
+        if (!isRecipeAvailable(recipe.id)) return ProductionResult(producer, inventory, completed = false)
         val inputResource = recipe.inputResource
         if (inputResource != null && producer.progressTicks == 0 && !inventory.canRemove(inputResource, recipe.inputAmount)) {
             return ProductionResult(producer, inventory, completed = false)

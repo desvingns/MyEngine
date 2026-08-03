@@ -1,7 +1,7 @@
 # MyEngine Handoff
 
-Last updated: 2026-08-03 (ENG-006 close-out; next backlog review)
-Owner: Codex
+Last updated: 2026-08-03 (ENG-017 close-out; next backlog review)
+Owner: Codex / me-docs
 
 ## DONE
 
@@ -14,6 +14,10 @@ Owner: Codex
   deterministic threshold recovery jobs with target-owned effects and stable need-vs-work arbitration,
   immutable HUD need bars, and `SandboxSaveCodec` v17 with v1-v16 migration. The card is in
   `.claude/specs/done/`; MySD TD Gate 1 remains outside the colony evidence boundary.
+
+- ENG-017 is complete (2026-08-03): added optional validated `tech-tree.json`, deterministic atomic
+  research spending and tower/building/recipe gating, immutable string-only tree snapshots, and
+  `SandboxSaveCodec` v18 with v1-v17 migration. The card is in `.claude/specs/done/`.
 
 ## ENG-006 close-out
 
@@ -1558,3 +1562,35 @@ was pushed.
   `:android:assembleDebug`, focused construction tests, and `git diff --check` passed.
 - Replay hashes: canonical `e4892bcc18f9d8dc`, kill `a763da4ac32b15b4`; save compatibility is v16
   with v1-v15 migration.
+
+## ENG-017 Close-out (2026-08-03)
+
+### DONE
+
+- Optional DX-008 `tech-tree.json` graph content is loaded and validated; `ResearchCommand` spends
+  one resource cost atomically and deterministic unlock refs gate towers, buildings, and recipes.
+- Immutable snapshot projection exposes sorted string-only node state. Sandbox save v18 persists
+  researched ids and pending research commands; v1-v17 migrate with empty research state.
+
+### DECISIONS
+
+- Node content uses a positive single-resource cost, prerequisite DAG, and typed `tower`, `building`,
+  or `recipe` unlock refs. Unreferenced definitions remain available for compatibility.
+- No ADR or human gate was needed, and no plugin/skill/pipeline contract changed.
+
+### NEXT
+
+- Review the remaining accepted backlog and run `/me --feature --next` for the next selected feature;
+  no new phase is planned.
+
+### BLOCKERS
+
+- No implementation blocker. No device/emulator or visual-golden proof is claimed beyond
+  `:android:assembleDebug`. The generated untracked `.ai/retro/retro-2026-08-03.md` is a baseline
+  artifact and is not part of ENG-017 feature staging.
+
+### VERIFICATION
+
+- Focused content/research/gating/snapshot/replay/save tests plus full Gradle tests/projects,
+  content validation, replay, save-compat, benchmark, selfcheck, Android `assembleDebug`, and
+  `git diff --check` passed.

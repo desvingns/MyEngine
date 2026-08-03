@@ -48,7 +48,7 @@ class SandboxDamageTypeTest {
         val save = SandboxSaveCodec.encode(paused.state, seed = 7L)
         val decoded = SandboxSaveCodec.decode(save, registry)
 
-        assertEquals(17, SandboxSaveCodec.SAVE_VERSION)
+        assertEquals(18, SandboxSaveCodec.SAVE_VERSION)
         assertEquals(paused.state.stableHash(), decoded.stableHash())
         // The static damage type is derived again from the loaded registry, not added to v15 state.
         assertNull(decoded.entities.byTag("tower").single().attack?.damageTypeId)

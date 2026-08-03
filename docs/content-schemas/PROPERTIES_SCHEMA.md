@@ -1,12 +1,48 @@
 # MyEngine Content Properties Schema
 
-Status: Phase 06 accepted; DX-008 hybrid format accepted; ENG-016, ENG-028, ENG-009, ENG-007, ENG-011, and ENG-004 fields documented
-Last updated: 2026-08-02
+Status: Phase 06 accepted; DX-008 hybrid format accepted; ENG-016, ENG-028, ENG-009, ENG-007, ENG-011, ENG-004, and ENG-017 fields documented
+Last updated: 2026-08-03
 
 Content packs use the DX-008 hybrid format defined by
 [`ADR-0003-content-format-hybrid.md`](../DECISIONS/ADR-0003-content-format-hybrid.md): flat entity
 definitions remain external `.properties` files, while nested assets use structured JSON. The
 loader remains Android-free; Android packages the same content directory as app assets.
+
+## Nested Research Assets
+
+`tech-tree.json` is optional and follows the DX-008 rule for graph-like nested assets. A pack without
+this file has no research nodes and preserves legacy behavior. The top-level value is an object with
+a required `nodes` array:
+
+```json
+{
+  "nodes": [
+    {
+      "id": "advanced-towers",
+      "cost": { "resource": "bolt", "amount": 20 },
+      "prerequisites": ["foundations"],
+      "unlocks": [
+        { "type": "tower", "id": "cannon" },
+        { "type": "recipe", "id": "steel" }
+      ]
+    }
+  ]
+}
+```
+
+Each node requires a non-blank unique `id` and a `cost` object containing a non-blank resource id
+and positive integer `amount`. `prerequisites` is an optional array of non-blank node ids and
+defaults to empty. `unlocks` is optional and defaults to empty; each entry requires a `type` of
+`tower`, `building`, or `recipe`, plus a non-blank target `id`. Unlock targets resolve against the
+same pack's corresponding definitions. An unlock reference may be owned by only one node;
+definitions without an unlock reference remain available for backward compatibility.
+
+Validation rejects invalid JSON, a missing/non-array `nodes` field, duplicate node ids, unknown
+resources, duplicate or unknown prerequisites, duplicate unlocks, unresolved unlock targets, and
+duplicate unlock ownership across nodes. Prerequisite references are traversed in sorted order and
+must form an acyclic DAG; diagnostics identify `tech-tree.json`, node id, and field path. The
+loader returns sorted node data to the Android-free simulation, while research progress is runtime
+state rather than content metadata.
 
 ## Manifest
 

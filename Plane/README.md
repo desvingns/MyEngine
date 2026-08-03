@@ -47,7 +47,7 @@
    PROC-007 -> ENG-021 -> ENG-029 -> ENG-012 -> ENG-007 -> ENG-018 (done 2026-08-02)
    -> ENG-011 (done 2026-08-02) -> ENG-019 (done 2026-08-02) -> ENG-001 (done 2026-08-02)
    -> ENG-003 (done 2026-08-02) -> ENG-031 (done 2026-08-02) -> ENG-004 (done 2026-08-02)
-   -> ENG-032 (done 2026-08-02) -> ENG-033 (done 2026-08-03); ENG-010, ENG-016, PROC-007, ENG-021,
+   -> ENG-032 (done 2026-08-02) -> ENG-033 (done 2026-08-03) -> ENG-017 (done 2026-08-03); ENG-010, ENG-016, PROC-007, ENG-021,
    ENG-029, ENG-012, ENG-007, ENG-018, ENG-011, ENG-019, ENG-001, ENG-003, ENG-031, ENG-004,
    ENG-032, ENG-033, and ENG-006 are closed; ENG-006 was selected from the remaining accepted
    backlog after the colony slice.
@@ -79,6 +79,7 @@
 | [x] | ENG-004 First worker agent MVP (hauling) | [ENG-004](../.claude/specs/done/ENG-004-hauling-worker-mvp.md) | Data-defined worker speed/capacity, deterministic source reservations, source-to-stockpile carry/deposit, positioned producer outputs, stockpile contents, and save v15 with v1-v14 migration | 2026-08-02 |
 | [x] | ENG-032 Construction system | [ENG-032](../.claude/specs/done/ENG-032-construction-blueprints.md) | Non-blocking blueprints, deterministic sourceId-ordered construction hauling/retry, build jobs, source refunds on cancel, save v16 with v1-v15 migration | 2026-08-02 |
 | [x] | ENG-033 Colonist needs MVP | [ENG-033](../.claude/specs/done/ENG-033-colonist-needs-mvp.md) | Content-defined hunger/rest decay and thresholds, deterministic recovery jobs/arbitration, immutable HUD need bars, save v17 with v1-v16 migration, and 10k determinism coverage | 2026-08-03 |
+| [x] | ENG-017 Research/tech tree + unlock gating | [ENG-017](../.claude/specs/done/ENG-017-research-tech-tree.md) | Optional validated `tech-tree.json`, deterministic atomic research spending, tower/building/recipe gating, immutable tree snapshot, save v18/v1-v17 migration, and replay/save/content/full-gate verification | 2026-08-03 |
 | [x] | ENG-006 Seeded procedural map generation | [ENG-006](../.claude/specs/done/ENG-006-procgen-maps.md) | Bounded seeded generation from validated content parameters, guaranteed spawn-to-core connectivity, deterministic fallback, ASCII devtools report, and seed-preserving sandbox save/reload | 2026-08-03 |
 
 ## Глобальные инварианты
@@ -1554,3 +1555,21 @@
 - VERIFICATION: Focused generator/sandbox/devtools tests, full Gradle tests/projects, content
   validation, replay, save compatibility, benchmark, selfcheck, Android `assembleDebug`, and
   `git diff --check` passed.
+
+### 2026-08-03 - ENG-017 (research/tech tree + unlock gating)
+
+- Status: Done / accepted; post-Phase-14 feature close-out; no new phase was created.
+- DONE: Added optional DX-008 `tech-tree.json` graph content, deterministic prerequisite/unlock
+  validation, atomic `ResearchCommand` spending, simulation gating for towers/buildings/recipes,
+  immutable string-only tech-tree snapshot state, and `SandboxSaveCodec` v18 with v1-v17 migration.
+- DECISIONS: Research is an atomic one-cost spend; researched node ids are sorted runtime state;
+  unreferenced definitions remain available for compatibility. No ADR or human gate was needed,
+  and no plugin/skill/pipeline contract changed.
+- NEXT: Review the remaining accepted backlog and run `/me --feature --next` for the next selected
+  feature; no new phase is planned.
+- BLOCKERS: No implementation blocker. No device/emulator or visual-golden evidence is claimed
+  beyond Android `assembleDebug`. The generated untracked `.ai/retro/retro-2026-08-03.md` is a
+  baseline artifact and is not part of ENG-017 feature staging.
+- VERIFICATION: Focused content/research/gating/snapshot/replay/save tests plus full Gradle
+  tests/projects, content validation, replay, save-compat, benchmark, selfcheck, Android
+  `assembleDebug`, and `git diff --check` passed.
