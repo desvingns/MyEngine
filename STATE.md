@@ -1,14 +1,31 @@
 # MyEngine State
 
-Last updated: 2026-08-03 (ENG-033 scope unblock)
-Active phase: Phase 00-14 complete; Phase 15 sequencing adopted; Signal Garden SG-001..005 complete; MyTD MTD-001..005 complete; DX-008, ENG-001, ENG-002, ENG-003, ENG-004, ENG-005, ENG-007, ENG-008, ENG-009, ENG-010, ENG-011, ENG-012, ENG-013, ENG-014, ENG-015, ENG-016, ENG-018, ENG-019, ENG-020, ENG-021, ENG-026, ENG-027, ENG-028, ENG-029, ENG-030, ENG-031, PROC-002, PROC-003, PROC-007, and PROC-013 complete; pipeline at v0.2.0; next exact item ENG-033
-Owner of last update: Codex (2026-08-03: human-authored ENG-033 scope accepted; next feature candidate ENG-033)
+Last updated: 2026-08-03 (ENG-033 close-out)
+Active phase: Phase 00-14 complete; Phase 15 sequencing adopted; Signal Garden SG-001..005 complete; MyTD MTD-001..005 complete; DX-008, ENG-001, ENG-002, ENG-003, ENG-004, ENG-005, ENG-007, ENG-008, ENG-009, ENG-010, ENG-011, ENG-012, ENG-013, ENG-014, ENG-015, ENG-016, ENG-018, ENG-019, ENG-020, ENG-021, ENG-026, ENG-027, ENG-028, ENG-029, ENG-030, ENG-031, ENG-032, ENG-033, PROC-002, PROC-003, PROC-007, and PROC-013 complete; pipeline at v0.2.0; next exact action is backlog review
+Owner of last update: Codex (2026-08-03: ENG-033 implementation and gate close-out)
 
 ## Current Status
 
-- ENG-033 is scope-unblocked: its card now contains accepted named `COL-FR`/`COL-NFR` requirements,
-  traceability, and implementation gates. The card remains in backlog until `/me --feature --next`
-  starts the implementation pipeline. MySD TD Gate 1 evidence remains outside the colony evidence boundary.
+- ENG-033 is complete: content-defined hunger/rest needs decay deterministically, threshold crossings
+  enqueue typed recovery jobs with stable need-vs-work arbitration, need bars project through immutable
+  HUD snapshots, and `SandboxSaveCodec` v17 persists needs with v1-v16 migration. MySD TD Gate 1
+  evidence remains outside the colony evidence boundary.
+
+## ENG-033 Close-out
+
+- DONE: Added optional `needs.properties`, `NeedContent`, `NeedsComponent`, `NeedsSystem`, typed
+  `NeedRecovery` job effects, target-owned recovery, deterministic HUD bars, and sandbox v17 save state.
+- DECISIONS: Need definitions use a 0..100 scale; threshold jobs use content priority then stable
+  job id ordering; one threshold episode gets a deterministic cycle id; legacy packs/entities remain
+  need-free and preserve canonical replay hashes.
+- NEXT: Review the remaining accepted backlog for the next feature; no new phase was created.
+- BLOCKERS: No implementation blocker. Conditional roster reviewers timed out after bounded waits;
+  local simulation/save/render/content/Android boundary review found no blocker. No device/emulator
+  or visual-golden proof is claimed beyond `assembleDebug`.
+- VERIFICATION: Full `test`, `projects`, content validation, replay, save-compat, benchmark,
+  selfcheck, Android assemble, focused need tests, and `git diff --check` passed. Replay hashes:
+  `e4892bcc18f9d8dc`, `a763da4ac32b15b4`, `3f02607020d48668`; benchmark simulation 437/93 ms,
+  spatial index 7.7136 ms, GoalField rebuild 7.3769 ms.
 
 - Phase 00-03 foundation, stack, and architecture contracts are complete.
 - Phase 04 agentic pipeline bootstrap is complete.

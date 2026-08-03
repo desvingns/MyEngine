@@ -47,8 +47,9 @@
    PROC-007 -> ENG-021 -> ENG-029 -> ENG-012 -> ENG-007 -> ENG-018 (done 2026-08-02)
    -> ENG-011 (done 2026-08-02) -> ENG-019 (done 2026-08-02) -> ENG-001 (done 2026-08-02)
    -> ENG-003 (done 2026-08-02) -> ENG-031 (done 2026-08-02) -> ENG-004 (done 2026-08-02)
-   -> ENG-032 (done 2026-08-02); ENG-010, ENG-016, PROC-007, ENG-021, ENG-029, ENG-012, ENG-007,
-   ENG-018, ENG-011, ENG-019, ENG-001, ENG-003, ENG-031, ENG-004, and ENG-032 are closed.
+   -> ENG-032 (done 2026-08-02) -> ENG-033 (done 2026-08-03); ENG-010, ENG-016, PROC-007, ENG-021,
+   ENG-029, ENG-012, ENG-007, ENG-018, ENG-011, ENG-019, ENG-001, ENG-003, ENG-031, ENG-004,
+   ENG-032, and ENG-033 are closed.
 4. Hardening gaps из `docs/HARDENING_AUDIT.md` закрывать по одному, с тестами и обновлением handoff.
 
 Новые крупные фазы добавлять только после того, как backlog specs перестанут быть достаточно
@@ -76,6 +77,7 @@
 | [x] | ENG-031 Stockpile zones + designations | [ENG-031](../.claude/specs/done/ENG-031-stockpiles-designations.md) | Accepted Option A: deterministic zone commands/store, validated resource filters, one-shot harvest-node JobBoard jobs, immutable snapshot zone projection, and save v14 with v1-v13 migration; hauling was completed by ENG-004 | 2026-08-02 |
 | [x] | ENG-004 First worker agent MVP (hauling) | [ENG-004](../.claude/specs/done/ENG-004-hauling-worker-mvp.md) | Data-defined worker speed/capacity, deterministic source reservations, source-to-stockpile carry/deposit, positioned producer outputs, stockpile contents, and save v15 with v1-v14 migration | 2026-08-02 |
 | [x] | ENG-032 Construction system | [ENG-032](../.claude/specs/done/ENG-032-construction-blueprints.md) | Non-blocking blueprints, deterministic sourceId-ordered construction hauling/retry, build jobs, source refunds on cancel, save v16 with v1-v15 migration | 2026-08-02 |
+| [x] | ENG-033 Colonist needs MVP | [ENG-033](../.claude/specs/done/ENG-033-colonist-needs-mvp.md) | Content-defined hunger/rest decay and thresholds, deterministic recovery jobs/arbitration, immutable HUD need bars, save v17 with v1-v16 migration, and 10k determinism coverage | 2026-08-03 |
 
 ## Глобальные инварианты
 
@@ -1515,3 +1517,20 @@
 - VERIFICATION: Full tests/projects/content validation/replay/save-compat/benchmark/selfcheck,
   focused construction tests, Android `assembleDebug`, and `git diff --check` passed. Conditional
   reviewer workers timed out after bounded waits; local boundary review passed.
+
+### 2026-08-03 - ENG-033 (colonist needs MVP)
+
+- Status: Done / accepted; no new phase was created.
+- DONE: Added optional content-defined hunger/rest policies, deterministic fixed-tick need decay,
+  threshold-triggered eat/sleep jobs, stable need-vs-work arbitration, target-owned recovery effects,
+  immutable HUD need bars, and `SandboxSaveCodec` v17 with v1-v16 migration.
+- DECISIONS: Need values use a bounded 0..100 scale; one threshold episode gets a deterministic cycle
+  id; legacy packs and entities remain need-free. No ADR, game-bundle traceability update, or plugin
+  version bump was needed.
+- NEXT: Review the remaining accepted backlog for the next feature; no new phase was created.
+- BLOCKERS: No implementation blocker. Conditional roster reviewers timed out after bounded waits;
+  local boundary review passed. No device/emulator or visual-golden proof is claimed beyond assembleDebug.
+- VERIFICATION: Full `test`, `projects`, content validation, replay, save-compat, benchmark, selfcheck,
+  focused need tests, Android `assembleDebug`, and `git diff --check` passed. Replay hashes:
+  `e4892bcc18f9d8dc`, `a763da4ac32b15b4`, `3f02607020d48668`; benchmark sim 437/93 ms, GoalField
+  rebuild 7.3769 ms, spatial index 7.7136 ms.

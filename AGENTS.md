@@ -90,10 +90,6 @@ At the end of each phase:
 
 ## Current Next Step
 
-The original Phase 00-14 plan is complete. The next project step is first-game kickoff work for
-Signal Garden. Start by reading:
-
-```powershell
-Get-Content -Raw games\signal-garden\ROADMAP.md
-Get-Content -Raw .claude\specs\backlog\SG-001-content-pack.md
-```
+The original Phase 00-14 plan is complete, Signal Garden kickoff cards are done, and the colony
+slice is complete through ENG-033. The next project step is to inspect the roadmap/backlog board
+and select the next accepted feature; do not use the historical SG-001 path above.

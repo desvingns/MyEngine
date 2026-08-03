@@ -51,7 +51,7 @@ Last updated: 2026-08-03 (ENG-033 scope unblock)
 | First worker agent MVP (hauling) | ENG-004 | vision:rimworld-like, vision:mindustry-like | 2 | **done** (2026-08-02; data-defined worker speed/capacity, deterministic source reservations, source-to-stockpile carry/deposit, positioned producer outputs, stockpile contents, v15 save with v1-v14 migration, and full gates pass) |
 | Stockpile zones + designations | ENG-031 | vision:rimworld-like, vision:mindustry-like | 2 | **done** (2026-08-02; accepted Option A: deterministic zone commands/store, validated resource filters, one-shot harvest-node JobBoard jobs, immutable snapshot projection, v14 save with v1-v13 migration; hauling, quantities/capacity, depletion/repeated harvest, and Android overlay consumption deferred) |
 | Construction system (blueprint, haul, build) | ENG-032 | vision:rimworld-like, vision:mindustry-like | 2 | **done** (2026-08-02; non-blocking blueprints, deterministic sourceId-ordered hauling/retry, build jobs, source refunds on cancel, save v16 with v1-v15 migration, and full gates pass) |
-| Colonist needs MVP (hunger/rest) | ENG-033 | authored-colony-scope | 1 | backlog (named COL-FR scope accepted 2026-08-03; implementation remains a separate `/me --feature --next` run) |
+| Colonist needs MVP (hunger/rest) | ENG-033 | authored-colony-scope | 1 | **done** (2026-08-03; content-defined decay/thresholds, deterministic eat/sleep jobs and arbitration, immutable HUD bars, save v17 with v1-v16 migration, 10k determinism coverage) |
 | Incident execution pipeline + RNG fix | ENG-016 | vision:rimworld-like, vision:mindustry-like, vision:td | 3 | **done** (2026-08-02; stateful deterministic director with persistent RNG cursor, cadence/pacing/cooldown selection, atomic typed spawn-wave/resource-event/modifier interpreter, v10 save with v1-v9 migration, remediation replay/save/overflow diagnostics and benchmark gates pass) |
 | Research/tech tree + unlock gating | ENG-017 | vision:mindustry-like, vision:td | 2 | backlog |
 | Seeded procedural map generation | ENG-006 | vision:rimworld-like, vision:mindustry-like, vision:td | 3 | backlog |
@@ -116,11 +116,9 @@ Last updated: 2026-08-03 (ENG-033 scope unblock)
    -> ENG-012 (done 2026-08-02) -> ENG-007 (done 2026-08-02) -> ENG-018 (done 2026-08-02)
    -> ENG-011 (done 2026-08-02) -> ENG-019 (done 2026-08-02) -> ENG-001 (done 2026-08-02)
    -> ENG-003 (done 2026-08-02) -> ENG-031 (done 2026-08-02) -> ENG-004 (done 2026-08-02)
-   -> ENG-032 (done 2026-08-02).
-   ENG-001, ENG-003, ENG-031, ENG-004, and ENG-032 are complete; ENG-033 is the next candidate
-   colony card and now has an accepted authored scope with named COL-FRs.
-   The adopted colony slice is complete through ENG-032; ENG-033 is eligible for its own
-   implementation run (see Plane/15). MySD TD evidence is not used as colony evidence.
+   -> ENG-032 (done 2026-08-02) -> ENG-033 (done 2026-08-03).
+   ENG-001, ENG-003, ENG-031, ENG-004, ENG-032, and ENG-033 are complete. MySD TD evidence is
+   not used as colony evidence.
 4. DX-008 is done: use its hybrid-format ADR for ENG-017/ENG-028 schema work. Other high-leverage
    pipeline cards remain DX-002, DX-006, and DX-005.
 5. MySD foundation: PROC-002 / ADR-0004 is done. MySD Gate 1/relaxed Gate 2 are accepted for the

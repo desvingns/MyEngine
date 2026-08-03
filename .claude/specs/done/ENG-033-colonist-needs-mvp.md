@@ -1,6 +1,6 @@
 id: ENG-033
 title: Colonist needs MVP (hunger/rest)
-status: backlog
+status: done
 phase: engine
 owner: human
 source: authored colony feature scope, human-authorized 2026-08-03; MySD evidence does not prove colony behavior
@@ -32,3 +32,12 @@ gates:
 traceability:
   gate_trigger: Plane/15 colony re-entry alternative for an authored colony scope with named FRs
   evidence_boundary: MySD Gate 1 is accepted for its TD reference inventory and is not used as colony evidence
+
+close_out:
+  completed_on: 2026-08-03
+  result: Added content-defined needs, deterministic threshold jobs and need-vs-work arbitration,
+    immutable HUD need bars, NeedRecovery job effects, and SandboxSaveCodec v17 with v1-v16 migration.
+  verification: Full test/projects/content validation/replay/save-compat/benchmark/selfcheck,
+    Android assembleDebug, focused need tests, and git diff --check passed.
+  reviewer_boundary: Conditional roster reviewers timed out after bounded waits; local simulation,
+    save, render, content, and Android boundary review found no blocker. No device/emulator proof claimed.

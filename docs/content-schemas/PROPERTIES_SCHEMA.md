@@ -145,6 +145,20 @@ construction ledgers are persisted in sandbox save v16; v1-v15 saves migrate wit
 construction state. Positioned producer outputs are materialized as deterministic
 `producer:<producerId>` sources and are not also credited to global inventory.
 
+### Needs
+
+`needs.properties` is optional. Definitions use `<needId>.<field>=<value>`:
+
+- `decayPerTick`: positive integer need decay applied once per fixed simulation tick
+- `threshold`: integer from 0 to 100 at or below which one deterministic job is enqueued
+- `recoveryAmount`: positive integer restored by the generated job's completion effect
+- `jobType`: non-blank job type (`eat`, `sleep`, or another game-defined worker action)
+- `priority`: non-negative job priority used by stable need-vs-work arbitration
+- `displayKey`: optional localization key projected into immutable HUD need bars
+
+Need levels are authoritative entity state, threshold episode counters are persisted, and
+`SandboxSaveCodec` v17 migrates v1-v16 saves with no needs state.
+
 ### Buildings
 
 `buildings.properties` is optional and uses the same `<id>.<field>=<value>` format. Building

@@ -46,6 +46,7 @@ data class HaulJobSpec(
 enum class JobEffectType(val id: String) {
     RESOURCE_DELTA("resource_delta"),
     SPAWN_BUILDING("spawn_building"),
+    NEED_RECOVERY("need_recovery"),
 }
 
 sealed interface JobCompletionEffect {
@@ -73,6 +74,19 @@ sealed interface JobCompletionEffect {
             require(siteId.isNotBlank()) { "Construction site id cannot be blank." }
         }
     }
+
+    data class NeedRecovery(
+        val needId: String,
+        val amount: Int,
+        val targetEntityId: EntityId? = null,
+    ) : JobCompletionEffect {
+        override val type: JobEffectType = JobEffectType.NEED_RECOVERY
+
+        init {
+            require(needId.isNotBlank()) { "Need id cannot be blank." }
+            require(amount > 0) { "Need recovery amount must be positive." }
+        }
+    }
 }
 
 /** Canonical effect key used by hashes, save encoding, and completion application. */
@@ -81,6 +95,8 @@ fun JobCompletionEffect.stableSortKey(): String = when (this) {
         listOf(type.id, resourceId, amount).joinToString("\u0000")
     is JobCompletionEffect.SpawnBuilding ->
         listOf(type.id, siteId, buildingId).joinToString("\u0000")
+    is JobCompletionEffect.NeedRecovery ->
+        listOf(type.id, needId, amount, targetEntityId?.value ?: -1L).joinToString("\u0000")
 }
 
 data class Job(
@@ -241,6 +257,7 @@ class JobBoard(initialJobs: List<Job> = emptyList()) {
                     when (effect) {
                         is JobCompletionEffect.ResourceDelta -> hash.add(effect.resourceId).add(effect.amount)
                         is JobCompletionEffect.SpawnBuilding -> hash.add(effect.buildingId).add(effect.siteId)
+                        is JobCompletionEffect.NeedRecovery -> hash.add(effect.needId).add(effect.amount).add(effect.targetEntityId?.value ?: -1L)
                     }
                 }
         }

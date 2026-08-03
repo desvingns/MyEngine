@@ -45,6 +45,7 @@ object ContentPackLoader {
         val towers = parseDefinitions(root, "towers.properties", errors, ::parseTower)
         val enemies = parseDefinitions(root, "enemies.properties", errors, ::parseEnemy)
         val workers = parseOptionalDefinitions(root, "workers.properties", errors, ::parseWorker)
+        val needs = parseOptionalDefinitions(root, "needs.properties", errors, ::parseNeed)
         val buildings = parseOptionalDefinitions(root, "buildings.properties", errors, ::parseBuilding)
         val recipes = parseDefinitions(root, "recipes.properties", errors, ::parseRecipe)
         val waves = parseDefinitions(root, "waves.properties", errors, ::parseWave)
@@ -107,6 +108,7 @@ object ContentPackLoader {
                 endlessWave = endlessWave,
                 damageTypes = damageTypes,
                 workers = workers,
+                needs = needs,
             ),
             errors = emptyList(),
         )
@@ -296,6 +298,23 @@ object ContentPackLoader {
             speedTilesPerTick = fields.requiredPositiveInt(file, id, "speedTilesPerTick", errors) ?: return null,
             capacity = fields.requiredPositiveInt(file, id, "capacity", errors) ?: return null,
         )
+
+    private fun parseNeed(id: String, fields: Map<String, String>, errors: MutableList<ContentValidationError>, file: String): NeedContent? {
+        val threshold = fields.requiredNonNegativeInt(file, id, "threshold", errors) ?: return null
+        if (threshold !in 0..100) {
+            errors += ContentValidationError(file, id, "threshold", "Expected an integer from 0 to 100.")
+            return null
+        }
+        return NeedContent(
+            id = id,
+            decayPerTick = fields.requiredPositiveInt(file, id, "decayPerTick", errors) ?: return null,
+            threshold = threshold,
+            recoveryAmount = fields.requiredPositiveInt(file, id, "recoveryAmount", errors) ?: return null,
+            jobType = fields.required(file, id, "jobType", errors) ?: return null,
+            priority = fields.requiredNonNegativeInt(file, id, "priority", errors) ?: return null,
+            displayKey = fields.optionalNonBlank(file, id, "displayKey", errors) ?: "need.$id",
+        )
+    }
 
     private fun parseEnemyResists(
         id: String,

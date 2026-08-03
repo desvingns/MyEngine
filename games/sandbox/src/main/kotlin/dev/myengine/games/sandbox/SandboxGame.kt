@@ -18,6 +18,7 @@ import dev.myengine.ai.JobCompletionEffect
 import dev.myengine.ai.JobCompletionEffectSink
 import dev.myengine.ai.JobExecutionSystem
 import dev.myengine.ai.JobStatus
+import dev.myengine.ai.NeedsSystem
 import dev.myengine.ai.HaulDestinationKind
 import dev.myengine.ai.stableSortKey
 import dev.myengine.logistics.HaulingSystem
@@ -61,6 +62,7 @@ import dev.myengine.entities.EnemyComponent
 import dev.myengine.entities.HealthComponent
 import dev.myengine.entities.InventoryComponent
 import dev.myengine.entities.JobActorComponent
+import dev.myengine.entities.NeedsComponent
 import dev.myengine.entities.WorkerComponent
 import dev.myengine.entities.MovementComponent
 import dev.myengine.entities.PositionComponent
@@ -81,6 +83,7 @@ import dev.myengine.render.DebugOverlay
 import dev.myengine.render.EngineSnapshot
 import dev.myengine.render.HudBuildTower
 import dev.myengine.render.HudLabels
+import dev.myengine.render.HudNeedBar
 import dev.myengine.render.HudResourceAmount
 import dev.myengine.render.HudSnapshot
 import dev.myengine.render.HudTowerInfo
@@ -221,11 +224,14 @@ class SandboxRuntime(
     seed: Long = 7L,
 ) {
     private val producerSystem = ProducerSystem(state.registry.recipes)
-    private data class PendingJobEffect(val job: Job, val effect: JobCompletionEffect)
+    private data class PendingJobEffect(val worker: EntityId, val job: Job, val effect: JobCompletionEffect)
 
     private val jobEffects = mutableListOf<PendingJobEffect>()
+    private val needsSystem = NeedsSystem(state.registry.needs)
     private val jobExecutionSystem = JobExecutionSystem(
-        completionEffectSink = JobCompletionEffectSink { _, job, effect -> jobEffects += PendingJobEffect(job, effect) },
+        completionEffectSink = JobCompletionEffectSink { worker, job, effect ->
+            jobEffects += PendingJobEffect(worker, job, effect)
+        },
         eligibleJob = { it.haul == null },
     )
     private val haulingSystem = HaulingSystem()
@@ -284,6 +290,7 @@ class SandboxRuntime(
             val incidentWaveEvents = mutableListOf<GameplayEvent>()
             val commands = commandQueue.drainFor(state.tick)
             commands.forEach { applyCommand(it, commandEvents) }
+            needsSystem.tick(state.entities, state.jobBoard)
             ensureConstructionJobs()
             executeHauling()
             ensureConstructionJobs()
@@ -425,6 +432,12 @@ class SandboxRuntime(
                     }
                     is JobCompletionEffect.SpawnBuilding ->
                         spawnCompletedBuilding(pending.job, effect, eventSink)
+                    is JobCompletionEffect.NeedRecovery -> {
+                        val target = effect.targetEntityId ?: pending.worker
+                        state.entities.update(target) { entity ->
+                            entity.copy(needs = entity.needs?.recover(effect.needId, effect.amount))
+                        }
+                    }
                 }
             }
     }
@@ -579,6 +592,21 @@ class SandboxRuntime(
                 availableUpgrades = upgrades,
             )
         }
+        val needBars = state.entities.all()
+            .filter { it.needs != null }
+            .sortedBy { it.id.value }
+            .flatMap { entity ->
+                val needs = entity.needs ?: return@flatMap emptyList()
+                state.registry.needs.toSortedMap().map { (needId, definition) ->
+                    HudNeedBar(
+                        entityId = entity.id.value,
+                        needId = needId,
+                        label = text(definition.displayKey).ifBlank { needId },
+                        value = needs.level(needId),
+                        threshold = definition.threshold,
+                    )
+                }
+            }
         val nextWave = nextUnspawnedWave()
         return HudSnapshot(
             labels = HudLabels(
@@ -603,6 +631,7 @@ class SandboxRuntime(
             coreHealth = state.defense.coreHealth,
             buildTowers = buildTowers,
             towers = towerInfo,
+            needBars = needBars,
         )
     }
 
@@ -1427,7 +1456,7 @@ class SandboxRuntime(
 private fun VisualAssetRef.toRenderAssetRef(): RenderAssetRef = RenderAssetRef(path = path, atlasKey = atlasKey)
 
 object SandboxSaveCodec {
-    const val SAVE_VERSION: Int = 16
+    const val SAVE_VERSION: Int = 17
 
     fun encode(state: SandboxState, seed: Long, pendingCommands: List<EngineCommand> = emptyList()): String {
         val props = Properties()
@@ -1564,6 +1593,13 @@ object SandboxSaveCodec {
                 entity.inventory?.capacity?.toString().orEmpty(),
                 if (entity.worker != null) "1" else "",
                 entity.worker?.workerId?.let(::encodeToken).orEmpty(),
+                if (entity.needs != null) "1" else "",
+                entity.needs?.levels?.toSortedMap()?.entries?.joinToString("~") { (id, value) ->
+                    "${encodeToken(id)}:$value"
+                }.orEmpty(),
+                entity.needs?.triggerCounts?.toSortedMap()?.entries?.joinToString("~") { (id, count) ->
+                    "${encodeToken(id)}:$count"
+                }.orEmpty(),
             ).joinToString("|")
         }
         props["pendingCommands"] = pendingCommands.joinToString(";") { cmd ->
@@ -1671,6 +1707,13 @@ object SandboxSaveCodec {
                         listOf(effect.type.id, encodeToken(effect.resourceId), effect.amount).joinToString(":")
                     is JobCompletionEffect.SpawnBuilding ->
                         listOf(effect.type.id, encodeToken(effect.buildingId), encodeToken(effect.siteId)).joinToString(":")
+                    is JobCompletionEffect.NeedRecovery ->
+                        listOf(
+                            effect.type.id,
+                            encodeToken(effect.needId),
+                            effect.amount,
+                            effect.targetEntityId?.value ?: "",
+                        ).joinToString(":")
                 }
             },
         job.haul?.let { haul ->
@@ -1692,7 +1735,10 @@ object SandboxSaveCodec {
                 val assignedTo = parts[6].toLongOrNull()?.let(::EntityId)
                 val effects = parts[10].split('~').filter { it.isNotBlank() }.map { effectText ->
                     val effectParts = effectText.split(':')
-                    require(effectParts.size == 3 && effectParts[0] in setOf("resource_delta", "spawn_building")) {
+                    require(
+                        effectParts[0] in setOf("resource_delta", "spawn_building", "need_recovery") &&
+                            (effectParts.size == 3 || (effectParts[0] == "need_recovery" && effectParts.size == 4)),
+                    ) {
                         "Invalid job completion effect '$effectText'."
                     }
                     if (effectParts[0] == "resource_delta") {
@@ -1701,10 +1747,17 @@ object SandboxSaveCodec {
                             amount = effectParts[2].toIntOrNull()
                                 ?: error("Invalid resource delta amount in '$effectText'."),
                         )
-                    } else {
+                    } else if (effectParts[0] == "spawn_building") {
                         JobCompletionEffect.SpawnBuilding(
                             buildingId = decodeToken(effectParts[1]),
                             siteId = decodeToken(effectParts[2]),
+                        )
+                    } else {
+                        JobCompletionEffect.NeedRecovery(
+                            needId = decodeToken(effectParts[1]),
+                            amount = effectParts[2].toIntOrNull()
+                                ?: error("Invalid need recovery amount in '$effectText'."),
+                            targetEntityId = effectParts.getOrNull(3)?.takeIf { it.isNotBlank() }?.toLongOrNull()?.let(::EntityId),
                         )
                     }
                 }
@@ -2136,6 +2189,14 @@ object SandboxSaveCodec {
                     require(it.workerId in registry.workers) { "Unknown worker '${it.workerId}' in save." }
                 }
             } else null
+            val needsPresent = version >= 17 && parts.getOrNull(26) == "1"
+            val needs = if (needsPresent) {
+                parseNeeds(
+                    levelsText = parts.getOrNull(27).orEmpty(),
+                    triggersText = parts.getOrNull(28).orEmpty(),
+                    registry = registry,
+                )
+            } else null
             Entity(
                 id = id,
                 type = type,
@@ -2154,6 +2215,7 @@ object SandboxSaveCodec {
                 enemy = enemy,
                 jobActor = if (jobActorPresent) JobActorComponent(assignedJobId, workTicks) else null,
                 worker = workerComponent,
+                needs = needs,
                 statusEffects = statusEffects,
                 // Wave routing is a derived GoalField cache.  Older v6 saves can still carry a
                 // serialized per-enemy path; discard it and rebuild from restored world occupancy.
@@ -2166,6 +2228,25 @@ object SandboxSaveCodec {
                 },
             )
         }
+
+    private fun parseNeeds(levelsText: String, triggersText: String, registry: ContentRegistry): NeedsComponent {
+        fun parse(text: String, label: String): Map<String, Int> = text
+            .split('~')
+            .filter { it.isNotBlank() }
+            .associate { encoded ->
+                val parts = encoded.split(':')
+                require(parts.size == 2) { "Invalid $label entry '$encoded'." }
+                val id = decodeToken(parts[0])
+                require(id in registry.needs) { "Unknown need '$id' in save." }
+                val value = parts[1].toIntOrNull()
+                    ?: error("Invalid $label value '$encoded'.")
+                id to value
+            }
+        return NeedsComponent(
+            levels = parse(levelsText, "need level"),
+            triggerCounts = parse(triggersText, "need trigger"),
+        )
+    }
 
     private fun parseEnemyComponent(text: String, type: String): EnemyComponent? {
         if (text.isBlank()) return null

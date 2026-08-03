@@ -183,6 +183,26 @@ data class WorkerContent(
     }
 }
 
+/** Data-defined colonist need policy consumed by the deterministic needs system. */
+data class NeedContent(
+    override val id: String,
+    val decayPerTick: Int,
+    val threshold: Int,
+    val recoveryAmount: Int,
+    val jobType: String,
+    val priority: Int,
+    val displayKey: String = "need.$id",
+) : ContentDefinition {
+    init {
+        require(decayPerTick > 0) { "Need decay must be positive." }
+        require(threshold in 0..100) { "Need threshold must be between 0 and 100." }
+        require(recoveryAmount > 0) { "Need recovery amount must be positive." }
+        require(jobType.isNotBlank()) { "Need job type cannot be blank." }
+        require(priority >= 0) { "Need priority cannot be negative." }
+        require(displayKey.isNotBlank()) { "Need display key cannot be blank." }
+    }
+}
+
 /** Data-driven 1x1 wall definition for the player-placed blocker slice. */
 data class BuildingContent(
     override val id: String,
@@ -471,6 +491,7 @@ data class ContentRegistry(
     val endlessWave: EndlessWaveContent? = null,
     val damageTypes: Map<String, DamageTypeContent> = emptyMap(),
     val workers: Map<String, WorkerContent> = emptyMap(),
+    val needs: Map<String, NeedContent> = emptyMap(),
 ) {
     /** Alias kept for callers that refer to the optional pack feature as simply `endless`. */
     val endless: EndlessWaveContent? get() = endlessWave
@@ -482,6 +503,7 @@ data class ContentRegistry(
     fun requireBuilding(id: String): BuildingContent = buildings[id] ?: error("Unknown building '$id'.")
     fun requireEffect(id: String): StatusEffectContent = effects[id] ?: error("Unknown status effect '$id'.")
     fun requireWorker(id: String): WorkerContent = workers[id] ?: error("Unknown worker '$id'.")
+    fun requireNeed(id: String): NeedContent = needs[id] ?: error("Unknown need '$id'.")
     fun requireMap(id: String? = null): MapContent = when {
         id != null -> maps[id] ?: error("Unknown map '$id'.")
         maps.size == 1 -> maps.values.single()

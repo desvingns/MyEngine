@@ -27,6 +27,7 @@ data class Entity(
     val worker: WorkerComponent? = null,
     val enemy: EnemyComponent? = null,
     val statusEffects: List<StatusEffectComponent> = emptyList(),
+    val needs: NeedsComponent? = null,
 ) {
     init {
         require(statusEffects.map { it.effectId }.distinct().size == statusEffects.size) {
@@ -46,6 +47,9 @@ data class Entity(
         jobActor?.appendHash(hash) ?: hash.add("no-job")
         worker?.let {
             hash.add("worker")
+            it.appendHash(hash)
+        }
+        needs?.let {
             it.appendHash(hash)
         }
         enemy?.appendHash(hash)
@@ -183,6 +187,33 @@ data class WorkerComponent(
 
     fun appendHash(hash: StableHash) = hash.add(workerId)
 }
+
+/** Immutable authoritative need levels and deterministic threshold-cycle counters. */
+data class NeedsComponent(
+    val levels: Map<String, Int> = emptyMap(),
+    val triggerCounts: Map<String, Int> = emptyMap(),
+) {
+    init {
+        require(levels.values.all { it in 0..100 }) { "Need levels must be between 0 and 100." }
+        require(triggerCounts.values.all { it >= 0 }) { "Need trigger counts cannot be negative." }
+    }
+
+    fun level(needId: String): Int = levels[needId] ?: 100
+
+    fun withLevels(nextLevels: Map<String, Int>): NeedsComponent = copy(levels = nextLevels.toSortedMap())
+
+    fun recover(needId: String, amount: Int): NeedsComponent = withLevels(
+        levels + (needId to (level(needId) + amount).coerceAtMost(100)),
+    )
+
+    fun appendHash(hash: StableHash) {
+        hash.add("needs")
+        levels.toSortedMap().forEach { (id, level) -> hash.add(id).add(level) }
+        triggerCounts.toSortedMap().forEach { (id, count) -> hash.add("trigger").add(id).add(count) }
+    }
+}
+
+typealias NeedComponent = NeedsComponent
 
 data class StatusEffectComponent(
     val effectId: String,

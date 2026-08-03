@@ -111,6 +111,15 @@ data class HudTowerInfo(
     val availableUpgrades: List<HudTowerTier>,
 )
 
+data class HudNeedBar(
+    val entityId: Long,
+    val needId: String,
+    val label: String,
+    val value: Int,
+    val threshold: Int,
+    val maxValue: Int = 100,
+)
+
 data class HudSnapshot(
     val labels: HudLabels,
     val resources: List<HudResourceAmount>,
@@ -121,6 +130,7 @@ data class HudSnapshot(
     val coreHealth: Int,
     val buildTowers: List<HudBuildTower>,
     val towers: List<HudTowerInfo>,
+    val needBars: List<HudNeedBar> = emptyList(),
 ) {
     companion object {
         val EMPTY = HudSnapshot(
@@ -133,6 +143,7 @@ data class HudSnapshot(
             coreHealth = 0,
             buildTowers = emptyList(),
             towers = emptyList(),
+            needBars = emptyList(),
         )
     }
 }

@@ -1,14 +1,51 @@
 # MyEngine Handoff
 
-Last updated: 2026-08-03 (ENG-033 scope unblock; next ENG-033 feature run)
+Last updated: 2026-08-03 (ENG-033 close-out; next backlog review)
 Owner: Codex
 
 ## DONE
 
-- ENG-033 scope unblock (2026-08-03): the backlog card is now an authored colony feature scope with
-  accepted named `COL-FR-001..004` and `COL-NFR-001`, traceable `COL-AC`/`COL-GATE` entries, and an
-  explicit boundary that MySD's TD Gate 1 evidence does not prove colony behavior. The card remains
-  in backlog; the next action is the separate `/me --feature --next` implementation run.
+- ENG-033 is complete (2026-08-03): added optional content-defined hunger/rest policies,
+  deterministic threshold recovery jobs with target-owned effects and stable need-vs-work arbitration,
+  immutable HUD need bars, and `SandboxSaveCodec` v17 with v1-v16 migration. The card is in
+  `.claude/specs/done/`; MySD TD Gate 1 remains outside the colony evidence boundary.
+
+## ENG-033 close-out
+
+### DONE
+
+- `NeedContent`/`needs.properties` validates decay, threshold, recovery, job type, priority, and HUD
+  display keys. `NeedsComponent` is authoritative entity state; `NeedsSystem` decays in entity/need
+  order and creates one deterministic job per threshold episode.
+- `NeedRecovery` is a typed completion effect targeting the originating colonist, so another worker
+  may execute the job without applying recovery to the wrong entity. Sandbox HUD projects sorted
+  `HudNeedBar` values through the immutable snapshot path.
+- Save v17 appends need levels/trigger counters to entity records and accepts v1-v16 with empty need
+  state; canonical legacy replay hashes remain unchanged when no needs state exists.
+
+### DECISIONS
+
+- Need values use a bounded 0..100 scale. Sandbox content uses hunger/rest thresholds at 25 with
+  content priorities 100/90; generic jobs with equal priority remain stable by job id.
+- No ADR or game-bundle traceability update was needed. No Android production code changed; the
+  Android unit assertion was synchronized to v17. No plugin/skill/pipeline contract changed.
+
+### NEXT
+
+- Review the remaining accepted backlog and choose the next `/me --feature --next` candidate.
+
+### BLOCKERS
+
+- No implementation blocker. The delegated scout/architect and conditional reviewer workers timed
+  out after bounded waits; local implementation and boundary review completed successfully. No
+  device/emulator or visual-golden evidence is claimed beyond `:android:assembleDebug`.
+
+### VERIFICATION
+
+- Full `gradlew test`, `gradlew projects`, content validation, replay, save-compat, benchmark,
+  `:android:assembleDebug`, selfcheck, focused content/needs/sandbox tests, and `git diff --check`
+  passed. Replay hashes: `e4892bcc18f9d8dc`, `a763da4ac32b15b4`, `3f02607020d48668`.
+- Benchmark: canonical 437 ms, kill 93 ms, GoalField rebuild 7.3769 ms, spatial index 7.7136 ms.
 
 - ENG-019 is done: the 1x1 wall MVP is content-defined and localized with validated cost, health,
   footprint, visual reference, and refund metadata. Render-free place/remove commands perform atomic
@@ -1467,8 +1504,8 @@ was pushed.
 
 ### NEXT
 
-- ENG-032 is complete. ENG-033 is the next candidate, but remaining colony demand is vision-only
-  and should wait for MySD Gate 1 or an authored colony game spec with named FRs.
+- ENG-032 was complete and ENG-033 was the next candidate at the time of this historical entry;
+  ENG-033 is now complete. Inspect the backlog for the next scoped feature.
 
 ### BLOCKERS
 
