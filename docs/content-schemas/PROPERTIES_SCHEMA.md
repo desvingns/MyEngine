@@ -88,6 +88,9 @@ Definition files use `<id>.<field>=<value>`.
   invalid value is rejected
 - `effectId`: optional status-effect id resolving to a definition in `effects.properties`
 - `maxHealth`: optional positive int for structure attacks; defaults to `10`
+- `canTargetAir`: optional boolean; defaults to `true` for legacy compatibility
+- `canTargetGround`: optional boolean; defaults to `true` for legacy compatibility; a tower must
+  target at least one movement mode
 - `splashRadius`: optional positive integer Manhattan radius centered on the selected primary
   target; omitted means the tower damages only that primary target
 - `falloff`: optional integer percentage from `0` through `100` of base damage removed per
@@ -170,6 +173,8 @@ result half-up. Multipliers are parsed as decimal values and never through binar
 - `rewardResource`: resource id
 - `rewardAmount`: non-negative int
 - `coreDamage`: positive int
+- `movementMode`: optional `ground` or `air`; defaults to `ground`. Air enemies route through
+  terrain and occupied tiles and require a tower with `canTargetAir=true` to be targetable.
 - `attacksStructures`: optional boolean; defaults to `false`. When `true`, a blocked enemy deals
   its `coreDamage` to the adjacent live tower or building with the lowest entity id once per tick.
 - `isElite`: optional boolean; defaults to `false`

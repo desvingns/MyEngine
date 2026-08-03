@@ -3,6 +3,20 @@
 Append-only log for changes to agent prompts, skills, adapters, workflow contracts, and pipeline
 rules. Project docs can change without an entry here unless they alter agent behavior.
 
+## 2026-08-03 - ENG-025 Flying Enemies
+
+- Owner: Codex
+- Change type: feature pipeline close-out
+- Changed: `engine-core`, `engine-content`, `engine-ai`, `engine-entities`, `engine-defense`,
+  `engine-devtools`, `games/sandbox`, content/defense contracts, save migration fixtures, and
+  roadmap/state/handoff artifacts for ENG-025.
+- Summary: Used the `me-dev:me` feature pipeline with the local role fallback because the bounded
+  roster was unavailable in this session. Added deterministic ground/air movement, air targeting
+  capabilities, balance coverage warning, v21 save migration, and replay/leak coverage. No agent,
+  skill, plugin, or pipeline contract changed.
+- Verification: Focused tests plus full test/projects, content validation, replay, save-compat,
+  benchmark, selfcheck, headless inspect, Android assemble, and diff-check gates.
+
 ## 2026-08-03 - ENG-006 Seeded Procedural Map Generation
 
 - Owner: Codex

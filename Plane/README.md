@@ -47,9 +47,9 @@
    PROC-007 -> ENG-021 -> ENG-029 -> ENG-012 -> ENG-007 -> ENG-018 (done 2026-08-02)
    -> ENG-011 (done 2026-08-02) -> ENG-019 (done 2026-08-02) -> ENG-001 (done 2026-08-02)
    -> ENG-003 (done 2026-08-02) -> ENG-031 (done 2026-08-02) -> ENG-004 (done 2026-08-02)
-   -> ENG-032 (done 2026-08-02) -> ENG-033 (done 2026-08-03) -> ENG-017 (done 2026-08-03) -> ENG-034 (done 2026-08-03) -> ENG-035 (done 2026-08-03) -> ENG-023 (done 2026-08-03); ENG-010, ENG-016, PROC-007, ENG-021,
+   -> ENG-032 (done 2026-08-02) -> ENG-033 (done 2026-08-03) -> ENG-017 (done 2026-08-03) -> ENG-034 (done 2026-08-03) -> ENG-035 (done 2026-08-03) -> ENG-023 (done 2026-08-03) -> ENG-025 (done 2026-08-03); ENG-010, ENG-016, PROC-007, ENG-021,
    ENG-029, ENG-012, ENG-007, ENG-018, ENG-011, ENG-019, ENG-001, ENG-003, ENG-031, ENG-004,
-   ENG-032, ENG-033, ENG-006, ENG-034, and ENG-035 are closed; ENG-006, ENG-034, and ENG-035 were selected from the remaining accepted
+   ENG-032, ENG-033, ENG-006, ENG-034, ENG-035, and ENG-025 are closed; ENG-006, ENG-034, ENG-035, and ENG-025 were selected from the remaining accepted
    backlog after the colony slice.
 4. Hardening gaps из `docs/HARDENING_AUDIT.md` закрывать по одному, с тестами и обновлением handoff.
 
@@ -88,6 +88,7 @@
 | [x] | ENG-034 Enemy attacks on structures | [ENG-034](../.claude/specs/done/ENG-034-enemy-structure-attacks.md) | Content-flagged blocked enemies damage the stable lowest-id adjacent tower/building, lethal damage clears occupancy and rebuilds GoalField, building health round-trips, and balance reports expose structure attack potential | 2026-08-03 |
 | [x] | ENG-035 Resource extractor building | [ENG-035](../.claude/specs/done/ENG-035-resource-extractor.md) | Deterministic finite/infinite resource nodes, underlying/adjacent output-only extractor production, stable ENG-004 haul sources, partial final batch, and save v19/v1-v18 migration; ENG-023 belts remain separate | 2026-08-03 |
 | [x] | ENG-023 Conveyor transport MVP | [ENG-023](../.claude/specs/done/ENG-023-conveyor-transport-mvp.md) | Android-free straight/corner belts with content-defined ticks-per-cell, deterministic backpressure/endpoints, persisted items in save v20, replay and 100-belt benchmark | 2026-08-03 |
+| [x] | ENG-025 Flying enemies | [ENG-025](../.claude/specs/done/ENG-025-flying-enemies.md) | Ground/air movement modes with blocker-ignoring air routes, tower capability filters, air-coverage balance warning, save v21 migration, and mixed-wave replay/leak tests | 2026-08-03 |
 
 ## Глобальные инварианты
 
@@ -1684,4 +1685,20 @@
 - Decisions:
   - Straight/corner belts use content-authored ticks-per-cell and stable sink-to-source movement;
     v20 persists items and v1-v19 migrations default to empty belt state.
+- Next: Review remaining accepted backlog; ENG-036 and PROC-015 remain human-owned start-gated work.
+
+### 2026-08-03 - ENG-025 (flying enemies)
+
+- Status: Done / accepted; no new phase was created.
+- Owner: Codex / `me-dev:me` (local role fallback; roster unavailable in this session)
+- Created/changed:
+  - `engine-core`, `engine-content`, `engine-ai`, `engine-entities`, `engine-defense`,
+    `engine-devtools`, `games/sandbox`
+  - content schema, v21 save fixture/migration coverage, focused ENG-025 tests, and close-out docs
+- Verification:
+  - Full tests/projects, content validation, schema drift, replay, save-compat, benchmark,
+    selfcheck, required headless inspect, Android `assembleDebug`, and `git diff --check` -> pass
+- Decisions:
+  - Air enemies use a blocker-ignoring deterministic GoalField; legacy saves decode movement as
+    ground. No Android production, renderer, or ADR changes were required.
 - Next: Review remaining accepted backlog; ENG-036 and PROC-015 remain human-owned start-gated work.

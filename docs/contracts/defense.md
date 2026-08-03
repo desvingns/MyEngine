@@ -1,6 +1,6 @@
 # engine-defense Contract
 
-Status: Accepted (ENG-011 close-out, 2026-08-02)
+Status: Accepted (ENG-025 close-out, 2026-08-03)
 Owner: waves, towers, enemies, and combat
 
 ## Responsibilities
@@ -28,6 +28,17 @@ Owner: waves, towers, enemies, and combat
 - `DamageEvent`
 - `DamageTypeContent`
 - `ContentRegistry.damageTypes`
+
+## ENG-025 movement and targeting semantics
+
+`EnemyContent.movementMode` is `ground` by default and may be `air`. Ground enemies use the
+existing blocker-aware GoalField. Air enemies use a deterministic GoalField that ignores blockers,
+so wall placement cannot invalidate their route. `TowerContent.canTargetGround` and
+`canTargetAir` default to `true`; content validation requires at least one capability. Target
+selection and splash candidates filter by the enemy movement mode before applying the existing
+stable priority/entity-id ordering. Balance reports warn when an authored air wave has no
+air-capable tower. `SandboxSaveCodec` v21 persists the movement mode; older saves decode it as
+ground.
 
 ## ENG-011 damage and resistance semantics
 

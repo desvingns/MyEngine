@@ -138,7 +138,7 @@ class SandboxBeltTransportTest {
         val restored = SandboxSaveCodec.decode(save, state.registry)
 
         assertTrue(save.contains("saveVersion=${SandboxSaveCodec.SAVE_VERSION}"))
-        assertEquals(20, SandboxSaveCodec.SAVE_VERSION)
+        assertEquals(21, SandboxSaveCodec.SAVE_VERSION)
         assertEquals(state.belts, restored.belts)
         assertEquals(state.stableHash(), restored.stableHash())
     }

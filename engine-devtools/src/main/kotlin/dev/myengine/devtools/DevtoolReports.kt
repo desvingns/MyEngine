@@ -12,6 +12,7 @@ import dev.myengine.content.TowerUpgradeTier
 import dev.myengine.content.WaveModifier
 import dev.myengine.content.WaveContent
 import dev.myengine.content.effectiveStats
+import dev.myengine.core.MovementMode
 import dev.myengine.core.Tick
 import dev.myengine.core.SeededRandom
 import dev.myengine.defense.DamageFormula
@@ -267,6 +268,9 @@ data class BalancePackSummary(
     val coreDamagePotential: Int,
     val structureAttackTypes: Int,
     val structureDamagePotential: Int,
+    val airEnemyTypes: Int = 0,
+    val airWaveEnemies: Int = 0,
+    val airCapableTowerTypes: Int = 0,
     val rewardTotal: Int,
     val resourceTypes: Int,
     val recipeOutputPerTick: Double,
@@ -293,6 +297,9 @@ data class BalancePackSummary(
         "core_damage_potential" to coreDamagePotential,
         "structure_attack_types" to structureAttackTypes,
         "structure_damage_potential" to structureDamagePotential,
+        "air_enemy_types" to airEnemyTypes,
+        "air_wave_enemies" to airWaveEnemies,
+        "air_capable_tower_types" to airCapableTowerTypes,
         "reward_total" to rewardTotal,
         "resource_types" to resourceTypes,
         "recipe_output_per_tick" to recipeOutputPerTick,
@@ -674,13 +681,13 @@ object DevtoolReports {
         val baseline = baselineLoad.registry?.let(::summarizeBalance)
         val changed = changedLoad.registry?.let(::summarizeBalance)
         val deltas = if (baseline != null && changed != null) balanceDeltas(baseline, changed) else emptyList()
-        val warnings = deltas.filter { it.flagged }.map { delta ->
+        val warnings = (changed?.let(::balanceWarnings).orEmpty() + deltas.filter { it.flagged }.map { delta ->
             BalanceWarning(
                 category = delta.category,
                 metric = delta.metric,
                 message = "${delta.metric} changed from ${delta.baseline} to ${delta.changed}",
             )
-        }
+        })
         return BalanceDeltaReport(
             baselineRoot = baselineRoot.toString().replace('\\', '/'),
             changedRoot = changedRoot.toString().replace('\\', '/'),
@@ -727,6 +734,9 @@ object DevtoolReports {
         val structureDamagePotential = waveEntries.sumOf {
             if (it.first.attacksStructures) it.first.coreDamage.toLong() else 0L
         }.coerceAtMost(Int.MAX_VALUE.toLong()).toInt()
+        val airEnemyTypes = registry.enemies.values.count { it.movementMode == MovementMode.AIR }
+        val airWaveEnemies = waveEntries.count { it.first.movementMode == MovementMode.AIR }
+        val airCapableTowerTypes = registry.towers.values.count { it.canTargetAir }
         val rewardTotal = waveEntries.sumOf { it.second.rewardAmount.toLong() }
             .coerceAtMost(Int.MAX_VALUE.toLong()).toInt()
         val recipeOutputPerTick = registry.recipes.values.sumOf { recipe ->
@@ -745,6 +755,9 @@ object DevtoolReports {
             coreDamagePotential = coreDamagePotential,
             structureAttackTypes = structureAttackTypes,
             structureDamagePotential = structureDamagePotential,
+            airEnemyTypes = airEnemyTypes,
+            airWaveEnemies = airWaveEnemies,
+            airCapableTowerTypes = airCapableTowerTypes,
             rewardTotal = rewardTotal,
             resourceTypes = registry.resources.size,
             recipeOutputPerTick = recipeOutputPerTick,
@@ -871,6 +884,9 @@ object DevtoolReports {
             delta("core", "core_damage_potential", baseline.coreDamagePotential.toDouble(), changed.coreDamagePotential.toDouble()),
             delta("structure", "structure_attack_types", baseline.structureAttackTypes.toDouble(), changed.structureAttackTypes.toDouble()),
             delta("structure", "structure_damage_potential", baseline.structureDamagePotential.toDouble(), changed.structureDamagePotential.toDouble()),
+            delta("air", "air_enemy_types", baseline.airEnemyTypes.toDouble(), changed.airEnemyTypes.toDouble()),
+            delta("air", "air_wave_enemies", baseline.airWaveEnemies.toDouble(), changed.airWaveEnemies.toDouble()),
+            delta("air", "air_capable_tower_types", baseline.airCapableTowerTypes.toDouble(), changed.airCapableTowerTypes.toDouble()),
             delta("resource", "reward_total", baseline.rewardTotal.toDouble(), changed.rewardTotal.toDouble()),
             delta("resource", "resource_types", baseline.resourceTypes.toDouble(), changed.resourceTypes.toDouble()),
             delta("resource", "recipe_output_per_tick", baseline.recipeOutputPerTick, changed.recipeOutputPerTick),
@@ -879,6 +895,19 @@ object DevtoolReports {
             delta("tower", "splash_falloff_percent_total", baseline.splashFalloffPercentTotal.toDouble(), changed.splashFalloffPercentTotal.toDouble()),
             delta("tower", "splash_effective_aoe_tiles", baseline.splashEffectiveAoeTiles.toDouble(), changed.splashEffectiveAoeTiles.toDouble()),
         )
+
+    private fun balanceWarnings(summary: BalancePackSummary): List<BalanceWarning> =
+        if (summary.airWaveEnemies > 0 && summary.airCapableTowerTypes == 0) {
+            listOf(
+                BalanceWarning(
+                    category = "air",
+                    metric = "air_targeting_coverage",
+                    message = "Air waves are present but no tower can target air enemies.",
+                ),
+            )
+        } else {
+            emptyList()
+        }
 
     private fun delta(category: String, metric: String, baseline: Double, changed: Double): BalanceMetricDelta {
         val absolute = changed - baseline

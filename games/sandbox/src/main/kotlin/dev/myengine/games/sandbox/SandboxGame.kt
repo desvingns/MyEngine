@@ -38,6 +38,7 @@ import dev.myengine.core.SeededRandom
 import dev.myengine.core.StableHash
 import dev.myengine.core.TerminalReason
 import dev.myengine.core.Tick
+import dev.myengine.core.MovementMode
 import dev.myengine.core.command.BuildTowerCommand
 import dev.myengine.core.command.CancelBlueprintCommand
 import dev.myengine.core.command.PlaceBlueprintCommand
@@ -269,6 +270,8 @@ class SandboxRuntime(
     private val core = map.core.let { TilePosition(it.x, it.y) }
     /** Derived cache: rebuilt from authoritative world occupancy after placement and on restore. */
     private var goalField: GoalField = rebuildAfterWalkabilityChange()
+    /** Air routes intentionally ignore terrain and occupancy blockers, so this cache is static. */
+    private var airGoalField: GoalField = GoalField.buildIgnoringBlockers(state.world, core)
     /** Latest transient combat events, replaced every completed simulation tick. */
     private var combatEvents: CombatEvents = CombatEvents.EMPTY
     private val simulationRandom = SeededRandom.fromSnapshot(
@@ -334,6 +337,7 @@ class SandboxRuntime(
                 eventSink = scheduledWaveEvents,
                 spawnRoutes = spawnRoutes,
                 random = simulationRandom,
+                airGoalField = airGoalField,
             )
             state.randomCursor = simulationRandom.snapshot()
             val statusEffectResult = defenseRuntime.updateStatusEffects(
@@ -348,7 +352,13 @@ class SandboxRuntime(
                 state.lastCommandOrError = statusEffectDeposit.dropped.entries
                     .joinToString(",", prefix = "reward_dropped:") { "${it.key}:${it.value}" }
             }
-            val towerResult = defenseRuntime.updateTowers(state.registry, state.entities, goalField, state.tick)
+            val towerResult = defenseRuntime.updateTowers(
+                state.registry,
+                state.entities,
+                goalField,
+                state.tick,
+                airGoalField,
+            )
             state.defense = state.defense.record(towerResult.metrics).recordTowerMetrics(towerResult.towerMetrics)
             val deposit = depositRewards(state.inventory, towerResult.rewards)
             state.inventory = deposit.inventory
@@ -365,6 +375,7 @@ class SandboxRuntime(
                 goalField = goalField,
                 world = state.world,
                 onStructureDestroyed = { goalField = rebuildAfterWalkabilityChange() },
+                airGoalField = airGoalField,
             )
             evaluateTerminalState()
             if (state.run.isTerminal) {
@@ -389,6 +400,7 @@ class SandboxRuntime(
                     spawn = spawn,
                     core = core,
                     goalField = goalField,
+                    airGoalField = airGoalField,
                     tick = state.tick,
                     eventSink = incidentWaveEvents,
                     spawnRoutes = spawnRoutes,
@@ -870,6 +882,7 @@ class SandboxRuntime(
             spawn = spawn,
             core = core,
             goalField = goalField,
+            airGoalField = airGoalField,
             tick = state.tick,
             eventSink = eventSink,
             spawnRoutes = spawnRoutes,
@@ -1679,7 +1692,7 @@ class SandboxRuntime(
 private fun VisualAssetRef.toRenderAssetRef(): RenderAssetRef = RenderAssetRef(path = path, atlasKey = atlasKey)
 
 object SandboxSaveCodec {
-    const val SAVE_VERSION: Int = 20
+    const val SAVE_VERSION: Int = 21
 
     fun encode(state: SandboxState, seed: Long, pendingCommands: List<EngineCommand> = emptyList()): String {
         val props = Properties()
@@ -1846,6 +1859,7 @@ object SandboxSaveCodec {
                         enemy.rewardAmount,
                         enemy.isElite,
                         enemy.isBoss,
+                        enemy.movementMode.id,
                     ).joinToString("~")
                 }.orEmpty(),
                 if (entity.jobActor != null) "1" else "",
@@ -2514,7 +2528,7 @@ object SandboxSaveCodec {
                 emptyList()
             }
             val enemy = if (version >= 11) {
-                parseEnemyComponent(parts.getOrNull(17).orEmpty(), type)
+                parseEnemyComponent(parts.getOrNull(17).orEmpty(), type, version)
             } else {
                 null
             }
@@ -2598,23 +2612,28 @@ object SandboxSaveCodec {
         )
     }
 
-    private fun parseEnemyComponent(text: String, type: String): EnemyComponent? {
+    private fun parseEnemyComponent(text: String, type: String, version: Int): EnemyComponent? {
         if (text.isBlank()) return null
         require(type.startsWith("enemy:")) { "Enemy component is only valid on an enemy entity." }
         val parts = text.split('~')
-        require(parts.size == 7) { "Invalid enemy component entry '$text'." }
+        val expectedPartCount = if (version >= 21) 8 else 7
+        require(parts.size == expectedPartCount) { "Invalid enemy component entry '$text'." }
         val enemyId = decodeToken(parts[0])
         require(type == "enemy:$enemyId") { "Enemy component id '$enemyId' does not match entity type '$type'." }
         val speed = parts[1].toIntOrNull()
         val coreDamage = parts[2].toIntOrNull()
         val rewardAmount = parts[4].toIntOrNull()
         require(speed != null && coreDamage != null && rewardAmount != null) { "Invalid enemy component values '$text'." }
+        val movementMode = parts.getOrNull(7)?.takeIf { it.isNotBlank() }?.let {
+            MovementMode.fromId(it) ?: error("Invalid enemy movement mode '$it'.")
+        } ?: MovementMode.GROUND
         return EnemyComponent(
             enemyId = enemyId,
             speedTilesPerTick = speed,
             coreDamage = coreDamage,
             rewardResource = decodeToken(parts[3]),
             rewardAmount = rewardAmount,
+            movementMode = movementMode,
             isElite = parts[5].toBooleanStrictOrNull() ?: error("Invalid elite flag in '$text'."),
             isBoss = parts[6].toBooleanStrictOrNull() ?: error("Invalid boss flag in '$text'."),
         )

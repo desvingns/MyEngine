@@ -1,6 +1,7 @@
 package dev.myengine.entities
 
 import dev.myengine.core.StableHash
+import dev.myengine.core.MovementMode
 import dev.myengine.core.command.TargetingMode
 import dev.myengine.world.TilePosition
 
@@ -67,6 +68,7 @@ data class EnemyComponent(
     val coreDamage: Int,
     val rewardResource: String,
     val rewardAmount: Int,
+    val movementMode: MovementMode = MovementMode.GROUND,
     val isElite: Boolean = false,
     val isBoss: Boolean = false,
 ) {
@@ -87,6 +89,7 @@ data class EnemyComponent(
             .add(rewardAmount)
             .add(isElite)
             .add(isBoss)
+        if (movementMode != MovementMode.GROUND) hash.add("movement-mode").add(movementMode.id)
     }
 }
 

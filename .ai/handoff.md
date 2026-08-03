@@ -1,7 +1,43 @@
 # MyEngine Handoff
 
-Last updated: 2026-08-03 (ENG-023 close-out; next backlog review)
+Last updated: 2026-08-03 (ENG-025 close-out; next backlog review)
 Owner: Codex
+
+## ENG-025 close-out (2026-08-03)
+
+### DONE
+
+- Added `MovementMode` content/runtime state with ground compatibility defaults and air routing
+  through a blocker-ignoring GoalField; ground routing remains unchanged.
+- Added validated tower `canTargetAir`/`canTargetGround` capabilities and deterministic target
+  filtering for direct and splash targeting. Balance reports warn when air waves have no air-capable
+  tower.
+- Bumped `SandboxSaveCodec` v20 -> v21. v1-v20 saves migrate movement mode to ground; v21 saves
+  persist the mode. Added content, defense, sandbox mixed-wave/air-leak/replay, and migration tests.
+- Moved the card to `.claude/specs/done/` and synchronized roadmap, Plane, STATE, and DIGEST.
+
+### DECISIONS
+
+- Air enemies use a dedicated blocker-ignoring GoalField and the existing deterministic movement
+  contract; air-capable towers are selected by content flags. No Android production, renderer, or
+  ADR changes were required.
+
+### NEXT
+
+- Review the remaining accepted backlog; ENG-036 and PROC-015 remain human-owned start-gated work.
+
+### BLOCKERS
+
+- No implementation blocker. The me-dev roster was unavailable in this session, so architect,
+  tester, simulation, save, balance, and verifier review roles were performed locally. The known
+  untracked `.ai/retro/retro-2026-08-03.md` baseline was preserved and excluded. No device/emulator
+  or visual-golden proof is claimed.
+
+### VERIFICATION
+
+- Focused ENG-025 tests, full `gradlew test`, `gradlew projects`, content validation, replay,
+  save-compat, benchmark, selfcheck, required headless inspect, Android `assembleDebug`, and
+  `git diff --check` passed.
 
 ## ENG-023 close-out (2026-08-03)
 

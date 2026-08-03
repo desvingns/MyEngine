@@ -83,8 +83,9 @@ class GoalField private constructor(
             world: TileWorld,
             goal: TilePosition,
             additionalBlocked: TilePosition? = null,
+            ignoreBlockers: Boolean = false,
         ): GoalField {
-            if (!world.inBounds(goal) || !isWalkable(world, goal, additionalBlocked)) {
+            if (!world.inBounds(goal) || !isWalkable(world, goal, additionalBlocked, ignoreBlockers)) {
                 return GoalField(goal, emptyMap(), emptyMap())
             }
 
@@ -99,8 +100,8 @@ class GoalField private constructor(
                 current.neighbors4()
                     .sorted()
                     .filter { neighbor ->
-                        world.inBounds(neighbor) &&
-                            isWalkable(world, neighbor, additionalBlocked) &&
+                            world.inBounds(neighbor) &&
+                            isWalkable(world, neighbor, additionalBlocked, ignoreBlockers) &&
                             neighbor !in distances
                     }
                     .forEach { neighbor ->
@@ -111,6 +112,10 @@ class GoalField private constructor(
             }
             return GoalField(goal, distances.toMap(), nextSteps.toMap())
         }
+
+        /** Builds the deterministic air route field, which ignores terrain and occupancy blockers. */
+        fun buildIgnoringBlockers(world: TileWorld, goal: TilePosition): GoalField =
+            build(world = world, goal = goal, ignoreBlockers = true)
 
         /**
          * The single route-cache hook for walkability changes.  Use [additionalBlocked] to probe
@@ -130,7 +135,12 @@ class GoalField private constructor(
             )
         }
 
-        private fun isWalkable(world: TileWorld, position: TilePosition, additionalBlocked: TilePosition?): Boolean =
-            position != additionalBlocked && world.canOccupy(position)
+        private fun isWalkable(
+            world: TileWorld,
+            position: TilePosition,
+            additionalBlocked: TilePosition?,
+            ignoreBlockers: Boolean,
+        ): Boolean =
+            position != additionalBlocked && (ignoreBlockers || world.canOccupy(position))
     }
 }

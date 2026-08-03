@@ -121,10 +121,10 @@ version and migration matrix make the state transition explicit and keep old sav
   every supported version, round-trip, and future-version rejection.
 - `.claude/specs/done/PROC-007-save-migration-matrix.md` — matrix acceptance and stable-hash
   contract; inspect it, do not edit it for a feature field.
-- `games/sandbox/src/test/resources/save-fixtures/v18.properties` — baseline fixture to add/retain
-  for the current `SAVE_VERSION=19` before the next bump.
-- `games/sandbox/src/test/resources/save-fixtures/v20.properties` — next checked-in fixture after
-  bumping the current codec to v20.
+- `games/sandbox/src/test/resources/save-fixtures/v20.properties` — baseline fixture retained for
+  the current `SAVE_VERSION=21` migration boundary.
+- `games/sandbox/src/test/resources/save-fixtures/v21.properties` — newest checked-in fixture after
+  bumping the codec to v21.
 - `scripts/me-save-compat.ps1` — only when the supported-version matrix or gate invocation changes.
 - `android/src/test/kotlin/dev/myengine/android/FixedTickFrameLoopTest.kt` — update only if an
   Android-facing save-version assertion is intentionally part of the contract.

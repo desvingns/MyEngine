@@ -1,6 +1,7 @@
 package dev.myengine.defense
 
 import dev.myengine.ai.GoalField
+import dev.myengine.core.MovementMode
 import dev.myengine.core.command.TargetingMode
 import dev.myengine.entities.Entity
 import dev.myengine.world.TilePosition
@@ -17,11 +18,16 @@ object TargetSelector {
         range: Int,
         enemies: Iterable<Entity>,
         goalField: GoalField,
+        airGoalField: GoalField? = null,
+        canTarget: (MovementMode) -> Boolean = { true },
     ): Entity? = enemies.asSequence()
         .mapNotNull { enemy ->
             val position = enemy.position?.tile ?: return@mapNotNull null
             val health = enemy.health ?: return@mapNotNull null
-            val goalDistance = goalField.distanceAt(position) ?: return@mapNotNull null
+            val movementMode = enemy.enemy?.movementMode ?: MovementMode.GROUND
+            if (!canTarget(movementMode)) return@mapNotNull null
+            val routeField = if (movementMode == MovementMode.AIR) airGoalField else goalField
+            val goalDistance = routeField?.distanceAt(position) ?: return@mapNotNull null
             if (!health.isAlive() || towerPosition.manhattanDistance(position) > range) return@mapNotNull null
             Candidate(enemy, towerPosition.manhattanDistance(position), goalDistance, health.current)
         }

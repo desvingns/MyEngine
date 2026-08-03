@@ -2,6 +2,7 @@ package dev.myengine.content
 
 import java.math.BigDecimal
 import dev.myengine.core.GameplayEventType
+import dev.myengine.core.MovementMode
 import dev.myengine.core.command.TargetingMode
 
 data class ContentPackManifest(
@@ -77,11 +78,16 @@ data class TowerContent(
     val assetRef: VisualAssetRef? = null,
     val effectId: String? = null,
     val damageTypeId: String? = null,
+    /** Whether this tower can select air enemies as targets. Legacy towers default to true. */
+    val canTargetAir: Boolean = true,
+    /** Whether this tower can select ground enemies as targets. Legacy towers default to true. */
+    val canTargetGround: Boolean = true,
     /** Optional structure health used when an enemy pack enables structure attacks. */
     val maxHealth: Int = 10,
 ) : ContentDefinition {
     init {
         require(maxHealth > 0) { "Tower max health must be positive." }
+        require(canTargetAir || canTargetGround) { "A tower must target air or ground enemies." }
     }
 }
 
@@ -161,6 +167,8 @@ data class EnemyContent(
     val rewardResource: String,
     val rewardAmount: Int,
     val coreDamage: Int,
+    /** Air enemies route through terrain and occupied tiles; ground is the legacy default. */
+    val movementMode: MovementMode = MovementMode.GROUND,
     /** When true, a blocked enemy attacks an adjacent live tower or building. */
     val attacksStructures: Boolean = false,
     val assetRef: VisualAssetRef? = null,

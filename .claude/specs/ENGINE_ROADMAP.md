@@ -7,7 +7,7 @@ two or more games outranks single-game gaps of the same severity.
 Updated by: the `/me-spec` backlog bridge (new gaps / new demand) and `/me`
 close-out (status changes).
 
-Last updated: 2026-08-03 (ENG-035 close-out)
+Last updated: 2026-08-03 (ENG-025 close-out)
 
 ## Capabilities
 
@@ -34,7 +34,7 @@ Last updated: 2026-08-03 (ENG-035 close-out)
 | Splash damage + shot events | ENG-009 | mytd, vision:td, vision:mindustry-like | 3 | **done** (2026-07-28; stable entity-id-ordered Manhattan AoE, integer per-ring falloff, and transient immutable source/target/tick shot-hit events; save v8 and replay hashes unchanged) |
 | Status effects framework | ENG-010 | mytd, vision:td, vision:mindustry-like | 3 | **done** (2026-08-01; content-defined slow/DoT, deterministic lifecycle, movement/damage modifiers, save v9 migration, immutable snapshot tags, and stable slow replay coverage) |
 | Enemy armor + damage types | ENG-011 | vision:td, vision:mindustry-like | 2 | **done** (2026-08-02; Option A typed damage content, 0..100 percentage resistances, bidirectional validation, deterministic Long/floor formula, direct/splash runtime, effective-DPS matrix, resist replay hash, and `SAVE_VERSION=11` preserved) |
-| Flying enemies | ENG-025 | vision:td | 1 | backlog |
+| Flying enemies | ENG-025 | vision:td | 1 | **done** (2026-08-03; ground/air movement modes, blocker-ignoring air routes, tower capability filters, air-coverage balance warning, v21 save migration, mixed-wave replay/leak coverage) |
 | Boss/elite enemies + wave modifiers | ENG-012 | vision:td | 1 | **done** (2026-08-02; data-defined elite/boss scaling, indexed wave modifiers, deterministic effective spawn state, boss snapshot marker, save v11 migration, replay/save/balance coverage) |
 | Tower sell/refund | ENG-013 | mytd, vision:td | 2 | **done** (2026-07-18; required validated `sellRefundRatio`, deterministic cumulative per-resource floor refund, atomic capacity rejection, occupancy/metrics cleanup, same-tick goal-field rebuild, and pending-sell save coverage; `SAVE_VERSION` remains 6) |
 | Game speed control (presentation-side) | ENG-015 | mytd, vision:td, vision:rimworld-like | 3 | **done** (2026-07-21; Android-local 0x/1x/2x/4x pacing and HUD controls preserve fixed-tick simulation, per-tick trajectory parity, save/replay boundaries, and all verifier boundary checks; device/instrumentation and FrameMetrics/JankStats remain pending) |
@@ -116,13 +116,14 @@ Last updated: 2026-08-03 (ENG-035 close-out)
    -> ENG-012 (done 2026-08-02) -> ENG-007 (done 2026-08-02) -> ENG-018 (done 2026-08-02)
    -> ENG-011 (done 2026-08-02) -> ENG-019 (done 2026-08-02) -> ENG-001 (done 2026-08-02)
    -> ENG-003 (done 2026-08-02) -> ENG-031 (done 2026-08-02) -> ENG-004 (done 2026-08-02)
-   -> ENG-032 (done 2026-08-02) -> ENG-033 (done 2026-08-03) -> ENG-017 (done 2026-08-03).
-   ENG-001, ENG-003, ENG-031, ENG-004, ENG-032, ENG-033, and ENG-017 are complete. MySD TD evidence is
+   -> ENG-032 (done 2026-08-02) -> ENG-033 (done 2026-08-03) -> ENG-017 (done 2026-08-03)
+   -> ENG-025 (done 2026-08-03).
+   ENG-001, ENG-003, ENG-031, ENG-004, ENG-032, ENG-033, ENG-017, and ENG-025 are complete. MySD TD evidence is
    not used as colony evidence.
 4. DX-008 is done: use its hybrid-format ADR for ENG-017/ENG-028 schema work. DX-002, DX-006,
    DX-005, and PROC-006 are complete (2026-08-03). Post-DX-006 recommendation: review the
    remaining accepted backlog and assign owner, blocked_by, and start gates before selecting another
-   card; ENG-036 and PROC-015 remain explicitly human-owned.
+   card; ENG-036 and PROC-015 remain explicitly human-owned. ENG-025 is now closed.
 5. MySD foundation: PROC-002 / ADR-0004 is done. MySD Gate 1/relaxed Gate 2 are accepted for the
    TD reference bundle, but no colony demand is inferred from that bundle. ENG-033 is unlocked by
    its separate authored scope; future MySD demand still bridges only through PROC-015 semantics.

@@ -11,6 +11,7 @@ import java.nio.file.Files
 import java.nio.file.Path
 import java.math.BigDecimal
 import dev.myengine.core.GameplayEventType
+import dev.myengine.core.MovementMode
 import dev.myengine.core.command.TargetingMode
 import java.util.ArrayDeque
 import java.util.Properties
@@ -200,8 +201,14 @@ object ContentPackLoader {
             displayKey = fields.required(file, id, "displayKey", errors) ?: return null,
         )
 
-    private fun parseTower(id: String, fields: Map<String, String>, errors: MutableList<ContentValidationError>, file: String): TowerContent? =
-        TowerContent(
+    private fun parseTower(id: String, fields: Map<String, String>, errors: MutableList<ContentValidationError>, file: String): TowerContent? {
+        val canTargetAir = fields.optionalBool(file, id, "canTargetAir", errors) ?: true
+        val canTargetGround = fields.optionalBool(file, id, "canTargetGround", errors) ?: true
+        if (!canTargetAir && !canTargetGround) {
+            errors += ContentValidationError(file, id, "canTargetAir", "A tower must target air or ground enemies.")
+            return null
+        }
+        return TowerContent(
             id = id,
             displayKey = fields.required(file, id, "displayKey", errors) ?: return null,
             range = fields.requiredPositiveInt(file, id, "range", errors) ?: return null,
@@ -223,8 +230,11 @@ object ContentPackLoader {
                 } else value
             },
             damageTypeId = fields.optionalNonBlank(file, id, "damageTypeId", errors),
+            canTargetAir = canTargetAir,
+            canTargetGround = canTargetGround,
             maxHealth = fields.optionalPositiveInt(file, id, "maxHealth", errors) ?: 10,
         )
+    }
 
     private fun parseTowerUpgradeTiers(
         id: String,
@@ -287,6 +297,12 @@ object ContentPackLoader {
             rewardResource = fields.required(file, id, "rewardResource", errors) ?: return null,
             rewardAmount = fields.requiredNonNegativeInt(file, id, "rewardAmount", errors) ?: return null,
             coreDamage = fields.requiredPositiveInt(file, id, "coreDamage", errors) ?: return null,
+            movementMode = fields.optionalNonBlank(file, id, "movementMode", errors)?.let { value ->
+                MovementMode.fromId(value) ?: run {
+                    errors += ContentValidationError(file, id, "movementMode", "Expected ground or air.")
+                    null
+                }
+            } ?: MovementMode.GROUND,
             attacksStructures = fields.optionalBool(file, id, "attacksStructures", errors) ?: false,
             assetRef = parseVisualAssetRef(id, fields, errors, file),
             isElite = isElite,

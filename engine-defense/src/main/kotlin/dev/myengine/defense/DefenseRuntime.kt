@@ -15,6 +15,7 @@ import dev.myengine.content.StatusEffectStackingRule
 import dev.myengine.content.TowerContent
 import dev.myengine.content.WaveContent
 import dev.myengine.core.Tick
+import dev.myengine.core.MovementMode
 import dev.myengine.core.SeededRandom
 import dev.myengine.core.CombatEvents
 import dev.myengine.core.GameplayEvent
@@ -158,6 +159,7 @@ class DefenseRuntime(private val pathfinder: GridPathfinder = GridPathfinder()) 
         eventSink: MutableList<GameplayEvent>? = null,
         spawnRoutes: Map<String, TilePosition> = emptyMap(),
         random: SeededRandom? = null,
+        airGoalField: GoalField? = null,
     ): DefenseState {
         var nextState = state
         val dueWaves = registry.waves.values
@@ -202,6 +204,7 @@ class DefenseRuntime(private val pathfinder: GridPathfinder = GridPathfinder()) 
                     tick = tick,
                     eventSink = eventSink,
                     spawnRoutes = spawnRoutes,
+                    airGoalField = airGoalField,
                 )
             }
         return nextState
@@ -224,6 +227,7 @@ class DefenseRuntime(private val pathfinder: GridPathfinder = GridPathfinder()) 
         tick: Tick = Tick(0),
         eventSink: MutableList<GameplayEvent>? = null,
         spawnRoutes: Map<String, TilePosition> = emptyMap(),
+        airGoalField: GoalField? = null,
     ): DefenseState {
         if (wave.id in state.spawnedWaveIds) return state
         var nextState = state
@@ -243,6 +247,7 @@ class DefenseRuntime(private val pathfinder: GridPathfinder = GridPathfinder()) 
                         spawn = route,
                         core = core,
                         goalField = goalField,
+                        airGoalField = airGoalField,
                     )
                     enemyOrdinal += 1
                 }
@@ -385,6 +390,7 @@ class DefenseRuntime(private val pathfinder: GridPathfinder = GridPathfinder()) 
         entities: EntityStore,
         goalField: GoalField? = null,
         tick: Tick = Tick(0),
+        airGoalField: GoalField? = null,
     ): TowerUpdateResult {
         var metrics = DefenseMetrics()
         val rewards = mutableMapOf<String, Int>()
@@ -400,6 +406,11 @@ class DefenseRuntime(private val pathfinder: GridPathfinder = GridPathfinder()) 
         entities.byTag("tower").sortedBy { it.id.value }.forEach { towerEntity ->
             val towerComponent = towerEntity.tower ?: return@forEach
             val attack = towerEntity.attack ?: return@forEach
+            val towerContent = registry.requireTower(towerComponent.towerId)
+            val canTargetMovement: (MovementMode) -> Boolean = { movementMode ->
+                (movementMode == MovementMode.AIR && towerContent.canTargetAir) ||
+                    (movementMode == MovementMode.GROUND && towerContent.canTargetGround)
+            }
             if (towerComponent.cooldownRemaining > 0) {
                 entities.update(towerEntity.id) { it.copy(tower = towerComponent.copy(cooldownRemaining = towerComponent.cooldownRemaining - 1)) }
                 return@forEach
@@ -414,6 +425,8 @@ class DefenseRuntime(private val pathfinder: GridPathfinder = GridPathfinder()) 
                     attack.range,
                     enemyIndex.query(towerPosition, attack.range, entities),
                     goalField,
+                    airGoalField,
+                    canTarget = canTargetMovement,
                 )
             } else {
                 // Compatibility for direct defense-module callers predating goal-field routing.
@@ -421,7 +434,8 @@ class DefenseRuntime(private val pathfinder: GridPathfinder = GridPathfinder()) 
                     .filter { enemy ->
                         val position = enemy.position?.tile ?: return@filter false
                         val health = enemy.health ?: return@filter false
-                        health.isAlive() && towerPosition.manhattanDistance(position) <= attack.range
+                        val movementMode = enemy.enemy?.movementMode ?: MovementMode.GROUND
+                        health.isAlive() && towerPosition.manhattanDistance(position) <= attack.range && canTargetMovement(movementMode)
                     }
                     .sortedWith(compareBy<Entity> { towerPosition.manhattanDistance(it.position!!.tile) }.thenBy { it.id.value })
                     .firstOrNull()
@@ -437,13 +451,15 @@ class DefenseRuntime(private val pathfinder: GridPathfinder = GridPathfinder()) 
                 contentId = towerComponent.towerId,
             )
             val targetPosition = target.position?.tile ?: return@forEach
-            val towerContent = registry.requireTower(towerComponent.towerId)
             val targets = splashTargets(
                 primaryTarget = target,
                 primaryPosition = targetPosition,
                 splashRadius = towerContent.splashRadius,
                 enemyIndex = enemyIndex,
                 entities = entities,
+                canTarget = { target ->
+                    canTargetMovement(target.enemy?.movementMode ?: MovementMode.GROUND)
+                },
             )
             targets.forEach { damagedTarget ->
                 val health = damagedTarget.health ?: return@forEach
@@ -530,11 +546,13 @@ class DefenseRuntime(private val pathfinder: GridPathfinder = GridPathfinder()) 
         splashRadius: Int?,
         enemyIndex: GridSpatialIndex,
         entities: EntityStore,
+        canTarget: (Entity) -> Boolean = { true },
     ): List<Entity> = when (splashRadius) {
         null -> listOf(primaryTarget)
         else -> enemyIndex.query(primaryPosition, splashRadius, entities)
             .asSequence()
             .filter { enemy ->
+                if (!canTarget(enemy)) return@filter false
                 val position = enemy.position?.tile
                 val health = enemy.health
                 position != null && health?.isAlive() == true && primaryPosition.manhattanDistance(position) <= splashRadius
@@ -555,14 +573,17 @@ class DefenseRuntime(private val pathfinder: GridPathfinder = GridPathfinder()) 
         entities: EntityStore,
         goalField: GoalField? = null,
         world: TileWorld? = null,
+        airGoalField: GoalField? = null,
         onStructureDestroyed: () -> Unit = {},
     ): DefenseState {
         var nextState = state
         entities.byTag("enemy").sortedBy { it.id.value }.forEach { enemy ->
             val movement = enemy.movement ?: return@forEach
             val position = enemy.position?.tile ?: return@forEach
+            val movementMode = enemy.enemy?.movementMode ?: MovementMode.GROUND
+            val routeField = if (movementMode == MovementMode.AIR) airGoalField else goalField
             val speed = effectiveMovementSpeed(registry, enemy)
-            val reachesCore = if (goalField != null) goalField.isGoal(position) else {
+            val reachesCore = if (routeField != null) routeField.isGoal(position) else {
                 val nextIndex = movement.pathIndex + speed
                 nextIndex >= movement.path.lastIndex
             }
@@ -572,7 +593,7 @@ class DefenseRuntime(private val pathfinder: GridPathfinder = GridPathfinder()) 
                 entities.markRemove(enemy.id)
                 nextState = nextState.copy(coreHealth = (nextState.coreHealth - damage).coerceAtLeast(0))
                     .record(DefenseMetrics(enemiesLeaked = 1, coreDamage = damage))
-            } else if (goalField != null && goalField.nextStep(position) == null && attacksStructures(registry, enemy)) {
+            } else if (routeField != null && routeField.nextStep(position) == null && attacksStructures(registry, enemy)) {
                 attackBlockingStructure(
                     enemy = enemy,
                     position = position,
@@ -581,10 +602,10 @@ class DefenseRuntime(private val pathfinder: GridPathfinder = GridPathfinder()) 
                     world = world,
                     onStructureDestroyed = onStructureDestroyed,
                 )
-            } else if (speed > 0 && goalField != null) {
+            } else if (speed > 0 && routeField != null) {
                 var nextPosition = position
                 repeat(speed) {
-                    nextPosition = goalField.nextStep(nextPosition) ?: return@repeat
+                    nextPosition = routeField.nextStep(nextPosition) ?: return@repeat
                 }
                 if (nextPosition != position) {
                     entities.update(enemy.id) { it.copy(position = PositionComponent(nextPosition)) }
@@ -669,8 +690,14 @@ class DefenseRuntime(private val pathfinder: GridPathfinder = GridPathfinder()) 
         spawn: TilePosition,
         core: TilePosition,
         goalField: GoalField?,
+        airGoalField: GoalField?,
     ) {
-        val movement = if (goalField != null) {
+        val routeField = if (enemy.movementMode == MovementMode.AIR) {
+            airGoalField ?: GoalField.buildIgnoringBlockers(world, core)
+        } else {
+            goalField
+        }
+        val movement = if (routeField != null) {
             MovementComponent()
         } else {
             val path = when (val result = pathfinder.find(world, PathRequest(spawn, core))) {
@@ -690,10 +717,11 @@ class DefenseRuntime(private val pathfinder: GridPathfinder = GridPathfinder()) 
             coreDamage = enemy.coreDamage,
             rewardResource = enemy.rewardResource,
             rewardAmount = stats.rewardAmount,
+            movementMode = enemy.movementMode,
             isElite = enemy.isElite,
             isBoss = enemy.isBoss,
         ).takeIf {
-            enemy.isElite || enemy.isBoss ||
+            enemy.isElite || enemy.isBoss || enemy.movementMode != MovementMode.GROUND ||
                 enemy.healthScalePercent != 100 || enemy.speedScalePercent != 100 ||
                 enemy.rewardScalePercent != 100 || waveModifier != null ||
                 waveHealthPercent != 100L || waveRewardPercent != 100L
@@ -730,6 +758,7 @@ private fun EnemyContent.toEnemyComponent(): EnemyComponent = EnemyComponent(
     coreDamage = coreDamage,
     rewardResource = rewardResource,
     rewardAmount = rewardAmount,
+    movementMode = movementMode,
     isElite = isElite,
     isBoss = isBoss,
 )

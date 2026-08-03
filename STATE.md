@@ -1,8 +1,8 @@
 # MyEngine State
 
-Last updated: 2026-08-03 (ENG-023 close-out)
-Active phase: Phase 00-14 complete; Phase 15 sequencing adopted; Signal Garden SG-001..005 complete; MyTD MTD-001..005 complete; DX-002, DX-005, DX-006, DX-008, ENG-001, ENG-002, ENG-003, ENG-004, ENG-005, ENG-006, ENG-007, ENG-008, ENG-009, ENG-010, ENG-011, ENG-012, ENG-013, ENG-014, ENG-015, ENG-016, ENG-017, ENG-018, ENG-019, ENG-020, ENG-021, ENG-023, ENG-026, ENG-027, ENG-028, ENG-029, ENG-030, ENG-031, ENG-032, ENG-033, ENG-034, ENG-035, PROC-002, PROC-003, PROC-006, PROC-007, and PROC-013 complete; pipeline at v0.2.0; next exact action is review of the remaining accepted backlog
-Owner of last update: Codex (2026-08-03: ENG-023 close-out)
+Last updated: 2026-08-03 (ENG-025 close-out)
+Active phase: Phase 00-14 complete; Phase 15 sequencing adopted; Signal Garden SG-001..005 complete; MyTD MTD-001..005 complete; DX-002, DX-005, DX-006, DX-008, ENG-001, ENG-002, ENG-003, ENG-004, ENG-005, ENG-006, ENG-007, ENG-008, ENG-009, ENG-010, ENG-011, ENG-012, ENG-013, ENG-014, ENG-015, ENG-016, ENG-017, ENG-018, ENG-019, ENG-020, ENG-021, ENG-023, ENG-025, ENG-026, ENG-027, ENG-028, ENG-029, ENG-030, ENG-031, ENG-032, ENG-033, ENG-034, ENG-035, PROC-002, PROC-003, PROC-006, PROC-007, and PROC-013 complete; pipeline at v0.2.0; next exact action is review of the remaining accepted backlog
+Owner of last update: Codex (2026-08-03: ENG-025 close-out)
 
 ## Current Status
 
@@ -68,6 +68,24 @@ Owner of last update: Codex (2026-08-03: ENG-023 close-out)
   content validation, schema drift, replay (`e4892bcc18f9d8dc`, `a763da4ac32b15b4`,
   `3f02607020d48668`), save-compat, benchmark (100 belts x 1000 ticks), selfcheck, required
   headless inspect, Android `assembleDebug`, and `git diff --check` passed.
+
+## ENG-025 Close-out
+
+- DONE: Added `MovementMode` content/runtime state with ground compatibility defaults and air
+  routing through a blocker-ignoring GoalField. Towers now validate and filter air/ground targeting,
+  including splash candidates; balance reports warn when air waves have no air-capable tower.
+  `SandboxSaveCodec` is v21 with v1-v20 ground migration and v21 movement-mode persistence.
+- DECISIONS: Air enemies use the same deterministic goal-field movement contract while ignoring
+  blockers; ground enemies retain existing routing and blocked-structure behavior. No Android
+  production, renderer, or ADR changes were required.
+- NEXT: Review the remaining accepted backlog; ENG-036 and PROC-015 remain human-owned start-gated
+  work.
+- BLOCKERS: No implementation blocker. Conditional roster workers were unavailable in this session,
+  so review roles were performed locally. The known untracked `.ai/retro/retro-2026-08-03.md`
+  baseline remains excluded; no device/emulator or visual-golden proof is claimed.
+- VERIFICATION: Focused ENG-025 tests, full `gradlew test`, `gradlew projects`, content validation,
+  replay, save-compat, benchmark, selfcheck, required headless inspect, Android `assembleDebug`,
+  and `git diff --check` passed.
 
 ## ENG-035 Close-out
 

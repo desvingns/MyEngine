@@ -272,6 +272,32 @@ class DevtoolReportsTest {
     }
 
     @Test
+    fun balanceReportWarnsWhenAirWaveHasNoAirCapableTower() {
+        val changedRoot = Files.createTempDirectory("myengine-balance-air")
+        copyFlatPack(SandboxGame.contentRoot(), changedRoot)
+        Files.writeString(
+            changedRoot.resolve("enemies.properties"),
+            Files.readString(changedRoot.resolve("enemies.properties")) + "\ndrift.movementMode=air\n",
+        )
+        Files.writeString(
+            changedRoot.resolve("towers.properties"),
+            Files.readString(changedRoot.resolve("towers.properties")) + "\npulse.canTargetAir=false\n",
+        )
+        Files.writeString(
+            changedRoot.resolve("waves.properties"),
+            Files.readString(changedRoot.resolve("waves.properties")) + "\nair-wave.startTick=1\nair-wave.spawns=drift:1\n",
+        )
+
+        val report = DevtoolReports.balanceDeltaReport(SandboxGame.contentRoot(), changedRoot)
+
+        assertTrue(report.valid, report.toJson())
+        assertEquals(1, report.changed!!.airEnemyTypes)
+        assertTrue(report.changed.airWaveEnemies > 0, report.toJson())
+        assertEquals(0, report.changed.airCapableTowerTypes)
+        assertTrue(report.warnings.any { it.metric == "air_targeting_coverage" }, report.toJson())
+    }
+
+    @Test
     fun balanceDeltaReportJsonParsesAsStructuredObject() {
         val json = DevtoolReports.balanceDeltaReport(
             baselineRoot = SandboxGame.contentRoot(),
