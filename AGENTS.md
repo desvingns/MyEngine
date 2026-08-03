@@ -18,6 +18,11 @@ Read in this order:
 Use `rg`/`rg --files` for repository search. If a file already exists, read it before editing it.
 Do not overwrite user or agent changes you did not make.
 
+For the default headless debugging step, run `.\gradlew.bat --quiet :engine-devtools:run --args "inspect sandbox default games/sandbox/content/sandbox 35"`.
+The generic form is `inspect <factory> <scenario> <pack> <ticks> [script] [seed]`.
+The optional inspection command script uses one command per line in the form
+`tick:build_tower:towerId:x:y`; the legacy `inspect <ticks> [pack] [script] [seed]` form remains accepted.
+
 ## What This Repo Is
 
 `MyEngine` is an Android-first reusable 2D simulation/game framework for future games in colony

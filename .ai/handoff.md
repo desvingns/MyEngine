@@ -1,7 +1,37 @@
 # MyEngine Handoff
 
-Last updated: 2026-08-03 (ENG-017 close-out; next backlog review)
-Owner: Codex / me-docs
+Last updated: 2026-08-03 (DX-002 close-out; next backlog review)
+Owner: Codex
+
+## DX-002 close-out
+
+### DONE
+
+- Added the provider-based `HeadlessStateInspector` and `HeadlessScenarioFactory` SPI, a
+  `ServiceLoader` sandbox adapter, deterministic ASCII + JSON state output, optional bounded
+  command scripts, CLI aliases, and the AGENTS default debugging reference.
+
+### DECISIONS
+
+- Game adapters own command parsing and authoritative state projection; the generic inspector only
+  coordinates factory selection, script delivery, fixed ticks, and serialization. No save/content
+  schema, `SAVE_VERSION`, Android production code, plugin contract, or ADR changed.
+
+### NEXT
+
+- Review remaining accepted backlog; DX-006 is the next high-leverage DX candidate after DX-002.
+
+### BLOCKERS
+
+- No implementation blocker. The verifier worker timed out after bounded waiting, so the local
+  boundary review is the recorded fallback. No device/emulator, visual-golden, or frame-budget proof
+  is claimed beyond Android `assembleDebug`.
+
+### VERIFICATION
+
+- Focused inspector tests and confirmed full `gradlew test` passed. `projects`, content validation,
+  replay, save-compat, benchmark, selfcheck, Android `assembleDebug`, and `git diff --check` passed.
+- Initial full-test invocation had a transient PowerShell `RemoteException`; confirmation rerun passed.
 
 ## DONE
 

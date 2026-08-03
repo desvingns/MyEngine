@@ -558,3 +558,18 @@ by: claude
   Android assembleDebug, focused construction tests, and `git diff --check` passed.
 - No plugin version bump; no ADR. Reviewer timeouts are recorded as a non-blocking infrastructure
   note in the close-out docs and telemetry.
+
+## 2026-08-03 - MyEngine DX-002 feature run
+
+- Owner: Codex
+- Change type: normal feature run; no agent/skill/adapter/pipeline contract change.
+- Summary: Added the provider-based headless state inspector, sandbox ServiceLoader adapter,
+  deterministic ASCII/JSON state projection, optional command scripts, CLI aliases, and default
+  AGENTS debugging reference. No save version or Android production change.
+- Pipeline: selfcheck passed; scout confirmed DX-002 as the next accepted high-leverage card;
+  architect/developer/tester/runner contracts were used. Verifier timed out after bounded waiting;
+  local boundary review completed. Runner had one transient full-test invocation failure, then a
+  confirmation pass; no malformed JSON was returned.
+- Verification: focused inspector tests, confirmed full tests/projects/content validation/replay/
+  save-compat/benchmark/selfcheck, Android assembleDebug, and diff-check passed.
+- No plugin version bump; no ADR.

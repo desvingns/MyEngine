@@ -37,6 +37,26 @@ fun main(args: Array<String>) {
             val seed = args.getOrNull(3)?.toLongOrNull() ?: 7L
             DevtoolReports.endlessWaveScalingReport(root, waveCount, seed).toJson()
         }
+        "inspect", "state-inspect", "headless-inspect" -> {
+            val shortForm = args.size == 1 || args.getOrNull(1)?.toIntOrNull() != null
+            val factoryId = if (shortForm) "sandbox" else args[1]
+            val scenarioId = if (shortForm) "default" else args[2]
+            val packArg = if (shortForm) args.getOrNull(2) else args.getOrNull(3)
+            val packRoot = packArg?.let { DevtoolReports.repoRoot().resolve(it) }
+                ?: dev.myengine.games.sandbox.SandboxGame.contentRoot()
+            val ticks = if (shortForm) {
+                args.getOrNull(1)?.toIntOrNull() ?: 35
+            } else {
+                args.getOrNull(4)?.let { value ->
+                    value.toIntOrNull() ?: error("Invalid inspection tick count '$value'.")
+                } ?: 35
+            }
+            val scriptArg = if (shortForm) args.getOrNull(3) else args.getOrNull(5)
+            val scriptPath = scriptArg?.let { DevtoolReports.repoRoot().resolve(it) }
+            val seedArg = if (shortForm) args.getOrNull(4) else args.getOrNull(6)
+            val seed = seedArg?.toLongOrNull() ?: 7L
+            DevtoolReports.headlessStateInspect(factoryId, scenarioId, packRoot, ticks, scriptPath, seed).toJson()
+        }
         "replay-inspect" -> DevtoolReports.replayInspect()
         else -> buildJson("error" to "unknown_command", "command" to command)
     }

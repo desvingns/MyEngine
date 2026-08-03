@@ -1,10 +1,15 @@
 # MyEngine State
 
-Last updated: 2026-08-03 (ENG-017 close-out)
-Active phase: Phase 00-14 complete; Phase 15 sequencing adopted; Signal Garden SG-001..005 complete; MyTD MTD-001..005 complete; DX-008, ENG-001, ENG-002, ENG-003, ENG-004, ENG-005, ENG-006, ENG-007, ENG-008, ENG-009, ENG-010, ENG-011, ENG-012, ENG-013, ENG-014, ENG-015, ENG-016, ENG-017, ENG-018, ENG-019, ENG-020, ENG-021, ENG-026, ENG-027, ENG-028, ENG-029, ENG-030, ENG-031, ENG-032, ENG-033, PROC-002, PROC-003, PROC-007, and PROC-013 complete; pipeline at v0.2.0; next exact action is review of the remaining accepted backlog
-Owner of last update: Codex / me-docs (2026-08-03: ENG-017 documentation close-out)
+Last updated: 2026-08-03 (DX-002 close-out)
+Active phase: Phase 00-14 complete; Phase 15 sequencing adopted; Signal Garden SG-001..005 complete; MyTD MTD-001..005 complete; DX-002, DX-008, ENG-001, ENG-002, ENG-003, ENG-004, ENG-005, ENG-006, ENG-007, ENG-008, ENG-009, ENG-010, ENG-011, ENG-012, ENG-013, ENG-014, ENG-015, ENG-016, ENG-017, ENG-018, ENG-019, ENG-020, ENG-021, ENG-026, ENG-027, ENG-028, ENG-029, ENG-030, ENG-031, ENG-032, ENG-033, PROC-002, PROC-003, PROC-007, and PROC-013 complete; pipeline at v0.2.0; next exact action is review of the remaining accepted backlog
+Owner of last update: Codex (2026-08-03: DX-002 close-out)
 
 ## Current Status
+
+- DX-002 is complete: `engine-devtools` now exposes a provider-based headless inspector with a
+  deterministic ASCII frame and JSON state dump for entities, inventories, defense metrics, and
+  stable hash. The sandbox adapter is registered through `ServiceLoader`; no save version or
+  Android production boundary changed.
 
 - ENG-006 is complete: validated content parameters produce a deterministic seeded map with bounded
   route-safe retries, a deterministic corridor fallback, a seed-preserving sandbox session, and an
@@ -19,6 +24,21 @@ Owner of last update: Codex / me-docs (2026-08-03: ENG-017 documentation close-o
   unlock references; deterministic atomic research spends resources and gates tower/building/recipe
   availability; immutable tree state is exposed in snapshots; `SandboxSaveCodec` v18 persists
   researched ids and pending research commands, with v1-v17 migration.
+
+## DX-002 Close-out
+
+- DONE: Added `HeadlessScenarioFactory`/`HeadlessStateInspector`, the sandbox adapter and service
+  registration, CLI aliases, optional bounded command scripts, and the default AGENTS debugging
+  reference. Output excludes wall-clock timing and keeps stable ordering for byte determinism.
+- DECISIONS: Game adapters own command parsing and authoritative state projection; the inspector is
+  read-only and generic. No save/content schema/API version or ADR was needed.
+- NEXT: Review the remaining accepted backlog; DX-006 is the next high-leverage DX candidate after
+  DX-002, subject to the normal `/me --feature --next` selection.
+- BLOCKERS: No implementation blocker. Verifier worker timed out after a bounded wait; local
+  boundary review found no blocker. No device/emulator, visual-golden, or frame-budget claim is made.
+- VERIFICATION: Focused inspector tests, confirmed full Gradle tests, projects, content validation,
+  replay, save-compat, benchmark, selfcheck, Android `assembleDebug`, and `git diff --check` passed.
+  Initial full-test invocation had a transient PowerShell `RemoteException`; the confirmation run passed.
 
 ## ENG-033 Close-out
 

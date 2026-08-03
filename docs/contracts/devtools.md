@@ -1,6 +1,6 @@
 # engine-devtools Contract
 
-Status: Planned draft  
+Status: Active draft
 Owner: development tools
 
 ## Responsibilities
@@ -27,10 +27,18 @@ Owner: development tools
 - `ScenarioDefinition`
 - `ReplayReport`
 - `ProceduralMapReport` for deterministic seeded map metadata and ASCII terrain output.
+- `HeadlessStateInspector` and `HeadlessScenarioFactory` for game-owned, bounded inspection.
 - content validation CLI boundary.
 
 The `procedural-map [seed]` command (also available as `map-generate`) reports a generated sandbox
 map without mutating authoritative runtime state.
+
+The `inspect` command (aliases `state-inspect` and `headless-inspect`) runs a registered factory to
+tick N and emits one deterministic JSON object containing an ASCII frame and a state dump with
+entities, inventories, defense metrics, and stable hash. The short form is `inspect 35`; the generic
+form is `inspect <factory> <scenario> <pack> <ticks> [script] [seed]`. Registered adapters own
+command-script parsing and authoritative state access; the inspector excludes wall-clock fields so
+identical arguments produce byte-identical output.
 
 ## Test Gates
 

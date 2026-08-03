@@ -59,7 +59,7 @@ Last updated: 2026-08-03 (ENG-017 close-out)
 | Resource extractor building | ENG-035 | vision:mindustry-like, vision:rimworld-like | 2 | backlog |
 | Conveyor transport MVP | ENG-023 | vision:mindustry-like | 1 | backlog |
 | New-game scaffolder script | DX-001 | agent pipeline | - | backlog |
-| Headless state inspector (agent eyes) | DX-002 | agent pipeline | - | backlog |
+| Headless state inspector (agent eyes) | DX-002 | agent pipeline | - | **done** (2026-08-03; provider-based deterministic ASCII/JSON inspector, sandbox ServiceLoader adapter, optional command scripts, focused/full gates) |
 | Replay divergence bisector | DX-003 | agent pipeline | - | backlog |
 | Desktop content hot-reload | DX-004 | agent pipeline | - | backlog |
 | Schema-docs drift gate | DX-005 | agent pipeline | - | backlog |
@@ -120,7 +120,7 @@ Last updated: 2026-08-03 (ENG-017 close-out)
    ENG-001, ENG-003, ENG-031, ENG-004, ENG-032, ENG-033, and ENG-017 are complete. MySD TD evidence is
    not used as colony evidence.
 4. DX-008 is done: use its hybrid-format ADR for ENG-017/ENG-028 schema work. Other high-leverage
-   pipeline cards remain DX-002, DX-006, and DX-005.
+   pipeline cards remain DX-006 and DX-005; DX-002 is complete (2026-08-03).
 5. MySD foundation: PROC-002 / ADR-0004 is done. MySD Gate 1/relaxed Gate 2 are accepted for the
    TD reference bundle, but no colony demand is inferred from that bundle. ENG-033 is unlocked by
    its separate authored scope; future MySD demand still bridges only through PROC-015 semantics.

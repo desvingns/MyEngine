@@ -485,6 +485,23 @@ object DevtoolReports {
             "\"spatial_index\":${spatialIndexBenchmark().toJson()}}"
     }
 
+    /** Runs a registered game adapter to a fixed tick and emits ASCII plus a stable state dump. */
+    fun headlessStateInspect(
+        factoryId: String = "sandbox",
+        scenarioId: String = "default",
+        packRoot: Path = SandboxGame.contentRoot(),
+        ticks: Int = 35,
+        scriptPath: Path? = null,
+        seed: Long = 7L,
+    ): HeadlessInspectionReport = HeadlessStateInspector().inspect(
+        factoryId = factoryId,
+        scenarioId = scenarioId,
+        packRoot = packRoot,
+        ticks = ticks,
+        commandScript = scriptPath?.let(Files::readAllLines).orEmpty(),
+        seed = seed,
+    )
+
     /** Deterministic one-tick workload with at least 1,000 concurrent enemies. */
     fun spatialIndexBenchmark(
         enemyCount: Int = 1_024,
@@ -871,7 +888,7 @@ private data class TowerBalanceProfile(
     val damageTypeId: String?,
 )
 
-private data class RawJson(val value: String)
+internal data class RawJson(val value: String)
 
 private fun saturatedAdd(left: Long, right: Long): Long =
     if (right > 0L && left > Long.MAX_VALUE - right) Long.MAX_VALUE else left + right

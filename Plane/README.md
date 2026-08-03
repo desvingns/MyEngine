@@ -80,6 +80,7 @@
 | [x] | ENG-032 Construction system | [ENG-032](../.claude/specs/done/ENG-032-construction-blueprints.md) | Non-blocking blueprints, deterministic sourceId-ordered construction hauling/retry, build jobs, source refunds on cancel, save v16 with v1-v15 migration | 2026-08-02 |
 | [x] | ENG-033 Colonist needs MVP | [ENG-033](../.claude/specs/done/ENG-033-colonist-needs-mvp.md) | Content-defined hunger/rest decay and thresholds, deterministic recovery jobs/arbitration, immutable HUD need bars, save v17 with v1-v16 migration, and 10k determinism coverage | 2026-08-03 |
 | [x] | ENG-017 Research/tech tree + unlock gating | [ENG-017](../.claude/specs/done/ENG-017-research-tech-tree.md) | Optional validated `tech-tree.json`, deterministic atomic research spending, tower/building/recipe gating, immutable tree snapshot, save v18/v1-v17 migration, and replay/save/content/full-gate verification | 2026-08-03 |
+| [x] | DX-002 Headless state inspector | [DX-002](../.claude/specs/done/DX-002-headless-state-inspector.md) | Provider-based deterministic ASCII/JSON inspection with entities, inventories, defense metrics, stable hash, optional scripts, and AGENTS default-debug reference | 2026-08-03 |
 | [x] | ENG-006 Seeded procedural map generation | [ENG-006](../.claude/specs/done/ENG-006-procgen-maps.md) | Bounded seeded generation from validated content parameters, guaranteed spawn-to-core connectivity, deterministic fallback, ASCII devtools report, and seed-preserving sandbox save/reload | 2026-08-03 |
 
 ## Глобальные инварианты
@@ -1573,3 +1574,17 @@
 - VERIFICATION: Focused content/research/gating/snapshot/replay/save tests plus full Gradle
   tests/projects, content validation, replay, save-compat, benchmark, selfcheck, Android
   `assembleDebug`, and `git diff --check` passed.
+
+### 2026-08-03 - DX-002 (headless state inspector)
+
+- Status: Done / accepted; no new phase was created.
+- Owner: Codex
+- DONE: Added provider-based `HeadlessStateInspector`/`HeadlessScenarioFactory`, the sandbox
+  ServiceLoader adapter, deterministic ASCII/JSON state output, optional command scripts, CLI
+  aliases, and the AGENTS default-debugging reference.
+- DECISIONS: Provider adapters own command parsing and authoritative state projection; inspector
+  output excludes wall-clock values. No save version, ADR, or plugin contract change.
+- VERIFICATION: Focused inspector tests and confirmed full tests/projects/content validation/replay/
+  save-compat/benchmark/selfcheck, Android `assembleDebug`, and `git diff --check` passed. The
+  verifier worker timed out; local boundary review found no blocker.
+- NEXT: Review remaining accepted backlog; DX-006 is the next high-leverage DX candidate.
