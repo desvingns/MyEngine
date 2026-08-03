@@ -11,6 +11,7 @@ Last updated: 2026-07-02
 - `StableHash`, `HashableState`
 - `TileWorld`, `TilePosition`, `WorldSize`
 - `ContentPackLoader`, `ContentRegistry`
+- `ProceduralMapParameters`, `ProceduralMapGenerator`, `GeneratedMap`
 - `EntityId`, `Entity`, `EntityStore`
 
 ## Experimental

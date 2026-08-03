@@ -7,6 +7,9 @@ import dev.myengine.content.EndlessWaveGenerator
 import dev.myengine.content.IncidentEffectDescriptor
 import dev.myengine.content.MapContent
 import dev.myengine.content.MapWinCondition
+import dev.myengine.content.GeneratedMap
+import dev.myengine.content.ProceduralMapGenerator
+import dev.myengine.content.ProceduralMapParameters
 import dev.myengine.content.TowerUpgradeTier
 import dev.myengine.content.VisualAssetRef
 import dev.myengine.content.WaveContent
@@ -2303,6 +2306,35 @@ object SandboxGame {
         require(result.isValid) { result.errors.joinToString("\n") }
         val registry = result.registry!!
         return difficultyId?.let(registry::resolveDifficulty) ?: registry
+    }
+
+    /** Generates a map from the selected content map without mutating the loaded registry. */
+    fun generateProceduralMap(
+        registry: ContentRegistry = loadRegistry(),
+        seed: Long = 7L,
+        wallDensityPercent: Int = 18,
+        maxAttempts: Int = 16,
+    ): GeneratedMap {
+        val template = registry.requireMap()
+        val parameters = ProceduralMapParameters.fromContentMap(
+            map = template,
+            tiles = registry.tiles,
+            wallDensityPercent = wallDensityPercent,
+            maxAttempts = maxAttempts,
+        )
+        return ProceduralMapGenerator.generate(seed, parameters)
+    }
+
+    /** Creates a sandbox runtime backed by a generated map; the existing save seed carries provenance. */
+    fun createProceduralRuntime(
+        registry: ContentRegistry = loadRegistry(),
+        seed: Long = 7L,
+        wallDensityPercent: Int = 18,
+        maxAttempts: Int = 16,
+    ): SandboxRuntime {
+        val generated = generateProceduralMap(registry, seed, wallDensityPercent, maxAttempts)
+        val generatedRegistry = registry.copy(maps = registry.maps + (generated.map.id to generated.map))
+        return createRuntime(generatedRegistry, mapId = generated.map.id, seed = seed)
     }
 
     fun createInitialState(

@@ -3,6 +3,18 @@
 Append-only log for changes to agent prompts, skills, adapters, workflow contracts, and pipeline
 rules. Project docs can change without an entry here unless they alter agent behavior.
 
+## 2026-08-03 - ENG-006 Seeded Procedural Map Generation
+
+- Owner: Codex
+- Change type: feature pipeline close-out
+- Changed: `engine-content`, `games/sandbox`, `engine-devtools`, content/devtools/API contracts, and
+  roadmap/handoff/state artifacts for ENG-006.
+- Summary: Used the me-dev feature pipeline and graphify fast-path tracing. Delegated scout/architect
+  workers timed out after bounded waits; local implementation preserved the existing content, runtime,
+  save, and replay boundaries. No agent, skill, plugin, or pipeline contract changed.
+- Verification: Focused tests plus full test/projects, content validation, replay, save-compat,
+  benchmark, Android assemble, selfcheck, and diff-check gates.
+
 ## 2026-08-03 - ENG-033 Authored Colony Scope Unblock
 
 - Owner: Codex

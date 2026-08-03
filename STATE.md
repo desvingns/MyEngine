@@ -1,10 +1,14 @@
 # MyEngine State
 
-Last updated: 2026-08-03 (ENG-033 close-out)
-Active phase: Phase 00-14 complete; Phase 15 sequencing adopted; Signal Garden SG-001..005 complete; MyTD MTD-001..005 complete; DX-008, ENG-001, ENG-002, ENG-003, ENG-004, ENG-005, ENG-007, ENG-008, ENG-009, ENG-010, ENG-011, ENG-012, ENG-013, ENG-014, ENG-015, ENG-016, ENG-018, ENG-019, ENG-020, ENG-021, ENG-026, ENG-027, ENG-028, ENG-029, ENG-030, ENG-031, ENG-032, ENG-033, PROC-002, PROC-003, PROC-007, and PROC-013 complete; pipeline at v0.2.0; next exact action is backlog review
-Owner of last update: Codex (2026-08-03: ENG-033 implementation and gate close-out)
+Last updated: 2026-08-03 (ENG-006 close-out)
+Active phase: Phase 00-14 complete; Phase 15 sequencing adopted; Signal Garden SG-001..005 complete; MyTD MTD-001..005 complete; DX-008, ENG-001, ENG-002, ENG-003, ENG-004, ENG-005, ENG-006, ENG-007, ENG-008, ENG-009, ENG-010, ENG-011, ENG-012, ENG-013, ENG-014, ENG-015, ENG-016, ENG-018, ENG-019, ENG-020, ENG-021, ENG-026, ENG-027, ENG-028, ENG-029, ENG-030, ENG-031, ENG-032, ENG-033, PROC-002, PROC-003, PROC-007, and PROC-013 complete; pipeline at v0.2.0; next exact action is review of the remaining accepted backlog
+Owner of last update: Codex (2026-08-03: ENG-006 implementation and gate close-out)
 
 ## Current Status
+
+- ENG-006 is complete: validated content parameters produce a deterministic seeded map with bounded
+  route-safe retries, a deterministic corridor fallback, a seed-preserving sandbox session, and an
+  ASCII devtools report. No save version bump was needed.
 
 - ENG-033 is complete: content-defined hunger/rest needs decay deterministically, threshold crossings
   enqueue typed recovery jobs with stable need-vs-work arbitration, need bars project through immutable
@@ -427,7 +431,8 @@ Owner of last update: Codex (2026-08-03: ENG-033 implementation and gate close-o
 
 ## Next Exact Action
 
-Run `/me --feature --next` for ENG-032 (construction blueprints). ENG-004 has no implementation blocker.
+ENG-006 is complete. Review the remaining accepted backlog and run `/me --feature --next` for the
+next selected candidate.
 
 ## Known Blockers
 

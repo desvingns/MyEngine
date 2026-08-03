@@ -49,7 +49,8 @@
    -> ENG-003 (done 2026-08-02) -> ENG-031 (done 2026-08-02) -> ENG-004 (done 2026-08-02)
    -> ENG-032 (done 2026-08-02) -> ENG-033 (done 2026-08-03); ENG-010, ENG-016, PROC-007, ENG-021,
    ENG-029, ENG-012, ENG-007, ENG-018, ENG-011, ENG-019, ENG-001, ENG-003, ENG-031, ENG-004,
-   ENG-032, and ENG-033 are closed.
+   ENG-032, ENG-033, and ENG-006 are closed; ENG-006 was selected from the remaining accepted
+   backlog after the colony slice.
 4. Hardening gaps из `docs/HARDENING_AUDIT.md` закрывать по одному, с тестами и обновлением handoff.
 
 Новые крупные фазы добавлять только после того, как backlog specs перестанут быть достаточно
@@ -78,6 +79,7 @@
 | [x] | ENG-004 First worker agent MVP (hauling) | [ENG-004](../.claude/specs/done/ENG-004-hauling-worker-mvp.md) | Data-defined worker speed/capacity, deterministic source reservations, source-to-stockpile carry/deposit, positioned producer outputs, stockpile contents, and save v15 with v1-v14 migration | 2026-08-02 |
 | [x] | ENG-032 Construction system | [ENG-032](../.claude/specs/done/ENG-032-construction-blueprints.md) | Non-blocking blueprints, deterministic sourceId-ordered construction hauling/retry, build jobs, source refunds on cancel, save v16 with v1-v15 migration | 2026-08-02 |
 | [x] | ENG-033 Colonist needs MVP | [ENG-033](../.claude/specs/done/ENG-033-colonist-needs-mvp.md) | Content-defined hunger/rest decay and thresholds, deterministic recovery jobs/arbitration, immutable HUD need bars, save v17 with v1-v16 migration, and 10k determinism coverage | 2026-08-03 |
+| [x] | ENG-006 Seeded procedural map generation | [ENG-006](../.claude/specs/done/ENG-006-procgen-maps.md) | Bounded seeded generation from validated content parameters, guaranteed spawn-to-core connectivity, deterministic fallback, ASCII devtools report, and seed-preserving sandbox save/reload | 2026-08-03 |
 
 ## Глобальные инварианты
 
@@ -1534,3 +1536,21 @@
   focused need tests, Android `assembleDebug`, and `git diff --check` passed. Replay hashes:
   `e4892bcc18f9d8dc`, `a763da4ac32b15b4`, `3f02607020d48668`; benchmark sim 437/93 ms, GoalField
   rebuild 7.3769 ms, spatial index 7.7136 ms.
+
+### 2026-08-03 - ENG-006 (seeded procedural map generation)
+
+- Status: Done / accepted; no new phase was created. The card moved from backlog to done after the
+  user-approved feature selection.
+- DONE: Added a content-derived seeded generator with bounded route-safe retries and a deterministic
+  corridor fallback; sandbox procedural sessions preserve the map seed through the existing save
+  identity; devtools expose deterministic JSON metadata plus an ASCII map dump.
+- DECISIONS: The generator emits the existing validated `MapContent` shape and keeps authoritative
+  runtime/save boundaries unchanged. Wall density and retry count are run parameters rather than a
+  second content-pack schema; no save version bump is needed.
+- NEXT: Review the remaining accepted backlog for the next feature; no new phase was created.
+- BLOCKERS: No implementation blocker. Delegated scout/architect workers timed out after bounded
+  waits, so the local integration path and existing test/gate contracts were used. No device/emulator
+  or visual-golden proof is claimed beyond `assembleDebug`.
+- VERIFICATION: Focused generator/sandbox/devtools tests, full Gradle tests/projects, content
+  validation, replay, save compatibility, benchmark, selfcheck, Android `assembleDebug`, and
+  `git diff --check` passed.

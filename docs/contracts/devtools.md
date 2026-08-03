@@ -26,7 +26,11 @@ Owner: development tools
 - `ScenarioRunner`
 - `ScenarioDefinition`
 - `ReplayReport`
+- `ProceduralMapReport` for deterministic seeded map metadata and ASCII terrain output.
 - content validation CLI boundary.
+
+The `procedural-map [seed]` command (also available as `map-generate`) reports a generated sandbox
+map without mutating authoritative runtime state.
 
 ## Test Gates
 
@@ -34,4 +38,3 @@ Owner: development tools
 - CLI validation tests.
 - Report snapshot tests.
 - Tooling dependency boundary tests.
-

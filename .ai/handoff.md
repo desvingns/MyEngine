@@ -1,14 +1,52 @@
 # MyEngine Handoff
 
-Last updated: 2026-08-03 (ENG-033 close-out; next backlog review)
+Last updated: 2026-08-03 (ENG-006 close-out; next backlog review)
 Owner: Codex
 
 ## DONE
+
+- ENG-006 is complete (2026-08-03): added deterministic seeded procedural map generation from
+  validated content parameters, bounded spawn-to-core route retries with a corridor fallback, a
+  seed-preserving sandbox procedural session, and a devtools ASCII/JSON report. The card is in
+  `.claude/specs/done/`; no save version bump was needed.
 
 - ENG-033 is complete (2026-08-03): added optional content-defined hunger/rest policies,
   deterministic threshold recovery jobs with target-owned effects and stable need-vs-work arbitration,
   immutable HUD need bars, and `SandboxSaveCodec` v17 with v1-v16 migration. The card is in
   `.claude/specs/done/`; MySD TD Gate 1 remains outside the colony evidence boundary.
+
+## ENG-006 close-out
+
+### DONE
+
+- `ProceduralMapParameters.fromContentMap` derives generator inputs from the validated canonical map
+  and tile registry; `ProceduralMapGenerator` uses a forked seeded RNG, bounded attempts, path
+  validation, and a deterministic corridor fallback to return ordinary `MapContent`.
+- `SandboxGame.createProceduralRuntime` and `SandboxSession.startProcedural` retain the generated map
+  id and seed through the existing save/reload path. `DevtoolReports.proceduralMapReport` and the
+  `procedural-map`/`map-generate` CLI command expose stable metadata and ASCII terrain.
+
+### DECISIONS
+
+- Keep procedural generation in `engine-content`; the sandbox only adapts generated content into the
+  existing runtime. Density and retry budget are runtime parameters, not a new pack schema.
+- Existing save identity (`mapId`, `seed`) is sufficient, so `SandboxSaveCodec` remains v17.
+
+### NEXT
+
+- Review the remaining accepted backlog and choose the next `/me --feature --next` candidate.
+
+### BLOCKERS
+
+- No implementation blocker. Delegated scout/architect workers timed out after bounded waits; local
+  integration and boundary review completed. No device/emulator or visual-golden evidence is claimed
+  beyond `:android:assembleDebug`.
+
+### VERIFICATION
+
+- Focused generator/sandbox/devtools tests, full `gradlew test`, `gradlew projects`, content
+  validation, replay, save-compat, benchmark, selfcheck, Android assemble, and `git diff --check`
+  passed.
 
 ## ENG-033 close-out
 

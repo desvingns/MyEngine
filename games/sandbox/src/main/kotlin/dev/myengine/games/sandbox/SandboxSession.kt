@@ -57,6 +57,17 @@ class SandboxSession(
             mapId: String? = null,
         ): SandboxSession = SandboxSession(SandboxGame.createRuntime(registry, difficultyId, mapId, seed), seed)
 
+        /** Starts a session with a deterministic generated map and the same seed in its save. */
+        fun startProcedural(
+            registry: ContentRegistry = SandboxGame.loadRegistry(),
+            seed: Long = DEFAULT_SEED,
+            wallDensityPercent: Int = 18,
+            maxAttempts: Int = 16,
+        ): SandboxSession = SandboxSession(
+            SandboxGame.createProceduralRuntime(registry, seed, wallDensityPercent, maxAttempts),
+            seed,
+        )
+
         /**
          * Restores a session from a save [text] produced by [save].
          *

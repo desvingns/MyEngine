@@ -354,3 +354,16 @@ The loader validates dimensions, row widths, unknown terrain symbols and tile/re
 and core bounds, exactly one core, a walkable path from every named spawn to the core, and terminal
 rule values. Errors include `maps.json`, the map id, and a field path suitable for the
 content-validation report.
+
+## Deterministic Procedural Map Generation
+
+Procedural maps are generated at runtime from validated `MapContent` and `TileContent`; they do not
+introduce a second pack schema. `ProceduralMapParameters` carries the generated map id, dimensions,
+floor/wall/core tile ids, spawn/core coordinates, wall density, and bounded retry count. A seeded
+`ProceduralMapGenerator` returns a regular `MapContent` with the existing terminal rules and named
+spawn/core, retries deterministically when a layout has no route, and uses a deterministic corridor
+fallback after the retry budget is exhausted. The sandbox save keeps the generator seed through its
+existing `seed` and `mapId` fields.
+
+Devtools expose `procedural-map [seed]` (alias `map-generate`) as a JSON report containing the seed,
+stable map hash, dimensions, spawn/core coordinates, and an ASCII terrain dump.

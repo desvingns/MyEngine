@@ -96,6 +96,31 @@ class DevtoolReportsTest {
     }
 
     @Test
+    fun proceduralMapReportIsDeterministicAndIncludesAsciiAndSeed() {
+        val first = DevtoolReports.proceduralMapReport(seed = 41L)
+        val second = DevtoolReports.proceduralMapReport(seed = 41L)
+        val parsed = Json.parseToJsonElement(first.toJson()).jsonObject
+
+        assertEquals(first, second)
+        assertEquals(41L, first.seed)
+        assertEquals("sandbox-canonical-generated", first.mapId)
+        assertTrue(first.ascii.contains('C'))
+        assertTrue(first.ascii.contains('#'))
+        assertEquals(41L, parsed.getValue("seed").jsonPrimitive.content.toLong())
+        assertEquals(first.hash, parsed.getValue("hash").jsonPrimitive.content)
+    }
+
+    @Test
+    fun proceduralMapCommandPrintsOneJsonObject() {
+        val text = captureStdout { main(arrayOf("procedural-map", "43")) }.trim()
+        val parsed = Json.parseToJsonElement(text).jsonObject
+
+        assertTrue(text.startsWith("{") && text.endsWith("}"), text)
+        assertEquals(43L, parsed.getValue("seed").jsonPrimitive.content.toLong())
+        assertTrue(parsed.getValue("ascii").jsonPrimitive.content.contains('C'))
+    }
+
+    @Test
     fun goalFieldBenchmarkReportsCanonical64x64StableJsonShape() {
         val json = DevtoolReports.goalFieldRebuildBenchmark().toJson()
         val parsed = Json.parseToJsonElement(json).jsonObject

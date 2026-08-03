@@ -202,6 +202,34 @@ data class EndlessWaveScalingReport(
     }
 }
 
+data class ProceduralMapReport(
+    val mapId: String,
+    val seed: Long,
+    val attempt: Int,
+    val hash: String,
+    val width: Int,
+    val height: Int,
+    val spawnX: Int,
+    val spawnY: Int,
+    val coreX: Int,
+    val coreY: Int,
+    val ascii: String,
+) {
+    fun toJson(): String = buildJson(
+        "map_id" to mapId,
+        "seed" to seed,
+        "attempt" to attempt,
+        "hash" to hash,
+        "width" to width,
+        "height" to height,
+        "spawn_x" to spawnX,
+        "spawn_y" to spawnY,
+        "core_x" to coreX,
+        "core_y" to coreY,
+        "ascii" to ascii,
+    )
+}
+
 data class BalancePackSummary(
     val packId: String,
     val enemyTypes: Int,
@@ -410,6 +438,34 @@ object DevtoolReports {
             seed = seed,
             rows = rows,
             errors = emptyList(),
+        )
+    }
+
+    /** Generates and dumps a deterministic content-shaped map for headless inspection. */
+    fun proceduralMapReport(
+        seed: Long = 7L,
+        wallDensityPercent: Int = 18,
+        maxAttempts: Int = 16,
+    ): ProceduralMapReport {
+        val generated = SandboxGame.generateProceduralMap(
+            seed = seed,
+            wallDensityPercent = wallDensityPercent,
+            maxAttempts = maxAttempts,
+        )
+        val map = generated.map
+        val spawn = map.primarySpawn.position
+        return ProceduralMapReport(
+            mapId = map.id,
+            seed = generated.seed,
+            attempt = generated.attempt,
+            hash = generated.hash,
+            width = map.width,
+            height = map.height,
+            spawnX = spawn.x,
+            spawnY = spawn.y,
+            coreX = map.core.x,
+            coreY = map.core.y,
+            ascii = map.terrainRows.joinToString("\n"),
         )
     }
 

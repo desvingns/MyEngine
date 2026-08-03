@@ -6,6 +6,10 @@ fun main(args: Array<String>) {
         "scenario", "balance", "benchmark" -> DevtoolReports.runScenarioSuite()
         "goal-field-benchmark" -> DevtoolReports.goalFieldRebuildBenchmark().toJson()
         "spatial-index-benchmark" -> DevtoolReports.spatialIndexBenchmark().toJson()
+        "procedural-map", "map-generate" -> {
+            val seed = args.getOrNull(1)?.toLongOrNull() ?: 7L
+            DevtoolReports.proceduralMapReport(seed = seed).toJson()
+        }
         "balance-delta", "balance-report" -> {
             val baselineRoot = args.getOrNull(1)?.let { DevtoolReports.repoRoot().resolve(it) }
                 ?: dev.myengine.games.sandbox.SandboxGame.contentRoot()

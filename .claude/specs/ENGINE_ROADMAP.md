@@ -54,7 +54,7 @@ Last updated: 2026-08-03 (ENG-033 scope unblock)
 | Colonist needs MVP (hunger/rest) | ENG-033 | authored-colony-scope | 1 | **done** (2026-08-03; content-defined decay/thresholds, deterministic eat/sleep jobs and arbitration, immutable HUD bars, save v17 with v1-v16 migration, 10k determinism coverage) |
 | Incident execution pipeline + RNG fix | ENG-016 | vision:rimworld-like, vision:mindustry-like, vision:td | 3 | **done** (2026-08-02; stateful deterministic director with persistent RNG cursor, cadence/pacing/cooldown selection, atomic typed spawn-wave/resource-event/modifier interpreter, v10 save with v1-v9 migration, remediation replay/save/overflow diagnostics and benchmark gates pass) |
 | Research/tech tree + unlock gating | ENG-017 | vision:mindustry-like, vision:td | 2 | backlog |
-| Seeded procedural map generation | ENG-006 | vision:rimworld-like, vision:mindustry-like, vision:td | 3 | backlog |
+| Seeded procedural map generation | ENG-006 | vision:rimworld-like, vision:mindustry-like, vision:td | 3 | **done** (2026-08-03; bounded deterministic generator from validated content params, guaranteed spawn-to-core path, ASCII devtools report, seed-preserving sandbox save/reload) |
 | Enemy attacks on structures | ENG-034 | vision:mindustry-like | 1 | backlog |
 | Resource extractor building | ENG-035 | vision:mindustry-like, vision:rimworld-like | 2 | backlog |
 | Conveyor transport MVP | ENG-023 | vision:mindustry-like | 1 | backlog |
