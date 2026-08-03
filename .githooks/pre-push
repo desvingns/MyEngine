@@ -1,0 +1,4 @@
+#!/usr/bin/env sh
+set -eu
+
+exec powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/me-pre-push.ps1

@@ -1,10 +1,15 @@
 # MyEngine State
 
-Last updated: 2026-08-03 (DX-006 close-out)
-Active phase: Phase 00-14 complete; Phase 15 sequencing adopted; Signal Garden SG-001..005 complete; MyTD MTD-001..005 complete; DX-002, DX-006, DX-008, ENG-001, ENG-002, ENG-003, ENG-004, ENG-005, ENG-006, ENG-007, ENG-008, ENG-009, ENG-010, ENG-011, ENG-012, ENG-013, ENG-014, ENG-015, ENG-016, ENG-017, ENG-018, ENG-019, ENG-020, ENG-021, ENG-026, ENG-027, ENG-028, ENG-029, ENG-030, ENG-031, ENG-032, ENG-033, PROC-002, PROC-003, PROC-007, and PROC-013 complete; pipeline at v0.2.0; next exact action is review of the remaining accepted backlog
-Owner of last update: Codex (2026-08-03: DX-006 close-out)
+Last updated: 2026-08-03 (DX-005 + PROC-006 close-out)
+Active phase: Phase 00-14 complete; Phase 15 sequencing adopted; Signal Garden SG-001..005 complete; MyTD MTD-001..005 complete; DX-002, DX-005, DX-006, DX-008, ENG-001, ENG-002, ENG-003, ENG-004, ENG-005, ENG-006, ENG-007, ENG-008, ENG-009, ENG-010, ENG-011, ENG-012, ENG-013, ENG-014, ENG-015, ENG-016, ENG-017, ENG-018, ENG-019, ENG-020, ENG-021, ENG-026, ENG-027, ENG-028, ENG-029, ENG-030, ENG-031, ENG-032, ENG-033, PROC-002, PROC-003, PROC-006, PROC-007, and PROC-013 complete; pipeline at v0.2.0; next exact action is review of the remaining accepted backlog
+Owner of last update: Codex (2026-08-03: DX-005 + PROC-006 close-out)
 
 ## Current Status
+
+- DX-005 + PROC-006 are complete: ContentLoader/property-schema drift is checked in both
+  directions with deterministic fixtures, selfcheck includes the gate, and `.githooks/pre-push`
+  runs the full tests/content/replay/save lane through one blocking JSON result. No engine, save,
+  Android runtime, or plugin contract changed.
 
 - DX-006 is complete: `docs/COOKBOOK.md` provides five on-demand implementation recipes with exact
   file lists, gates, and historical commit references; `AGENTS.md` links it without expanding the
@@ -28,6 +33,21 @@ Owner of last update: Codex (2026-08-03: DX-006 close-out)
   unlock references; deterministic atomic research spends resources and gates tower/building/recipe
   availability; immutable tree state is exposed in snapshots; `SandboxSaveCodec` v18 persists
   researched ids and pending research commands, with v1-v17 migration.
+
+## DX-005 + PROC-006 Close-out
+
+- DONE: Added `scripts/me-schema-docs-drift.ps1`, bidirectional drift fixtures, schema corrections
+  for status effects and legacy indexed fields, `scripts/me-pre-push.ps1`, and `.githooks/pre-push`.
+- DECISIONS: User-approved combined scope. Hook activation is opt-in via `git config core.hooksPath
+  .githooks`; the lane emits one compact JSON result and blocks on any failed check. No ADR, plugin
+  version bump, save version, Android production, or simulation change.
+- NEXT: Review the remaining accepted backlog before the next `/me --feature --next` run.
+- BLOCKERS: No implementation blocker. The runner's initial Gradle projects/assemble attempt lacked
+  `JAVA_HOME`; reruns with `C:\Program Files\Android\Android Studio\jbr` passed. The bounded
+  verifier worker timed out; local boundary review found no blocker. The known untracked
+  `.ai/retro/retro-2026-08-03.md` baseline remains excluded.
+- VERIFICATION: Drift/fixture tests, full pre-push tests/content/replay/save, selfcheck, benchmark
+  (`sim_ms=15.9066`), projects, Android `assembleDebug`, and `git diff --check` passed.
 
 ## DX-006 Close-out
 

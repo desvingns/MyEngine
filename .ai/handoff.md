@@ -1,7 +1,45 @@
 # MyEngine Handoff
 
-Last updated: 2026-08-03 (DX-006 close-out; next backlog review)
+Last updated: 2026-08-03 (DX-005 + PROC-006 close-out; next backlog review)
 Owner: Codex
+
+## DX-005 + PROC-006 close-out
+
+### DONE
+
+- Added `scripts/me-schema-docs-drift.ps1`, which emits a deterministic one-line JSON report with
+  sorted `code_not_doc` and `doc_not_code` lists for ContentLoader properties versus the schema doc.
+- Added drift fixtures for both directions, aligned input, and missing-input/JSON-line failures;
+  corrected the schema doc for status effects and legacy indexed fields.
+- Wired the drift gate into `scripts/me-selfcheck.ps1` and added `.githooks/pre-push` ->
+  `scripts/me-pre-push.ps1`. The pre-push lane aggregates schema drift, fixtures, Gradle tests,
+  content validation, replay, and save compatibility into one blocking JSON result.
+- Moved DX-005 and PROC-006 cards to `.claude/specs/done/` and synchronized roadmap/Plane docs.
+
+### DECISIONS
+
+- The user approved the combined DX-005 + PROC-006 scope. Hook activation is opt-in through
+  `git config core.hooksPath .githooks`; setup and direct invocation are documented in
+  `docs/agentic/PRE_PUSH.md`.
+- No ADR, plugin/skill/pipeline contract change, save version, Android production change, or
+  simulation change was needed. The known untracked `.ai/retro/retro-2026-08-03.md` baseline was
+  preserved and excluded from scope.
+
+### NEXT
+
+- Review the remaining accepted backlog before the next `/me --feature --next` run.
+
+### BLOCKERS
+
+- No implementation blocker. The first runner attempt lacked `JAVA_HOME` for `projects` and
+  `assembleDebug`; confirmation with `C:\Program Files\Android\Android Studio\jbr` passed.
+  The bounded me-verifier worker timed out; local boundary review found no blocker.
+
+### VERIFICATION
+
+- Drift/fixture tests and the full pre-push lane passed: Gradle tests, content validation, replay,
+  and save compatibility. Selfcheck, benchmark (`sim_ms=15.9066`), projects, Android
+  `assembleDebug`, and `git diff --check` passed.
 
 ## DX-006 close-out
 

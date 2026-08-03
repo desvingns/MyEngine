@@ -82,6 +82,8 @@
 | [x] | ENG-017 Research/tech tree + unlock gating | [ENG-017](../.claude/specs/done/ENG-017-research-tech-tree.md) | Optional validated `tech-tree.json`, deterministic atomic research spending, tower/building/recipe gating, immutable tree snapshot, save v18/v1-v17 migration, and replay/save/content/full-gate verification | 2026-08-03 |
 | [x] | DX-002 Headless state inspector | [DX-002](../.claude/specs/done/DX-002-headless-state-inspector.md) | Provider-based deterministic ASCII/JSON inspection with entities, inventories, defense metrics, stable hash, optional scripts, and AGENTS default-debug reference | 2026-08-03 |
 | [x] | DX-006 Engine cookbook | [DX-006](../.claude/specs/done/DX-006-engine-cookbook.md) | Five on-demand recipes with exact file lists, gates, and historical commit references; AGENTS intake link stays token-economical | 2026-08-03 |
+| [x] | DX-005 Schema-docs drift gate | [DX-005](../.claude/specs/done/DX-005-schema-docs-drift-gate.md) | Deterministic ContentLoader/properties-schema drift report, bidirectional fixtures, selfcheck and pre-push wiring | 2026-08-03 |
+| [x] | PROC-006 CI pre-push lane | [PROC-006](../.claude/specs/done/PROC-006-ci-prepush.md) | `.githooks/pre-push` aggregates tests, content validation, replay, save compatibility and schema drift into one blocking JSON result | 2026-08-03 |
 | [x] | ENG-006 Seeded procedural map generation | [ENG-006](../.claude/specs/done/ENG-006-procgen-maps.md) | Bounded seeded generation from validated content parameters, guaranteed spawn-to-core connectivity, deterministic fallback, ASCII devtools report, and seed-preserving sandbox save/reload | 2026-08-03 |
 
 ## Глобальные инварианты
@@ -1604,3 +1606,23 @@
 - VERIFICATION: Selfcheck, full tests/projects, content validation, replay, save-compat, benchmark,
   Android `assembleDebug`, and `git diff --check` passed. The first Gradle test call lacked a valid
   `JAVA_HOME`; the confirmation run used Android Studio JBR and passed.
+
+### 2026-08-03 - DX-005 + PROC-006 (schema drift and pre-push lane)
+
+- Status: Done / accepted; combined feature run; no new phase was created.
+- DONE: Added the deterministic `me-schema-docs-drift.ps1` gate with code-not-doc and doc-not-code
+  output, aligned the properties schema for status effects and legacy indexed fields, added
+  aligned/missing-input/drift fixtures, wired drift into selfcheck, and added the `.githooks/pre-push`
+  lane through `scripts/me-pre-push.ps1`.
+- DECISIONS: The user selected the combined DX-005 + PROC-006 scope. The lane emits one compact JSON
+  result and blocks on any failed check; hook activation is opt-in through `git config
+  core.hooksPath .githooks`. No ADR, plugin version bump, engine runtime, save format, or Android
+  behavior changed.
+- NEXT: Review the remaining accepted backlog for the next feature; no new phase is planned.
+- BLOCKERS: No implementation blocker. Runner initially lacked `JAVA_HOME` for projects/assemble;
+  confirmation with `C:\Program Files\Android\Android Studio\jbr` passed. The known untracked
+  `.ai/retro/retro-2026-08-03.md` baseline remains excluded. The bounded verifier worker timed out;
+  local boundary review found no blocker.
+- VERIFICATION: Drift gate, fixtures, pre-push tests/content/replay/save, selfcheck, benchmark
+  (`sim_ms=15.9066`),
+  `gradlew projects`, `:android:assembleDebug`, and `git diff --check` passed.

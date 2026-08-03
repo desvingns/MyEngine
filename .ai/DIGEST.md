@@ -1,20 +1,38 @@
 # MyEngine Intake Digest
 
-Regenerated at close-out. Last updated: 2026-08-03 (DX-006 close-out).
+Regenerated at close-out. Last updated: 2026-08-03 (DX-005 + PROC-006 close-out).
 
 ## Current next action
 
-DX-006 (engine cookbook) is complete. Review the remaining accepted backlog before the next
+DX-005 + PROC-006 (schema drift and pre-push lane) are complete. Review the remaining accepted backlog before the next
 `/me --feature --next` run.
 
 ## Active specs / roadmap
 
-- DX-002, DX-006, ENG-001, ENG-003, ENG-031, ENG-004, ENG-032, ENG-033, ENG-006, and ENG-017 are done.
+- DX-002, DX-005, DX-006, ENG-001, ENG-003, ENG-031, ENG-004, ENG-032, ENG-033, ENG-006, ENG-017, and PROC-006 are done.
 - ENG-003 is a post-Phase-14/Phase-15 feature close-out; no new phase was created.
 - ENG-002 remains the wave-enemy GoalField path; ENG-003 is the deterministic JobBoard/job-actor tick capability.
 - ENG-033's authored scope is implemented with no game-bundle traceability update. MySD TD Gate 1 is
   accepted for its TD reference inventory but is not treated as evidence for colony behavior.
 - No ADR or plugin/skill/pipeline contract change was needed.
+
+## DX-005 + PROC-006 close-out
+
+### DONE
+
+- `me-schema-docs-drift.ps1` compares ContentLoader property keys with
+  `PROPERTIES_SCHEMA.md` and reports both drift directions as one JSON line.
+- Fixtures cover code-not-doc, doc-not-code, aligned input, missing input, and malformed-output
+  boundaries. Selfcheck invokes the drift gate.
+- `.githooks/pre-push` delegates to `me-pre-push.ps1`, which aggregates drift, fixtures, tests,
+  content validation, replay, and save compatibility and blocks on any failed gate.
+
+### VERIFICATION
+
+- Pre-push, selfcheck, benchmark (`sim_ms=15.9066`), projects, Android `assembleDebug`, and
+  `git diff --check` passed;
+  the initial runner Gradle attempt lacked `JAVA_HOME`, then passed with Android Studio JBR.
+- The known untracked `.ai/retro/retro-2026-08-03.md` baseline remains excluded from the feature.
 
 ## DX-006 close-out
 

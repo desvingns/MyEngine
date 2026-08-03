@@ -84,6 +84,20 @@ try {
     $boardCheckExit = 1
 }
 if ($boardCheckExit -ne 0 -or $null -eq $boardCheck -or $boardCheck.verdict -ne "pass") { $failures++ }
+
+$schemaDriftRaw = & powershell.exe -NoProfile -File (Join-Path $root "scripts/me-schema-docs-drift.ps1") 2>$null | Out-String
+$schemaDriftExit = $LASTEXITCODE
+$schemaDrift = $null
+try {
+    $schemaDrift = $schemaDriftRaw.Trim() | ConvertFrom-Json -ErrorAction Stop
+} catch {
+    $schemaDrift = [ordered]@{
+        verdict = "fail"
+        summary = "schema-docs drift gate did not return one JSON result"
+    }
+    $schemaDriftExit = 1
+}
+if ($schemaDriftExit -ne 0 -or $null -eq $schemaDrift -or $schemaDrift.verdict -ne "pass") { $failures++ }
 $verdict = if ($failures -eq 0) { "pass" } else { "fail" }
 
 $result = [ordered]@{
@@ -94,6 +108,7 @@ $result = [ordered]@{
     unparseable_json               = @($jsonBad)
     marketplace_missing_sources    = @($mkMissing)
     spec_board_check               = $boardCheck
+    schema_docs_drift              = $schemaDrift
 }
 $result | ConvertTo-Json -Compress -Depth 6
 if ($verdict -eq "pass") { exit 0 } else { exit 1 }

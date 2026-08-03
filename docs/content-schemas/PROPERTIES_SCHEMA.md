@@ -86,6 +86,7 @@ Definition files use `<id>.<field>=<value>`.
 - `targetingMode`: optional targeting priority: `first`, `last`, `nearest`, `strongest`, or
   `weakest`; omitted schema-v1 content defaults deterministically to `nearest`, while an authored
   invalid value is rejected
+- `effectId`: optional status-effect id resolving to a definition in `effects.properties`
 - `splashRadius`: optional positive integer Manhattan radius centered on the selected primary
   target; omitted means the tower damages only that primary target
 - `falloff`: optional integer percentage from `0` through `100` of base damage removed per
@@ -130,6 +131,21 @@ metadata derived from the registry and are not persisted, so `SAVE_VERSION=11` r
 
 Legacy packs without `damage-types.properties` remain valid and keep nullable tower damage types
 and empty enemy resistance maps.
+
+### Status effects
+
+`effects.properties` is optional. A pack without it has no status-effect definitions. Definitions
+use the standard `<effectId>.<field>=<value>` form:
+
+- `type`: effect kind, `slow` or `dot`
+- `kind`: legacy alias for `type`
+- `magnitude`: non-negative integer for `slow`, positive integer for `dot`; slow values are at most
+  `100`
+- `durationTicks`: positive integer effect duration
+- `stackingRule`: `refresh`, `stack`, or `ignore`
+
+`type` takes precedence when both aliases are declared. A tower's optional `effectId` must resolve
+to an effect in the same content pack.
 
 ### Difficulties
 
@@ -273,6 +289,8 @@ definitions. It is valid only when every map declares `terminalRules.winConditio
   `drift:3;drift:2|scout:1`
 - `countGrowthPercent`, `healthGrowthPercent`, `rewardGrowthPercent`: positive integer percentages
   from `1` through `10000`, applied once per generated-wave step
+- `cycle.<index>`: legacy indexed composition entries used when `compositionCycle` is absent; indexes
+  must be contiguous from `0`
 - `spawnSelection`: optional `all` or pipe-delimited named map spawn ids, with the same validation
   and deterministic route ordering as finite waves
 
@@ -307,7 +325,8 @@ envelope when omitted.
 - `cooldownTicks`: optional non-negative int; defaults to `0`. After a selected incident, the same
   incident is ineligible until `selectionTick + cooldownTicks`; `0` means no cooldown state is set
 - `effects`: optional comma-separated typed effect descriptors, or indexed `effect.0=...`,
-  `effect.1=...` fields. Use one form only; indexed entries are applied in numeric index order.
+  `effect.1=...` / `effects.0=...`, `effects.1=...` fields. Use one form only; indexed entries are
+  applied in numeric index order.
 
 Cadence eligibility is inclusive at `cadenceStartTick`, then every
 `cadenceIntervalTicks` ticks, through the inclusive `cadenceEndTick` when present. An incident is

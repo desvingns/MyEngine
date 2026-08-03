@@ -593,3 +593,23 @@ by: claude
   valid `JAVA_HOME`; the confirmation run used Android Studio JBR and passed.
 - Baseline: known untracked `.ai/retro/retro-2026-08-03.md` was preserved and excluded from scope.
 - No plugin version bump; no ADR or human gate.
+
+## 2026-08-03 - MyEngine DX-005 + PROC-006 feature run
+
+- Owner: Codex
+- Change type: combined schema-docs drift and deterministic pre-push lane; no engine/runtime,
+  save, Android production, plugin, skill, or adapter contract change.
+- Summary: Added `scripts/me-schema-docs-drift.ps1` with sorted bidirectional JSON drift output,
+  aligned the properties schema for status effects and legacy indexed fields, added deterministic
+  drift fixtures, wired the gate into selfcheck, and added `.githooks/pre-push` plus
+  `scripts/me-pre-push.ps1` for the full tests/content/replay/save lane.
+- Pipeline: user approved the combined DX-005 + PROC-006 scope after the architecture gate;
+  scout and tester contracts passed (tester found and covered PowerShell scalar-array behavior),
+  developer contract passed, runner was partial on the first no-JAVA_HOME attempt and the
+  orchestrator confirmed the Gradle gates with Android Studio JBR. No malformed envelope was
+  returned by completed workers; bounded worker timeout notes remain in telemetry.
+- Verification: drift/fixture checks, pre-push tests, content validation, replay, save compatibility,
+  selfcheck, benchmark (`sim_ms=15.9066`), `gradlew projects`, `:android:assembleDebug`, and
+  `git diff --check` passed.
+- Baseline: known untracked `.ai/retro/retro-2026-08-03.md` was preserved and excluded.
+- No plugin version bump; no ADR.
