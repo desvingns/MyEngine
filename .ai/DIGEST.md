@@ -1,22 +1,48 @@
 # MyEngine Intake Digest
 
-Regenerated at close-out. Last updated: 2026-08-04 (DX-007 close-out).
+Regenerated at close-out. Last updated: 2026-08-04 (DX-003 close-out).
 
 ## Current next action
 
-DX-007 (content/save fuzz tests) is complete. DX-003 remains the first roadmap candidate, but
-requires a sequence-metadata decision (`owner`, `blocked_by`, `start_gates`) before intake; DX-004
-also has scope ambiguity. ENG-036 and PROC-015 remain human-owned start-gated work.
+DX-003 (replay divergence bisector) is complete. DX-004 remains the next roadmap candidate, but its
+running/hot-reload scope needs clarification; no new DX-004 metadata is assigned. ENG-036 and
+PROC-015 remain human-owned start-gated work.
 
 ## Active specs / roadmap
 
-- DX-001, DX-002, DX-005, DX-006, DX-007, ENG-001, ENG-003, ENG-031, ENG-004, ENG-032, ENG-033, ENG-006,
+- DX-001, DX-002, DX-003, DX-005, DX-006, DX-007, ENG-001, ENG-003, ENG-031, ENG-004, ENG-032, ENG-033, ENG-006,
   ENG-017, ENG-023, ENG-025, ENG-034, ENG-035, PROC-005, and PROC-006 are done.
 - ENG-003 is a post-Phase-14/Phase-15 feature close-out; no new phase was created.
 - ENG-002 remains the wave-enemy GoalField path; ENG-003 is the deterministic JobBoard/job-actor tick capability.
 - ENG-033's authored scope is implemented with no game-bundle traceability update. MySD TD Gate 1 is
   accepted for its TD reference inventory but is not treated as evidence for colony behavior.
 - No ADR or plugin/skill/pipeline contract change was needed.
+
+## DX-003 close-out (2026-08-04)
+
+### DONE
+
+- Deterministic per-tick trajectories record tick 0 and actual completed ticks in versioned
+  `dx-003-trajectory-v1` JSONL. Canonical, kill, and resist fixtures match PROC-005 final hashes;
+  the canonical-perturbed fixture diverges at tick 5 on `core_health`.
+
+### DECISIONS
+
+- The comparer reports the first divergent tick, sorted `changed_fields`, and a `hash_only` fallback.
+  `replay-inspect --trajectory` and `replay-bisect` return exit codes 0/1/2 for match/divergence/
+  invalid input or runtime errors. Resistance=50 uses a narrow devtools seam.
+- Legacy `replay-inspect`, PROC-005 `.hash` files, and `scripts/me-sim-replay.ps1` remain unchanged.
+  No Android, save-schema, continuous-runtime, ADR, or plugin-contract changes were made.
+
+### NEXT
+
+- DX-004 remains the next roadmap candidate; clarify its running/hot-reload scope before intake.
+  No new DX-004 metadata is assigned. ENG-036 and PROC-015 remain human-owned/start-gated.
+
+### VERIFICATION
+
+- Focused/full tests, `projects`, content validation, replay, save-compat, benchmark (`sim_ms=973`),
+  selfcheck, headless inspect, Android `assembleDebug`, CLI exit-code checks, and diff-check passed.
 
 ## DX-007 close-out (2026-08-04)
 
@@ -33,8 +59,8 @@ also has scope ambiguity. ENG-036 and PROC-015 remain human-owned start-gated wo
 
 ### NEXT
 
-- DX-003 remains the first roadmap candidate, but its `owner`, `blocked_by`, and `start_gates`
-  require a sequence-metadata decision before intake. DX-004 also has scope ambiguity.
+- DX-003 close-out is complete. DX-004 remains the next roadmap candidate, but its running/hot-reload
+  scope needs clarification; no new DX-004 metadata is assigned.
 
 ### VERIFICATION
 
@@ -52,12 +78,13 @@ also has scope ambiguity. ENG-036 and PROC-015 remain human-owned start-gated wo
 ### DECISIONS
 
 - Any intentional golden update requires an explicit reason in `.ai/handoff.md`.
-- DX-003 remains a separate next feature for per-tick replay-divergence bisection; no device,
-  emulator, or visual-golden proof is claimed.
+- DX-003 was the separate per-tick replay-divergence follow-up to PROC-005 and is now closed; no
+  device, emulator, or visual-golden proof is claimed.
 
 ### NEXT
 
-- Start DX-003 after PROC-005; ENG-036 and PROC-015 remain human-owned and start-gated.
+- DX-003 is closed. DX-004 is the next roadmap candidate after scope clarification; ENG-036 and
+  PROC-015 remain human-owned and start-gated.
 
 ### VERIFICATION
 

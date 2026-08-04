@@ -19,9 +19,9 @@ dependencies {
     implementation(project(":engine-ai"))
     implementation(project(":engine-content"))
     implementation(project(":games:sandbox"))
+    implementation(libs.kotlinx.serialization.json)
     testImplementation(libs.kotlin.test.junit5)
     testImplementation(libs.junit.jupiter)
-    testImplementation(libs.kotlinx.serialization.json)
 }
 
 application {

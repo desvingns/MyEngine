@@ -1,6 +1,16 @@
 package dev.myengine.devtools
 
+import kotlin.system.exitProcess
+
 fun main(args: Array<String>) {
+    if (args.firstOrNull() == "replay-bisect" ||
+        (args.firstOrNull() == "replay-inspect" && args.getOrNull(1) == "--trajectory")
+    ) {
+        val result = DevtoolReports.runReplayCommand(args)
+        println(result.output)
+        if (result.exitCode != 0) exitProcess(result.exitCode)
+        return
+    }
     val command = args.firstOrNull() ?: "scenario"
     val output = when (command) {
         "scenario", "balance", "benchmark" -> DevtoolReports.runScenarioSuite()

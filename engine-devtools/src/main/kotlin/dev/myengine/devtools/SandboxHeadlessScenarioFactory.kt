@@ -15,8 +15,13 @@ class SandboxHeadlessScenarioFactory : HeadlessScenarioFactory {
 
     override fun create(packRoot: Path, scenarioId: String, seed: Long): HeadlessScenario {
         require(scenarioId.isNotBlank()) { "Headless scenario id cannot be blank." }
-        val registry = SandboxGame.loadRegistry(packRoot)
-        return SandboxHeadlessScenario(scenarioId, SandboxGame.createRuntime(registry, seed = seed))
+        val runtime = if (scenarioId in setOf("canonical", "kill", "resist")) {
+            SandboxGame.createDevtoolsReplayRuntime(scenarioId, packRoot = packRoot, seed = seed)
+        } else {
+            val registry = SandboxGame.loadRegistry(packRoot)
+            SandboxGame.createRuntime(registry, seed = seed)
+        }
+        return SandboxHeadlessScenario(scenarioId, runtime)
     }
 }
 

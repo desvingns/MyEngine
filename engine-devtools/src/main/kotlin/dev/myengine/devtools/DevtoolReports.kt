@@ -972,6 +972,64 @@ object DevtoolReports {
         return "{\"scenarios\":[$canonical,$kill,$resistJson]}"
     }
 
+    fun replayTrajectory(definition: ReplayDefinition): ReplayTrajectory =
+        ReplayTrajectoryCapture.capture(definition)
+
+    /** Gate-friendly DX-003 CLI surface; legacy replay-inspect remains final-hash-only by default. */
+    fun runReplayCommand(args: Array<String>): ReplayCliResult {
+        return try {
+            when (args.firstOrNull()) {
+                "replay-inspect" -> {
+                    require(args.getOrNull(1) == "--trajectory") {
+                        "Use replay-inspect --trajectory <canonical|kill|resist> [ticks]."
+                    }
+                    require(args.size <= 4) { "Too many replay-inspect --trajectory arguments." }
+                    val scenario = args.getOrNull(2) ?: "canonical"
+                    val ticks = args.getOrNull(3)?.toIntOrNull()
+                        ?: if (args.size > 3) error("Invalid trajectory tick count '${args[3]}'.") else 35
+                    require(ticks >= 0) { "Trajectory ticks must be non-negative." }
+                    val definition = ReplayDefinition(
+                        scenario = scenario,
+                        packRoot = repoRoot().resolve("games/sandbox/content/sandbox"),
+                        requestedTicks = ticks,
+                    )
+                    ReplayCliResult(replayTrajectory(definition).toJsonLines(), 0)
+                }
+                "replay-bisect" -> {
+                    require(args.size == 2) { "Use replay-bisect <trajectory-fixture>." }
+                    val root = repoRoot()
+                    val candidate = Paths.get(args[1])
+                    val fixture = (if (candidate.isAbsolute) candidate else root.resolve(candidate)).normalize()
+                    require(fixture.startsWith(root) && Files.isRegularFile(fixture)) {
+                        "Trajectory fixture must be a file inside the repository: $fixture"
+                    }
+                    val expected = ReplayTrajectory.read(fixture)
+                    val packRoot = root.resolve(expected.metadata.pack).normalize()
+                    require(packRoot.startsWith(root) && Files.isDirectory(packRoot)) {
+                        "Trajectory pack must be a directory inside the repository: ${expected.metadata.pack}"
+                    }
+                    val actual = replayTrajectory(ReplayDefinition.fromMetadata(expected.metadata, packRoot))
+                    val comparison = ReplayTrajectoryComparer.compare(expected, actual)
+                    ReplayCliResult(comparison.toJson(), comparison.exitCode)
+                }
+                else -> error("Unknown DX-003 replay command.")
+            }
+        } catch (error: Exception) {
+            val kind = if (error is ReplayTrajectoryFormatException) "invalid_fixture" else "invalid_arguments_or_runtime"
+            ReplayCliResult(
+                ReplayComparison(
+                    status = "invalid",
+                    firstDivergentTick = null,
+                    expectedHash = null,
+                    actualHash = null,
+                    changedFields = listOf(kind),
+                    message = error.message ?: error::class.simpleName,
+                ).toJson(),
+                2,
+            )
+        }
+    }
+
     private fun replayScenarioJson(
         name: String,
         commands: String,
@@ -985,6 +1043,8 @@ object DevtoolReports {
         "enemies_killed" to result.metrics.enemiesKilled,
     )
 }
+
+data class ReplayCliResult(val output: String, val exitCode: Int)
 
 private data class TowerBalanceProfile(
     val towerId: String,

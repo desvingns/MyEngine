@@ -1,7 +1,41 @@
 # MyEngine Handoff
 
-Last updated: 2026-08-04 (DX-007 close-out; DX-003 metadata decision pending)
+Last updated: 2026-08-04 (DX-003 close-out)
 Owner: Codex / me-docs
+
+## DX-003 close-out (2026-08-04)
+
+### DONE
+
+- Moved the accepted card to `.claude/specs/done/DX-003-replay-divergence-bisector.md` with
+  `owner: codex`, `blocked_by: none`, the approved `start_gates`, and `status: done`.
+- Added deterministic per-tick trajectories recording tick 0 and actual completed ticks in the
+  versioned `dx-003-trajectory-v1` JSONL format. Canonical, kill, and resist fixtures match the
+  PROC-005 final hashes; the canonical-perturbed fixture diverges at tick 5 on `core_health`.
+
+### DECISIONS
+
+- The comparer reports the first divergent tick, sorted `changed_fields`, and a `hash_only` fallback.
+  `replay-inspect --trajectory` and `replay-bisect` return exit codes 0 for match, 1 for divergence,
+  and 2 for invalid input/runtime errors.
+- Resistance=50 uses a narrow devtools seam. Legacy `replay-inspect`, PROC-005 `.hash` files, and
+  `scripts/me-sim-replay.ps1` remain unchanged. No Android, save-schema, continuous-runtime, ADR,
+  or plugin-contract changes were made.
+
+### NEXT
+
+- DX-004 remains the next roadmap candidate, but its running/hot-reload scope needs clarification;
+  no new DX-004 metadata is assigned. ENG-036 and PROC-015 remain human-owned and start-gated.
+
+### BLOCKERS
+
+- No DX-003 implementation blocker. DX-004 scope clarification is the only open next-step question.
+
+### VERIFICATION
+
+- Focused/full tests, `projects`, content validation, replay, save-compat, benchmark (`sim_ms=973`),
+  selfcheck, headless inspect, Android `assembleDebug`, CLI exit-code checks, and `git diff --check`
+  passed.
 
 ## DX-007 close-out (2026-08-04)
 
@@ -22,12 +56,12 @@ Owner: Codex / me-docs
 
 ### NEXT
 
-- DX-003 remains the first roadmap candidate, but its sequence metadata (`owner`, `blocked_by`,
-  `start_gates`) needs an explicit decision before intake. DX-004 also has scope ambiguity.
+- DX-003 close-out is complete. DX-004 remains the next roadmap candidate, but its running/hot-reload
+  scope needs clarification; no new DX-004 metadata is assigned.
 
 ### BLOCKERS
 
-- No DX-007 implementation blocker. The next-card metadata decision is a process gate.
+- No DX-007 implementation blocker. The next-card scope clarification is a process gate.
 
 ### VERIFICATION
 
@@ -50,15 +84,14 @@ Owner: Codex / me-docs
 
 - Golden files are deterministic behavior contracts. Any intentional golden update requires an
   explicit reason in this handoff, including why the hash moved and which scenario changed.
-- DX-003 remains separate and is the next feature after PROC-005; per-tick divergence bisection is
-  not included in this close-out.
+- DX-003 was a separate follow-up to PROC-005; its per-tick divergence bisection is now closed.
 - No production simulation, save, renderer, Android, device, emulator, or visual-golden scope was
   added by the documentation close-out.
 
 ### NEXT
 
-- Start DX-003 (replay divergence bisector) after PROC-005; keep ENG-036 and PROC-015 human-owned
-  and start-gated.
+- DX-003 is closed. DX-004 is the next roadmap candidate after scope clarification; keep ENG-036
+  and PROC-015 human-owned and start-gated.
 
 ### BLOCKERS
 

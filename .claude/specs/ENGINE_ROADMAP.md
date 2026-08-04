@@ -7,7 +7,7 @@ two or more games outranks single-game gaps of the same severity.
 Updated by: the `/me-spec` backlog bridge (new gaps / new demand) and `/me`
 close-out (status changes).
 
-Last updated: 2026-08-04 (DX-007 close-out)
+Last updated: 2026-08-04 (DX-003 close-out)
 
 ## Capabilities
 
@@ -60,7 +60,7 @@ Last updated: 2026-08-04 (DX-007 close-out)
 | Conveyor transport MVP | ENG-023 | vision:mindustry-like | 1 | **done** (2026-08-03; deterministic straight/corner belts, content-defined ticks-per-cell, producer/core/entity endpoints, v20 save migration, replay and 100-belt benchmark) |
 | New-game scaffolder script | DX-001 | agent pipeline | - | **done** (2026-08-04; deterministic 28-file module/content/spec scaffold, settings wiring, canonical replay metadata, refusal/path/UTF-8 guards, contract and project/content/replay gates) |
 | Headless state inspector (agent eyes) | DX-002 | agent pipeline | - | **done** (2026-08-03; provider-based deterministic ASCII/JSON inspector, sandbox ServiceLoader adapter, optional command scripts, focused/full gates) |
-| Replay divergence bisector | DX-003 | agent pipeline | - | backlog |
+| Replay divergence bisector | DX-003 | agent pipeline | - | **done** (2026-08-04; deterministic tick-0 + actual-tick `dx-003-trajectory-v1` JSONL trajectories, canonical/kill/resist fixtures matching PROC-005 final hashes, first-divergent-tick comparer with sorted `changed_fields` and `hash_only` fallback, CLI exit codes 0/1/2, and resistance=50 seam; legacy replay-inspect, PROC-005 `.hash` files, and `scripts/me-sim-replay.ps1` unchanged) |
 | Desktop content hot-reload | DX-004 | agent pipeline | - | backlog |
 | Schema-docs drift gate | DX-005 | agent pipeline | - | **done** (2026-08-03; deterministic ContentLoader/properties-schema drift report, bidirectional fixtures, selfcheck and pre-push wiring) |
 | Engine cookbook (agent task recipes) | DX-006 | agent pipeline | - | **done** (2026-08-03; `docs/COOKBOOK.md` has five on-demand recipes with exact file lists, gates, and historical commit references; `AGENTS.md` links it without adding it to always-loaded intake) |
@@ -69,7 +69,7 @@ Last updated: 2026-08-04 (DX-007 close-out)
 | Spec board backsync | PROC-001 | process | - | backlog |
 | Domain roadmap sequencing | PROC-003 | process | - | **done** (2026-07-29; Plane/15 sequences flow-field [done], colony slice, storyteller; vision:* accepted as demand by owner amendment; successor ENG-010 adopted) |
 | Performance budgets | PROC-004 | process | - | backlog |
-| Golden replay hashes | PROC-005 | process | - | **done** (2026-08-04; checked-in canonical/kill/resist golden files are asserted by replay tests and compared by `me-sim-replay`; intentional updates require an explicit `.ai/handoff.md` reason; DX-003 remains separate) |
+| Golden replay hashes | PROC-005 | process | - | **done** (2026-08-04; checked-in canonical/kill/resist golden files are asserted by replay tests and compared by `me-sim-replay`; intentional updates require an explicit `.ai/handoff.md` reason; DX-003 consumed the per-tick follow-up without changing these contracts) |
 | CI pre-push lane | PROC-006 | process | - | **done** (2026-08-03; `.githooks/pre-push` runs tests, content validation, replay, save compatibility, schema drift and emits one blocking JSON result) |
 | Save migration matrix | PROC-007 | process | - | **done** (2026-08-02; checked-in v1-v10 fixtures, independent stable-hash migration matrix, and save-compat JSON result) |
 | Playtest bot | PROC-008 | process | - | backlog |
@@ -121,10 +121,10 @@ Last updated: 2026-08-04 (DX-007 close-out)
    ENG-001, ENG-003, ENG-031, ENG-004, ENG-032, ENG-033, ENG-017, and ENG-025 are complete. MySD TD evidence is
    not used as colony evidence.
 4. DX-008 is done: use its hybrid-format ADR for ENG-017/ENG-028 schema work. DX-001, DX-002,
-   DX-005, DX-006, DX-007, and PROC-006 are complete (2026-08-04). DX-003 remains the first
-   roadmap candidate, but requires an explicit sequence-metadata decision (`owner`, `blocked_by`,
-   and `start_gates`); DX-004 also has scope ambiguity. ENG-036 and PROC-015 remain explicitly
-   human-owned/start-gated. ENG-025 is now closed.
+   DX-003, DX-005, DX-006, DX-007, and PROC-006 are complete (2026-08-04). DX-004 remains the
+   next roadmap candidate, but its running/hot-reload scope needs clarification; no sequence
+   metadata is assigned here. ENG-036 and PROC-015 remain explicitly human-owned/start-gated.
+   ENG-025 is now closed.
 5. MySD foundation: PROC-002 / ADR-0004 is done. MySD Gate 1/relaxed Gate 2 are accepted for the
    TD reference bundle, but no colony demand is inferred from that bundle. ENG-033 is unlocked by
    its separate authored scope; future MySD demand still bridges only through PROC-015 semantics.

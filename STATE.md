@@ -1,8 +1,27 @@
 # MyEngine State
 
-Last updated: 2026-08-04 (DX-007 close-out)
-Active phase: Phase 00-14 complete; Phase 15 sequencing adopted; Signal Garden SG-001..005 complete; MyTD MTD-001..005 complete; DX-001, DX-002, DX-005, DX-006, DX-007, DX-008, ENG-001, ENG-002, ENG-003, ENG-004, ENG-005, ENG-006, ENG-007, ENG-008, ENG-009, ENG-010, ENG-011, ENG-012, ENG-013, ENG-014, ENG-015, ENG-016, ENG-017, ENG-018, ENG-019, ENG-020, ENG-021, ENG-023, ENG-025, ENG-026, ENG-027, ENG-028, ENG-029, ENG-030, ENG-031, ENG-032, ENG-033, ENG-034, ENG-035, PROC-002, PROC-003, PROC-005, PROC-006, PROC-007, and PROC-013 complete; pipeline at v0.2.0; next exact action is to resolve DX-003 sequence metadata before starting it; DX-004 has scope ambiguity
-Owner of last update: Codex / me-docs (2026-08-04: DX-007 close-out)
+Last updated: 2026-08-04 (DX-003 close-out)
+Active phase: Phase 00-14 complete; Phase 15 sequencing adopted; Signal Garden SG-001..005 complete; MyTD MTD-001..005 complete; DX-001, DX-002, DX-003, DX-005, DX-006, DX-007, DX-008, ENG-001, ENG-002, ENG-003, ENG-004, ENG-005, ENG-006, ENG-007, ENG-008, ENG-009, ENG-010, ENG-011, ENG-012, ENG-013, ENG-014, ENG-015, ENG-016, ENG-017, ENG-018, ENG-019, ENG-020, ENG-021, ENG-023, ENG-025, ENG-026, ENG-027, ENG-028, ENG-029, ENG-030, ENG-031, ENG-032, ENG-033, ENG-034, ENG-035, PROC-002, PROC-003, PROC-005, PROC-006, PROC-007, and PROC-013 complete; pipeline at v0.2.0; next exact action is to clarify DX-004 running/hot-reload scope; ENG-036 and PROC-015 remain human-owned/start-gated
+Owner of last update: Codex / me-docs (2026-08-04: DX-003 close-out)
+
+## DX-003 Close-out (2026-08-04)
+
+- DONE: Added deterministic per-tick trajectories recording tick 0 and actual completed ticks in
+  versioned `dx-003-trajectory-v1` JSONL; canonical, kill, and resist fixtures match the PROC-005
+  final hashes. The comparer reports the first divergent tick, sorted `changed_fields`, and a
+  `hash_only` fallback. The canonical-perturbed fixture diverges at tick 5 on `core_health`.
+- DECISIONS: `replay-inspect --trajectory` and `replay-bisect` return exit codes 0 for match, 1
+  for divergence, and 2 for invalid input/runtime errors. Resistance=50 is exposed through a narrow
+  devtools seam. Legacy `replay-inspect`, PROC-005 `.hash` files, and `scripts/me-sim-replay.ps1`
+  remain unchanged. No Android, save-schema, continuous-runtime, ADR, or plugin-contract changes
+  were made.
+- NEXT: DX-004 remains the next roadmap candidate; clarify its running/hot-reload scope before
+  intake. Do not assign new DX-004 metadata here. ENG-036 and PROC-015 remain human-owned/start-gated.
+- BLOCKERS: No DX-003 implementation blocker. The only open next-step question is DX-004 scope
+  clarification; no new human gate is required for DX-003 close-out.
+- VERIFICATION: Focused/full tests, `projects`, content validation, replay, save-compat, benchmark
+  (`sim_ms=973`), selfcheck, headless inspect, Android `assembleDebug`, CLI exit-code checks, and
+  `git diff --check` passed.
 
 ## DX-007 Close-out (2026-08-04)
 
@@ -12,9 +31,10 @@ Owner of last update: Codex / me-docs (2026-08-04: DX-007 close-out)
 - DECISIONS: Production API, `SAVE_VERSION`, save schema, Android, and `archive/` are unchanged.
   No game-bundle traceability update or ADR was needed; no plugin, skill, or pipeline contract
   changed. No sequence metadata was invented for the next backlog cards.
-- NEXT: DX-003 remains the first roadmap candidate, but its `owner`, `blocked_by`, and `start_gates`
-  require an explicit sequence-metadata decision before intake. DX-004 also has scope ambiguity.
-- BLOCKERS: No DX-007 implementation blocker. The next-card metadata decision is a process gate,
+- NEXT: DX-003 close-out is complete. DX-004 remains the next roadmap candidate, but its
+  running/hot-reload scope needs clarification; no new DX-004 metadata is assigned. ENG-036 and
+  PROC-015 remain human-owned/start-gated.
+- BLOCKERS: No DX-007 implementation blocker. The next-card scope clarification is a process gate,
   not a DX-007 failure.
 - VERIFICATION: Focused and full Gradle tests, `projects`, content validation, replay, save-compat,
   benchmark (`sim_ms=410`), selfcheck, headless inspect (hash `d599fc31843b5aa8`), Android
@@ -26,11 +46,11 @@ Owner of last update: Codex / me-docs (2026-08-04: DX-007 close-out)
   `scripts/me-sim-replay.ps1` compares discovered replay output against the golden files and
   preserves generated-game discovery.
 - DECISIONS: Golden files are deterministic behavior contracts. Any intentional golden update
-  requires an explicit reason in `.ai/handoff.md`. DX-003 remains a separate next feature for
-  per-tick replay-divergence bisection; this close-out changed no production, Android, or save
-  behavior.
-- NEXT: Start DX-003 after this PROC-005 close-out. ENG-036 and PROC-015 remain human-owned and
-  start-gated.
+  requires an explicit reason in `.ai/handoff.md`. DX-003 was the separate per-tick
+  replay-divergence follow-up and is now closed; this close-out changed no production, Android,
+  or save behavior.
+- NEXT: DX-004 remains the next roadmap candidate; clarify its running/hot-reload scope before
+  intake. ENG-036 and PROC-015 remain human-owned and start-gated.
 - BLOCKERS: No implementation blocker. The known untracked `archive/` baseline remains preserved
   and excluded. No device, emulator, or visual-golden proof is claimed.
 - VERIFICATION: `:games:sandbox:test`, `:engine-devtools:test`, full `gradlew test`, `projects`,
@@ -623,8 +643,8 @@ Owner of last update: Codex / me-docs (2026-08-04: DX-007 close-out)
 
 ## Next Exact Action
 
-DX-007 is complete. Resolve DX-003 sequence metadata (`owner`, `blocked_by`, `start_gates`) before
-starting the first roadmap candidate; DX-004 remains scope-ambiguous.
+DX-003 is complete. DX-004 remains the next roadmap candidate; clarify its running/hot-reload scope
+before intake. ENG-036 and PROC-015 remain human-owned/start-gated.
 
 ## Known Blockers
 

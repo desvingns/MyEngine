@@ -2734,6 +2734,29 @@ object SandboxGame {
         SandboxRuntime(createInitialState(registry, difficultyId, mapId, seed), seed = seed)
 
     /**
+     * Narrow devtools seam for deterministic replay inspection. It selects the same typed
+     * resistance registry used by [runScriptedResistScenario] without exposing a common replay API
+     * or changing the authoritative runtime/save contracts.
+     */
+    fun createDevtoolsReplayRuntime(
+        scenarioId: String,
+        packRoot: Path = contentRoot(),
+        seed: Long = 7L,
+        resistPercent: Int = 50,
+    ): SandboxRuntime {
+        require(scenarioId in setOf("default", "canonical", "kill", "resist")) {
+            "Unknown sandbox devtools replay scenario '$scenarioId'."
+        }
+        val base = loadRegistry(packRoot)
+        val registry = if (scenarioId == "resist") {
+            typedReplayRegistry(resistPercent, base)
+        } else {
+            base
+        }
+        return createRuntime(registry, seed = seed)
+    }
+
+    /**
      * Canonical replay/benchmark scenario. The pulse tower at (30,32) is adjacent to the core and
      * never reaches the (1,1)->(32,32) enemy corridor within the 35-tick budget, so it kills nothing.
      * Its hash is the long-standing baseline; kept stable on purpose. Use [runScriptedKillScenario]
@@ -2759,7 +2782,7 @@ object SandboxGame {
     fun runScriptedResistScenario(seed: Long = 7, resistPercent: Int = 50): SandboxScenarioResult {
         require(resistPercent in 0..100) { "Resistance must be between 0 and 100 percent." }
         return runScriptedTypedScenario(
-            registry = typedReplayRegistry(resistPercent),
+            registry = typedReplayRegistry(resistPercent = resistPercent),
             towerPosition = TilePosition(2, 2),
             seed = seed,
         )
@@ -2792,8 +2815,10 @@ object SandboxGame {
         return SandboxScenarioResult(runtime.state.stableHash(), runtime.snapshot(), save, runtime.state.defense.metrics)
     }
 
-    private fun typedReplayRegistry(resistPercent: Int): ContentRegistry {
-        val base = loadRegistry()
+    private fun typedReplayRegistry(
+        resistPercent: Int,
+        base: ContentRegistry = loadRegistry(),
+    ): ContentRegistry {
         val damageTypeId = "arcane"
         return base.copy(
             strings = base.strings + ("damage.arcane" to "Arcane"),
