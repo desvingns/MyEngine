@@ -1,7 +1,39 @@
 # MyEngine Handoff
 
-Last updated: 2026-08-04 (PROC-004 close-out)
+Last updated: 2026-08-04 (PROC-001 close-out)
 Owner: Codex / me-dev:me
+
+## PROC-001 close-out (2026-08-04)
+
+### DONE
+
+- Moved `.claude/specs/PROC-001-spec-backsync.md` to `done/` and synchronized the roadmap.
+- Added `scripts/me-spec-sync.ps1` plus `scripts/tests/me-spec-sync.tests.ps1`. The script validates
+  completed-card front matter, resolves relative/external source bundles, reports stale targeted
+  gap/traceability rows in one JSON line, and applies only target rows with `-Apply`.
+
+### DECISIONS
+
+- Report-only is the default. External writes require both `-Apply` and `-AllowExternalWrite`.
+- Canonical six-column traceability is documented with `engine_gap_status`; unsupported alternate
+  schemas fail without mutation. No external MyTD files were changed, no ADR was needed, and no
+  engine/save/Android/plugin scope was added.
+
+### NEXT
+
+- Review remaining accepted backlog; ENG-036 and PROC-015 remain human-owned/start-gated.
+
+### BLOCKERS
+
+- No implementation blocker. The late developer worker was stopped after review; the tester
+  added a targeted-row case and its expectation was corrected locally. The untracked `archive/`
+  baseline remains excluded.
+
+### VERIFICATION
+
+- PROC-001 contract test: 11 cases passed. Selfcheck, board checker, report-only MyTD source check,
+  full Gradle tests/projects, content validation, replay, save-compat, benchmark, Android assemble,
+  headless inspect, and `git diff --check` passed.
 
 ## PROC-004 close-out (2026-08-04)
 

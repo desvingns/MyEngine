@@ -733,3 +733,18 @@ by: claude
 - Verification: full Gradle tests/projects, content validation, replay, save compatibility, benchmark,
   pre-push, selfcheck, headless inspect, Android `assembleDebug`, and `git diff --check` passed.
 - Baseline: known untracked `archive/` was preserved and excluded. No ADR or save-version bump.
+
+## 2026-08-04 - MyEngine PROC-001 feature run
+
+- Owner: Codex / `me-dev:me`.
+- Change type: process tooling feature; no plugin version bump, adapter change, or engine runtime
+  change. Added the canonical `me-spec-sync` JSON report/apply contract and 11-case PowerShell
+  test coverage; documented six-column traceability and close-out invocation.
+- Pipeline: selfcheck passed; scouts returned partial/pass facts; architect returned a valid scope
+  envelope after bounded wait; developer completed late and was stopped after review; tester added
+  targeted-row coverage, whose escaping expectation was corrected locally. No malformed JSON
+  envelope was observed.
+- Verification: focused sync contract, source report-only, selfcheck, board checker, full tests/
+  projects, content validation, replay, save compatibility, benchmark, Android assemble, headless
+  inspect, and diff-check passed. External MyTD files were preserved unchanged.
+- Baseline: known untracked `archive/` was preserved and excluded. No ADR or save-version bump.

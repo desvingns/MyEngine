@@ -1818,3 +1818,17 @@
   save-compatibility, benchmark, pre-push, selfcheck, required headless inspect hash
   `d599fc31843b5aa8`, Android `assembleDebug`, and `git diff --check` passed. Verifier worker timed
   out after bounded waits; local read-only boundary review found no blocker.
+
+### 2026-08-04 - PROC-001 (automated spec back-sync)
+
+- Status: Done / accepted; no new phase was created.
+- Owner: Codex / `me-dev:me`
+- DONE: Added `scripts/me-spec-sync.ps1` with deterministic JSON report/apply behavior for
+  completed-card `source:` bundles. It resolves relative and external paths, validates the
+  canonical gap/traceability schemas, reports stale targeted `EG-*` rows, and protects external
+  writes behind `-Apply -AllowExternalWrite`.
+- Verification: 11-case contract test, selfcheck, board checker, report-only MyTD source check,
+  full Gradle tests/projects, content validation, replay, save-compat, benchmark, Android
+  `assembleDebug`, headless inspect, and `git diff --check` passed.
+- Decisions: No external MyTD files, engine runtime, save schema, Android, ADR, or plugin version
+  were changed. The next action is remaining backlog review; ENG-036 and PROC-015 stay human-owned.

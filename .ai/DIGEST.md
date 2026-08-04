@@ -1,22 +1,29 @@
 # MyEngine Intake Digest
 
-Regenerated at close-out. Last updated: 2026-08-04 (PROC-004 close-out).
+Regenerated at close-out. Last updated: 2026-08-04 (PROC-001 close-out).
 
 ## Current next action
 
-PROC-004 (numeric performance budgets) is complete. Review the remaining accepted backlog, assign
+PROC-001 (automated spec back-sync) is complete. Review the remaining accepted backlog, assign
 any missing owner/blocked_by/start gates, and select the next feature. ENG-036 and PROC-015 remain
 human-owned start-gated work.
 
 ## Active specs / roadmap
 
 - DX-001, DX-002, DX-003, DX-004, DX-005, DX-006, DX-007, ENG-001, ENG-003, ENG-031, ENG-004, ENG-032, ENG-033, ENG-006,
-  ENG-017, ENG-023, ENG-025, ENG-034, ENG-035, PROC-004, PROC-005, and PROC-006 are done.
+  ENG-017, ENG-023, ENG-025, ENG-034, ENG-035, PROC-001, PROC-004, PROC-005, and PROC-006 are done.
 - ENG-003 is a post-Phase-14/Phase-15 feature close-out; no new phase was created.
 - ENG-002 remains the wave-enemy GoalField path; ENG-003 is the deterministic JobBoard/job-actor tick capability.
 - ENG-033's authored scope is implemented with no game-bundle traceability update. MySD TD Gate 1 is
   accepted for its TD reference inventory but is not treated as evidence for colony behavior.
 - No ADR was needed; the verifier guidance and plugin version were updated for the benchmark gate.
+
+## PROC-001 close-out (2026-08-04)
+
+- Added deterministic `scripts/me-spec-sync.ps1` report/apply tooling and an 11-case PowerShell
+  contract test. It resolves relative/external bundles, validates six-column traceability, reports
+  stale targeted `EG-*` rows, and requires `-Apply -AllowExternalWrite` for external mutation.
+- No external MyTD files were changed; no engine/runtime/save/Android/ADR/plugin scope was added.
 
 ## PROC-004 close-out (2026-08-04)
 

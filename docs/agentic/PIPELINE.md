@@ -45,6 +45,9 @@ folders are thin adapters that point back to the canonical docs.
    docs. When a backlog spec is completed, its card status flips (backlog -> done) and, if the
    spec came from a game bundle, the game's `engine-gap-analysis.md` / `traceability.csv`
    status is updated too.
+   The deterministic source check is `powershell.exe -NoProfile -File scripts\me-spec-sync.ps1 -CardPath
+   <completed-card>`. It is report-only by default; use `-Apply`, and for an external source also
+   `-AllowExternalWrite`, only after the card/roadmap board check passes.
    A successful `--feature` run is not complete until its feature artifacts and close-out docs are
    committed as one intentional conventional commit and pushed directly to the configured `main`
    branch. Intake must start from a clean worktree (or a clearly documented,

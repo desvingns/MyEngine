@@ -42,8 +42,14 @@ Every requirement gets an `FR-*` id. User stories use `US-*`. Acceptance files u
 tags. `traceability.csv` maps:
 
 ```text
-requirement_id,user_story_id,acceptance_id,design_section,engine_gap_id
+requirement_id,user_story_id,acceptance_id,design_section,engine_gap_id,engine_gap_status
 ```
+
+For a completed engine-gap card, `engine_gap_status` mirrors the status in
+`engine-gap-analysis.md`. MyEngine's `scripts/me-spec-sync.ps1` reads the completed card's
+`source:` path and referenced `EG-*` ids, reports stale target rows as one JSON result, and only
+updates those rows when `-Apply` is supplied. External writes additionally require
+`-AllowExternalWrite`; report-only mode is the default.
 
 ## Engine Gap Split
 

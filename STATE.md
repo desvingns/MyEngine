@@ -1,8 +1,25 @@
 # MyEngine State
 
-Last updated: 2026-08-04 (PROC-004 close-out)
-Active phase: Phase 00-14 complete; Phase 15 sequencing adopted; Signal Garden SG-001..005 complete; MyTD MTD-001..005 complete; DX-001, DX-002, DX-003, DX-004, DX-005, DX-006, DX-007, DX-008, ENG-001, ENG-002, ENG-003, ENG-004, ENG-005, ENG-006, ENG-007, ENG-008, ENG-009, ENG-010, ENG-011, ENG-012, ENG-013, ENG-014, ENG-015, ENG-016, ENG-017, ENG-018, ENG-019, ENG-020, ENG-021, ENG-023, ENG-025, ENG-026, ENG-027, ENG-028, ENG-029, ENG-030, ENG-031, ENG-032, ENG-033, ENG-034, ENG-035, PROC-002, PROC-003, PROC-004, PROC-005, PROC-006, PROC-007, and PROC-013 complete; pipeline at v0.2.2; next exact action is to review remaining accepted backlog and select the next feature; ENG-036 and PROC-015 remain human-owned/start-gated
-Owner of last update: Codex / me-dev:me (2026-08-04: PROC-004 close-out)
+Last updated: 2026-08-04 (PROC-001 close-out)
+Active phase: Phase 00-14 complete; Phase 15 sequencing adopted; Signal Garden SG-001..005 complete; MyTD MTD-001..005 complete; DX-001, DX-002, DX-003, DX-004, DX-005, DX-006, DX-007, DX-008, ENG-001, ENG-002, ENG-003, ENG-004, ENG-005, ENG-006, ENG-007, ENG-008, ENG-009, ENG-010, ENG-011, ENG-012, ENG-013, ENG-014, ENG-015, ENG-016, ENG-017, ENG-018, ENG-019, ENG-020, ENG-021, ENG-023, ENG-025, ENG-026, ENG-027, ENG-028, ENG-029, ENG-030, ENG-031, ENG-032, ENG-033, ENG-034, ENG-035, PROC-001, PROC-002, PROC-003, PROC-004, PROC-005, PROC-006, PROC-007, and PROC-013 complete; pipeline at v0.2.2; next exact action is to review remaining accepted backlog and select the next feature; ENG-036 and PROC-015 remain human-owned/start-gated
+Owner of last update: Codex / me-dev:me (2026-08-04: PROC-001 close-out)
+
+## PROC-001 Close-out (2026-08-04)
+
+- DONE: Added `scripts/me-spec-sync.ps1` and its deterministic contract test. The script resolves
+  relative or external `source:` bundles, validates canonical gap/traceability schemas, reports
+  stale referenced `EG-*` rows as one JSON result, and applies only targeted rows with explicit
+  `-Apply`. External writes require `-AllowExternalWrite`.
+- DECISIONS: Default behavior is report-only. Unsupported bundle schemas fail clearly; no
+  external MyTD files were changed during this run. No engine, save, Android, renderer, ADR, or
+  plugin-version scope was added.
+- NEXT: Review remaining accepted backlog; ENG-036 and PROC-015 remain human-owned/start-gated.
+- BLOCKERS: No implementation blocker. The developer worker completed late and was stopped after
+  its edits were reviewed; tester feedback was incorporated. The known untracked `archive/`
+  baseline remains preserved and excluded.
+- VERIFICATION: Focused PROC-001 contract test (11 cases), selfcheck, board checker, source
+  report-only check against `D:/Pet/MyTD/spec`, full Gradle tests/projects, content validation,
+  replay, save-compat, benchmark, Android assembleDebug, headless inspect, and diff-check passed.
 
 ## PROC-004 Close-out (2026-08-04)
 
