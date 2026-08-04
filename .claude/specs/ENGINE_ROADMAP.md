@@ -7,7 +7,7 @@ two or more games outranks single-game gaps of the same severity.
 Updated by: the `/me-spec` backlog bridge (new gaps / new demand) and `/me`
 close-out (status changes).
 
-Last updated: 2026-08-04 (PROC-005 close-out)
+Last updated: 2026-08-04 (DX-007 close-out)
 
 ## Capabilities
 
@@ -64,7 +64,7 @@ Last updated: 2026-08-04 (PROC-005 close-out)
 | Desktop content hot-reload | DX-004 | agent pipeline | - | backlog |
 | Schema-docs drift gate | DX-005 | agent pipeline | - | **done** (2026-08-03; deterministic ContentLoader/properties-schema drift report, bidirectional fixtures, selfcheck and pre-push wiring) |
 | Engine cookbook (agent task recipes) | DX-006 | agent pipeline | - | **done** (2026-08-03; `docs/COOKBOOK.md` has five on-demand recipes with exact file lists, gates, and historical commit references; `AGENTS.md` links it without adding it to always-loaded intake) |
-| Fuzz tests for ContentLoader + SaveCodec | DX-007 | agent pipeline | - | backlog |
+| Fuzz tests for ContentLoader + SaveCodec | DX-007 | agent pipeline | - | **done** (2026-08-04; bounded fixed-seed ContentLoader/SaveCodec fuzz tests, typed malformed-content handling, valid save roundtrip and corruption rejection, pinned malformed-Unicode fixture; production API, `SAVE_VERSION`, schema, Android, and archive unchanged; no game-bundle traceability or ADR) |
 | ADR: JSON vs properties content format | DX-008 | agent pipeline | - | **done** (2026-07-16; ADR-0003 accepts `.properties` for flat definitions and JSON for nested assets) |
 | Spec board backsync | PROC-001 | process | - | backlog |
 | Domain roadmap sequencing | PROC-003 | process | - | **done** (2026-07-29; Plane/15 sequences flow-field [done], colony slice, storyteller; vision:* accepted as demand by owner amendment; successor ENG-010 adopted) |
@@ -121,9 +121,10 @@ Last updated: 2026-08-04 (PROC-005 close-out)
    ENG-001, ENG-003, ENG-031, ENG-004, ENG-032, ENG-033, ENG-017, and ENG-025 are complete. MySD TD evidence is
    not used as colony evidence.
 4. DX-008 is done: use its hybrid-format ADR for ENG-017/ENG-028 schema work. DX-001, DX-002,
-   DX-006, DX-005, and PROC-006 are complete (2026-08-04). Post-DX-001 recommendation: review the
-   remaining accepted backlog and assign owner, blocked_by, and start gates before selecting another
-   card; ENG-036 and PROC-015 remain explicitly human-owned. ENG-025 is now closed.
+   DX-005, DX-006, DX-007, and PROC-006 are complete (2026-08-04). DX-003 remains the first
+   roadmap candidate, but requires an explicit sequence-metadata decision (`owner`, `blocked_by`,
+   and `start_gates`); DX-004 also has scope ambiguity. ENG-036 and PROC-015 remain explicitly
+   human-owned/start-gated. ENG-025 is now closed.
 5. MySD foundation: PROC-002 / ADR-0004 is done. MySD Gate 1/relaxed Gate 2 are accepted for the
    TD reference bundle, but no colony demand is inferred from that bundle. ENG-033 is unlocked by
    its separate authored scope; future MySD demand still bridges only through PROC-015 semantics.

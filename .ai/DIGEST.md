@@ -1,21 +1,45 @@
 # MyEngine Intake Digest
 
-Regenerated at close-out. Last updated: 2026-08-04 (PROC-005 close-out).
+Regenerated at close-out. Last updated: 2026-08-04 (DX-007 close-out).
 
 ## Current next action
 
-PROC-005 (golden replay hashes) is complete. Start DX-003 (replay divergence bisector) next;
-ENG-036 and PROC-015 remain human-owned start-gated work.
+DX-007 (content/save fuzz tests) is complete. DX-003 remains the first roadmap candidate, but
+requires a sequence-metadata decision (`owner`, `blocked_by`, `start_gates`) before intake; DX-004
+also has scope ambiguity. ENG-036 and PROC-015 remain human-owned start-gated work.
 
 ## Active specs / roadmap
 
-- DX-001, DX-002, DX-005, DX-006, ENG-001, ENG-003, ENG-031, ENG-004, ENG-032, ENG-033, ENG-006, ENG-017,
-  ENG-023, ENG-025, ENG-034, ENG-035, PROC-005, and PROC-006 are done.
+- DX-001, DX-002, DX-005, DX-006, DX-007, ENG-001, ENG-003, ENG-031, ENG-004, ENG-032, ENG-033, ENG-006,
+  ENG-017, ENG-023, ENG-025, ENG-034, ENG-035, PROC-005, and PROC-006 are done.
 - ENG-003 is a post-Phase-14/Phase-15 feature close-out; no new phase was created.
 - ENG-002 remains the wave-enemy GoalField path; ENG-003 is the deterministic JobBoard/job-actor tick capability.
 - ENG-033's authored scope is implemented with no game-bundle traceability update. MySD TD Gate 1 is
   accepted for its TD reference inventory but is not treated as evidence for colony behavior.
 - No ADR or plugin/skill/pipeline contract change was needed.
+
+## DX-007 close-out (2026-08-04)
+
+### DONE
+
+- Bounded fixed-seed content/save fuzz tests cover malformed content, typed malformed-content
+  handling, valid save roundtrip, corrupted-save rejection, and a pinned malformed-Unicode fixture.
+
+### DECISIONS
+
+- Production API, `SAVE_VERSION`, save schema, Android, and `archive/` are unchanged. No
+  game-bundle traceability update or ADR was needed; no plugin, skill, or pipeline contract
+  changed.
+
+### NEXT
+
+- DX-003 remains the first roadmap candidate, but its `owner`, `blocked_by`, and `start_gates`
+  require a sequence-metadata decision before intake. DX-004 also has scope ambiguity.
+
+### VERIFICATION
+
+- Focused/full tests, `projects`, content validation, replay, save-compat, benchmark (`sim_ms=410`),
+  selfcheck, headless inspect hash `d599fc31843b5aa8`, Android `assembleDebug`, and diff-check passed.
 
 ## PROC-005 close-out (2026-08-04)
 

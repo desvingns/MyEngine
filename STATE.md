@@ -1,8 +1,24 @@
 # MyEngine State
 
-Last updated: 2026-08-04 (PROC-005 close-out)
-Active phase: Phase 00-14 complete; Phase 15 sequencing adopted; Signal Garden SG-001..005 complete; MyTD MTD-001..005 complete; DX-001, DX-002, DX-005, DX-006, DX-008, ENG-001, ENG-002, ENG-003, ENG-004, ENG-005, ENG-006, ENG-007, ENG-008, ENG-009, ENG-010, ENG-011, ENG-012, ENG-013, ENG-014, ENG-015, ENG-016, ENG-017, ENG-018, ENG-019, ENG-020, ENG-021, ENG-023, ENG-025, ENG-026, ENG-027, ENG-028, ENG-029, ENG-030, ENG-031, ENG-032, ENG-033, ENG-034, ENG-035, PROC-002, PROC-003, PROC-005, PROC-006, PROC-007, and PROC-013 complete; pipeline at v0.2.0; next exact action is DX-003 replay divergence bisector after PROC-005
-Owner of last update: Codex / me-docs (2026-08-04: PROC-005 close-out)
+Last updated: 2026-08-04 (DX-007 close-out)
+Active phase: Phase 00-14 complete; Phase 15 sequencing adopted; Signal Garden SG-001..005 complete; MyTD MTD-001..005 complete; DX-001, DX-002, DX-005, DX-006, DX-007, DX-008, ENG-001, ENG-002, ENG-003, ENG-004, ENG-005, ENG-006, ENG-007, ENG-008, ENG-009, ENG-010, ENG-011, ENG-012, ENG-013, ENG-014, ENG-015, ENG-016, ENG-017, ENG-018, ENG-019, ENG-020, ENG-021, ENG-023, ENG-025, ENG-026, ENG-027, ENG-028, ENG-029, ENG-030, ENG-031, ENG-032, ENG-033, ENG-034, ENG-035, PROC-002, PROC-003, PROC-005, PROC-006, PROC-007, and PROC-013 complete; pipeline at v0.2.0; next exact action is to resolve DX-003 sequence metadata before starting it; DX-004 has scope ambiguity
+Owner of last update: Codex / me-docs (2026-08-04: DX-007 close-out)
+
+## DX-007 Close-out (2026-08-04)
+
+- DONE: Added bounded fixed-seed content/save fuzz coverage, typed malformed-content handling,
+  valid save roundtrip and corruption-rejection checks, and a pinned malformed-Unicode regression
+  fixture.
+- DECISIONS: Production API, `SAVE_VERSION`, save schema, Android, and `archive/` are unchanged.
+  No game-bundle traceability update or ADR was needed; no plugin, skill, or pipeline contract
+  changed. No sequence metadata was invented for the next backlog cards.
+- NEXT: DX-003 remains the first roadmap candidate, but its `owner`, `blocked_by`, and `start_gates`
+  require an explicit sequence-metadata decision before intake. DX-004 also has scope ambiguity.
+- BLOCKERS: No DX-007 implementation blocker. The next-card metadata decision is a process gate,
+  not a DX-007 failure.
+- VERIFICATION: Focused and full Gradle tests, `projects`, content validation, replay, save-compat,
+  benchmark (`sim_ms=410`), selfcheck, headless inspect (hash `d599fc31843b5aa8`), Android
+  `assembleDebug`, and `git diff --check` all passed.
 
 ## PROC-005 Close-out (2026-08-04)
 
@@ -607,8 +623,8 @@ Owner of last update: Codex / me-docs (2026-08-04: PROC-005 close-out)
 
 ## Next Exact Action
 
-ENG-017 is complete. Review the remaining accepted backlog and run `/me --feature --next` for the
-next selected candidate.
+DX-007 is complete. Resolve DX-003 sequence metadata (`owner`, `blocked_by`, `start_gates`) before
+starting the first roadmap candidate; DX-004 remains scope-ambiguous.
 
 ## Known Blockers
 

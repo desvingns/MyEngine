@@ -52,8 +52,10 @@
    ENG-032, ENG-033, ENG-006, ENG-034, ENG-035, and ENG-025 are closed; ENG-006, ENG-034, ENG-035, and ENG-025 were selected from the remaining accepted
    backlog after the colony slice.
 4. Hardening gaps из `docs/HARDENING_AUDIT.md` закрывать по одному, с тестами и обновлением handoff.
-5. PROC-005 Golden replay hashes закрыт 2026-08-04; следующий рекомендуемый feature — DX-003
-   Replay divergence bisector. ENG-036 и PROC-015 остаются human-owned и start-gated.
+5. PROC-005 Golden replay hashes и DX-007 ContentLoader/SaveCodec fuzz tests закрыты 2026-08-04.
+   DX-003 остаётся первым roadmap-кандидатом, но перед intake требует решения по sequence metadata
+   (`owner`, `blocked_by`, `start_gates`); DX-004 также имеет scope ambiguity. ENG-036 и PROC-015
+   остаются human-owned и start-gated.
 
 Новые крупные фазы добавлять только после того, как backlog specs перестанут быть достаточно
 точным механизмом управления работой.
@@ -86,6 +88,7 @@
 | [x] | DX-001 New-game scaffolder | [DX-001](../.claude/specs/done/DX-001-new-game-scaffolder.md) | Deterministic 28-file game/module/content/spec scaffold, safe settings wiring, canonical replay discovery, and idempotence/path/encoding contract test | 2026-08-04 |
 | [x] | DX-006 Engine cookbook | [DX-006](../.claude/specs/done/DX-006-engine-cookbook.md) | Five on-demand recipes with exact file lists, gates, and historical commit references; AGENTS intake link stays token-economical | 2026-08-03 |
 | [x] | DX-005 Schema-docs drift gate | [DX-005](../.claude/specs/done/DX-005-schema-docs-drift-gate.md) | Deterministic ContentLoader/properties-schema drift report, bidirectional fixtures, selfcheck and pre-push wiring | 2026-08-03 |
+| [x] | DX-007 ContentLoader + SaveCodec fuzz tests | [DX-007](../.claude/specs/done/DX-007-content-save-fuzz.md) | Bounded fixed-seed malformed-content/save fuzz coverage, typed malformed-content handling, valid roundtrip/corruption rejection, and pinned malformed-Unicode fixture | 2026-08-04 |
 | [x] | PROC-006 CI pre-push lane | [PROC-006](../.claude/specs/done/PROC-006-ci-prepush.md) | `.githooks/pre-push` aggregates tests, content validation, replay, save compatibility and schema drift into one blocking JSON result | 2026-08-03 |
 | [x] | ENG-006 Seeded procedural map generation | [ENG-006](../.claude/specs/done/ENG-006-procgen-maps.md) | Bounded seeded generation from validated content parameters, guaranteed spawn-to-core connectivity, deterministic fallback, ASCII devtools report, and seed-preserving sandbox save/reload | 2026-08-03 |
 | [x] | ENG-034 Enemy attacks on structures | [ENG-034](../.claude/specs/done/ENG-034-enemy-structure-attacks.md) | Content-flagged blocked enemies damage the stable lowest-id adjacent tower/building, lethal damage clears occupancy and rebuilds GoalField, building health round-trips, and balance reports expose structure attack potential | 2026-08-03 |
@@ -1743,3 +1746,18 @@
     `.ai/handoff.md`. DX-003 remains separate.
 - Next:
   - DX-003 replay divergence bisector; ENG-036 and PROC-015 remain human-owned/start-gated.
+
+### 2026-08-04 - DX-007 (ContentLoader + SaveCodec fuzz tests)
+
+- Status: Done / accepted; no new phase was created.
+- Owner: Codex / `me-docs` for documentation close-out.
+- DONE: Closed bounded fixed-seed content/save fuzz tests, typed malformed-content handling, valid
+  save roundtrip and corruption rejection, and the pinned malformed-Unicode regression fixture.
+- DECISIONS: Production API, `SAVE_VERSION`, save schema, Android, and `archive/` are unchanged.
+  No game-bundle traceability update or ADR was needed; no plugin, skill, or pipeline contract
+  changed.
+- NEXT: DX-003 remains the first roadmap candidate but requires a sequence-metadata decision for
+  `owner`, `blocked_by`, and `start_gates`; DX-004 also has scope ambiguity.
+- VERIFICATION: Focused/full tests, `projects`, content validation, replay, save-compat, benchmark
+  (`sim_ms=410`), selfcheck, headless inspect hash `d599fc31843b5aa8`, Android `assembleDebug`, and
+  `git diff --check` passed.

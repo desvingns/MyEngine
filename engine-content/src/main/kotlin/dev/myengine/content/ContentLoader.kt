@@ -1774,8 +1774,18 @@ object ContentPackLoader {
             errors += ContentValidationError(path.fileName.toString(), "file", "path", "File is missing.")
             return null
         }
-        return Properties().also { props ->
-            Files.newInputStream(path).use(props::load)
+        return try {
+            Properties().also { props ->
+                Files.newInputStream(path).use(props::load)
+            }
+        } catch (error: Exception) {
+            errors += ContentValidationError(
+                path.fileName.toString(),
+                "file",
+                "properties",
+                "Could not read properties: ${error.message ?: error::class.simpleName}.",
+            )
+            null
         }
     }
 

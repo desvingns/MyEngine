@@ -12,6 +12,7 @@ import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 import kotlin.test.assertIs
 import kotlin.test.assertNull
+import kotlin.random.Random
 
 class ContentPackLoaderTest {
     @Test
@@ -26,6 +27,61 @@ class ContentPackLoaderTest {
         assertEquals(BigDecimal("0.5"), result.registry?.towers?.get("basic")?.sellRefundRatio)
         assertEquals(4, result.registry?.towers?.get("basic")?.upgradeTiers?.get(TowerUpgradeTier.key("main", 1))?.damage)
         assertTrue(result.registry?.buildings?.isEmpty() == true)
+    }
+
+    @Test
+    fun malformedPropertiesFixtureIsReportedWithoutUnexpectedRuntimeException() {
+        val root = createPack()
+        val fixture = requireNotNull(javaClass.getResourceAsStream(
+            "/content-fixtures/dx-007-malformed-unicode/manifest.properties",
+        )) { "Missing pinned DX-007 malformed-properties fixture." }.use { it.readBytes() }
+        Files.write(root.resolve("manifest.properties"), fixture)
+
+        val result = safeLoad(root, seed = PINNED_FIXTURE_SEED, mutation = "malformed-unicode-fixture")
+
+        assertFalse(result.isValid)
+        assertTrue(
+            result.errors.any {
+                it.file == "manifest.properties" && it.id == "file" && it.field == "properties"
+            },
+            result.errors.joinToString("\n"),
+        )
+    }
+
+    @Test
+    fun boundedFixedSeedMalformedContentFuzzHasDeterministicTypedDiagnostics() {
+        val mutations = contentFuzzMutations()
+        val cases = mutations + List(FUZZ_EXTRA_CASES) { index ->
+            val random = Random(FUZZ_SEED + index)
+            mutations[random.nextInt(mutations.size)]
+        }
+
+        cases.forEachIndexed { caseIndex, mutation ->
+            val seed = FUZZ_SEED + caseIndex
+            val root = createPack()
+            mutation.apply(root, Random(seed))
+
+            val first = safeLoad(root, seed, mutation.id)
+            val second = safeLoad(root, seed, mutation.id)
+
+            assertFalse(
+                first.isValid,
+                "Malformed content unexpectedly loaded: seed=$seed mutation=${mutation.id}",
+            )
+            assertNull(
+                first.registry,
+                "Malformed content returned a registry: seed=$seed mutation=${mutation.id}",
+            )
+            assertTrue(
+                first.errors.isNotEmpty(),
+                "Malformed content returned no typed diagnostics: seed=$seed mutation=${mutation.id}",
+            )
+            assertEquals(
+                first.errors,
+                second.errors,
+                "Diagnostics changed for seed=$seed mutation=${mutation.id}",
+            )
+        }
     }
 
     @Test
@@ -1290,6 +1346,94 @@ class ContentPackLoaderTest {
         )
     }
 
+    private fun safeLoad(root: Path, seed: Int, mutation: String): ContentLoadResult =
+        try {
+            ContentPackLoader.load(root)
+        } catch (error: RuntimeException) {
+            throw AssertionError(
+                "Unexpected RuntimeException for seed=$seed mutation=$mutation: ${error.message}",
+                error,
+            )
+        }
+
+    private data class ContentMutation(
+        val id: String,
+        val apply: (Path, Random) -> Unit,
+    )
+
+    private fun contentFuzzMutations(): List<ContentMutation> = listOf(
+        ContentMutation("manifest-schema-version") { root, _ ->
+            replaceProperty(root, "manifest.properties", "schemaVersion", "not-an-integer")
+        },
+        ContentMutation("manifest-malformed-unicode") { root, _ ->
+            val fixture = requireNotNull(javaClass.getResourceAsStream(
+                "/content-fixtures/dx-007-malformed-unicode/manifest.properties",
+            )).use { it.readBytes() }
+            Files.write(root.resolve("manifest.properties"), fixture)
+        },
+        ContentMutation("tile-invalid-boolean") { root, _ ->
+            replaceProperty(root, "tiles.properties", "floor.buildable", "maybe")
+        },
+        ContentMutation("resource-missing-display-key") { root, _ ->
+            replaceProperty(root, "resources.properties", "bolt.displayKey", "")
+        },
+        ContentMutation("tower-zero-range") { root, _ ->
+            replaceProperty(root, "towers.properties", "basic.range", "0")
+        },
+        ContentMutation("tower-invalid-decimal") { root, _ ->
+            replaceProperty(root, "towers.properties", "basic.sellRefundRatio", "not-a-decimal")
+        },
+        ContentMutation("tower-invalid-targeting-mode") { root, _ ->
+            replaceProperty(root, "towers.properties", "basic.targetingMode", "unknown")
+        },
+        ContentMutation("tower-malformed-upgrade-key") { root, _ ->
+            appendProperty(root, "towers.properties", "basic.upgrade.main.bad.damage", "1")
+        },
+        ContentMutation("tower-dangling-resource-reference") { root, _ ->
+            replaceProperty(root, "towers.properties", "basic.costResource", "missing-resource")
+        },
+        ContentMutation("enemy-negative-health") { root, _ ->
+            replaceProperty(root, "enemies.properties", "scout.health", "-1")
+        },
+        ContentMutation("enemy-invalid-movement-mode") { root, _ ->
+            appendProperty(root, "enemies.properties", "scout.movementMode", "teleport")
+        },
+        ContentMutation("enemy-invalid-boolean") { root, _ ->
+            appendProperty(root, "enemies.properties", "scout.isElite", "maybe")
+        },
+        ContentMutation("recipe-invalid-duration") { root, _ ->
+            replaceProperty(root, "recipes.properties", "generator.durationTicks", "not-an-integer")
+        },
+        ContentMutation("wave-dangling-enemy-reference") { root, _ ->
+            replaceProperty(root, "waves.properties", "wave1.spawns", "missing-enemy:2")
+        },
+        ContentMutation("incident-invalid-effect-number") { root, _ ->
+            appendProperty(root, "incidents.properties", "spark.effects", "resource_event:bolt:not-an-integer")
+        },
+        ContentMutation("maps-invalid-json") { root, _ ->
+            root.resolve("maps.json").writeText("{")
+        },
+        ContentMutation("maps-invalid-shape") { root, _ ->
+            root.resolve("maps.json").writeText("{ \"maps\": [\"not-an-object\"] }")
+        },
+        ContentMutation("tech-tree-invalid-json") { root, _ ->
+            root.resolve("tech-tree.json").writeText("{")
+        },
+    )
+
+    private fun replaceProperty(root: Path, file: String, key: String, value: String) {
+        val path = root.resolve(file)
+        val original = Files.readString(path)
+        val property = Regex("(?m)^${Regex.escape(key)}=.*$")
+        check(property.containsMatchIn(original)) { "Missing property '$key' in '$file'." }
+        Files.writeString(path, property.replace(original) { "$key=$value" })
+    }
+
+    private fun appendProperty(root: Path, file: String, key: String, value: String) {
+        val path = root.resolve(file)
+        Files.writeString(path, Files.readString(path) + "\n$key=$value\n")
+    }
+
     private fun mapJson(
         terrainRows: List<String> = listOf(".....", ".....", "..CR.", ".....", "....."),
         spawnX: Int = 0,
@@ -1427,5 +1571,11 @@ class ContentPackLoaderTest {
             .map { it.resolve(relativePath) }
             .firstOrNull { Files.isDirectory(it) }
             ?: error("Could not locate current content pack '$relativePath' from $cwd")
+    }
+
+    private companion object {
+        const val FUZZ_SEED: Int = 0x5EED007
+        const val FUZZ_EXTRA_CASES: Int = 16
+        const val PINNED_FIXTURE_SEED: Int = 0xD7007
     }
 }

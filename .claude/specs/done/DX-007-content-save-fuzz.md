@@ -1,6 +1,6 @@
 id: DX-007
 title: Property-based fuzz tests for ContentLoader + SaveCodec
-status: backlog
+status: done
 phase: dx
 source: engine gap sweep 2026-07-06 (project review)
 

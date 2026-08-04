@@ -1,7 +1,39 @@
 # MyEngine Handoff
 
-Last updated: 2026-08-04 (PROC-005 close-out; next DX-003)
+Last updated: 2026-08-04 (DX-007 close-out; DX-003 metadata decision pending)
 Owner: Codex / me-docs
+
+## DX-007 close-out (2026-08-04)
+
+### DONE
+
+- Moved the accepted card to `.claude/specs/done/DX-007-content-save-fuzz.md` and preserved its
+  acceptance criteria with `status: done`.
+- Closed bounded fixed-seed ContentLoader/SaveCodec fuzz coverage, typed malformed-content
+  handling, valid save roundtrip and corruption rejection, and the pinned malformed-Unicode
+  regression fixture.
+
+### DECISIONS
+
+- Production API, `SAVE_VERSION`, save schema, Android, and `archive/` remain unchanged.
+- No game-bundle traceability update or ADR was needed. No plugin, skill, or pipeline contract
+  changed, so `.ai/changes/agent-skill-log.md` was not modified.
+- No owner, `blocked_by`, or `start_gates` values were invented for the next cards.
+
+### NEXT
+
+- DX-003 remains the first roadmap candidate, but its sequence metadata (`owner`, `blocked_by`,
+  `start_gates`) needs an explicit decision before intake. DX-004 also has scope ambiguity.
+
+### BLOCKERS
+
+- No DX-007 implementation blocker. The next-card metadata decision is a process gate.
+
+### VERIFICATION
+
+- Focused and full Gradle tests, `projects`, content validation, replay, save-compat, benchmark
+  (`sim_ms=410`), selfcheck, headless inspect (hash `d599fc31843b5aa8`), Android `assembleDebug`,
+  and `git diff --check` all passed.
 
 ## PROC-005 close-out (2026-08-04)
 
