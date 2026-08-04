@@ -17,7 +17,7 @@ class SandboxVerticalSliceTest {
         val second = SandboxGame.runScriptedScenario()
 
         assertEquals(first.hash, second.hash)
-        assertEquals("e4892bcc18f9d8dc", first.hash)
+        assertEquals(ReplayGoldenHashes.canonical, first.hash)
         assertTrue(first.snapshot.entities.isNotEmpty())
     }
 
@@ -38,7 +38,7 @@ class SandboxVerticalSliceTest {
         assertEquals("resource", resourceTile.terrainId)
         assertEquals("bolt", resourceTile.resourceNode?.resourceId)
         assertEquals(100, resourceTile.resourceNode?.amount)
-        assertEquals("e4892bcc18f9d8dc", SandboxGame.runScriptedScenario(mapId = map.id).hash)
+        assertEquals(ReplayGoldenHashes.canonical, SandboxGame.runScriptedScenario(mapId = map.id).hash)
     }
 
     @Test
@@ -99,7 +99,7 @@ class SandboxVerticalSliceTest {
         assertTrue(first.metrics.towerShots > 0, "kill scenario never fired")
         // ...be replay-stable...
         assertEquals(first.hash, second.hash)
-        assertEquals("a763da4ac32b15b4", first.hash)
+        assertEquals(ReplayGoldenHashes.kill, first.hash)
         // ...and carry its own hash distinct from the (no-kill) canonical baseline.
         assertNotEquals(canonical.hash, first.hash)
         assertEquals(0, canonical.metrics.enemiesKilled)

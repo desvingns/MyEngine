@@ -1,8 +1,25 @@
 # MyEngine State
 
-Last updated: 2026-08-04 (DX-001 close-out)
-Active phase: Phase 00-14 complete; Phase 15 sequencing adopted; Signal Garden SG-001..005 complete; MyTD MTD-001..005 complete; DX-001, DX-002, DX-005, DX-006, DX-008, ENG-001, ENG-002, ENG-003, ENG-004, ENG-005, ENG-006, ENG-007, ENG-008, ENG-009, ENG-010, ENG-011, ENG-012, ENG-013, ENG-014, ENG-015, ENG-016, ENG-017, ENG-018, ENG-019, ENG-020, ENG-021, ENG-023, ENG-025, ENG-026, ENG-027, ENG-028, ENG-029, ENG-030, ENG-031, ENG-032, ENG-033, ENG-034, ENG-035, PROC-002, PROC-003, PROC-006, PROC-007, and PROC-013 complete; pipeline at v0.2.0; next exact action is review of the remaining accepted backlog
-Owner of last update: Codex (2026-08-04: DX-001 close-out)
+Last updated: 2026-08-04 (PROC-005 close-out)
+Active phase: Phase 00-14 complete; Phase 15 sequencing adopted; Signal Garden SG-001..005 complete; MyTD MTD-001..005 complete; DX-001, DX-002, DX-005, DX-006, DX-008, ENG-001, ENG-002, ENG-003, ENG-004, ENG-005, ENG-006, ENG-007, ENG-008, ENG-009, ENG-010, ENG-011, ENG-012, ENG-013, ENG-014, ENG-015, ENG-016, ENG-017, ENG-018, ENG-019, ENG-020, ENG-021, ENG-023, ENG-025, ENG-026, ENG-027, ENG-028, ENG-029, ENG-030, ENG-031, ENG-032, ENG-033, ENG-034, ENG-035, PROC-002, PROC-003, PROC-005, PROC-006, PROC-007, and PROC-013 complete; pipeline at v0.2.0; next exact action is DX-003 replay divergence bisector after PROC-005
+Owner of last update: Codex / me-docs (2026-08-04: PROC-005 close-out)
+
+## PROC-005 Close-out (2026-08-04)
+
+- DONE: Checked-in `canonical.hash`, `kill.hash`, and `resist.hash` are loaded by replay tests;
+  `scripts/me-sim-replay.ps1` compares discovered replay output against the golden files and
+  preserves generated-game discovery.
+- DECISIONS: Golden files are deterministic behavior contracts. Any intentional golden update
+  requires an explicit reason in `.ai/handoff.md`. DX-003 remains a separate next feature for
+  per-tick replay-divergence bisection; this close-out changed no production, Android, or save
+  behavior.
+- NEXT: Start DX-003 after this PROC-005 close-out. ENG-036 and PROC-015 remain human-owned and
+  start-gated.
+- BLOCKERS: No implementation blocker. The known untracked `archive/` baseline remains preserved
+  and excluded. No device, emulator, or visual-golden proof is claimed.
+- VERIFICATION: `:games:sandbox:test`, `:engine-devtools:test`, full `gradlew test`, `projects`,
+  content validation, replay, negative mismatch handling, save compatibility, benchmark,
+  selfcheck, required headless inspect, Android `assembleDebug`, and `git diff --check` passed.
 
 ## Current Status
 

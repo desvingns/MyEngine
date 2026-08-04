@@ -59,14 +59,27 @@ class Eng011BalanceAndReplayTest {
         val canonical = scenarios.getValue("canonical").jsonObject
         val kill = scenarios.getValue("kill").jsonObject
         val resist = scenarios.getValue("resist").jsonObject
+        val goldens = listOf("canonical", "kill", "resist")
+            .associateWith(::readReplayGolden)
 
-        assertEquals("e4892bcc18f9d8dc", canonical.getValue("final_hash").jsonPrimitive.content)
-        assertEquals("a763da4ac32b15b4", kill.getValue("final_hash").jsonPrimitive.content)
-        assertEquals("3f02607020d48668", resist.getValue("final_hash").jsonPrimitive.content)
-        assertEquals("3f02607020d48668", resist.getValue("golden_hash").jsonPrimitive.content)
+        assertEquals(goldens.getValue("canonical"), canonical.getValue("final_hash").jsonPrimitive.content)
+        assertEquals(goldens.getValue("kill"), kill.getValue("final_hash").jsonPrimitive.content)
+        assertEquals(goldens.getValue("resist"), resist.getValue("final_hash").jsonPrimitive.content)
+        assertEquals(goldens.getValue("resist"), resist.getValue("golden_hash").jsonPrimitive.content)
         assertEquals("true", resist.getValue("golden_match").jsonPrimitive.content)
         assertEquals("true", resist.getValue("repeat_stable").jsonPrimitive.content)
         assertEquals("true", resist.getValue("differs_from_zero_resist").jsonPrimitive.content)
+    }
+
+    private fun readReplayGolden(scenario: String): String {
+        val goldenRoot = generateSequence(Path.of(System.getProperty("user.dir")).toAbsolutePath().normalize()) { it.parent }
+            .map { it.resolve("games").resolve("sandbox").resolve("src").resolve("test").resolve("resources").resolve("golden") }
+            .firstOrNull(Files::isDirectory)
+            ?: error("Cannot locate checked-in sandbox replay golden resources")
+        val path = goldenRoot.resolve("$scenario.hash")
+        val value = Files.readString(path).trim()
+        require(value.matches(Regex("[0-9a-f]{16}"))) { "Invalid replay golden hash in $path" }
+        return value
     }
 
     private fun typedPack(): Path = Files.createTempDirectory("myengine-eng011-balance").also { root ->

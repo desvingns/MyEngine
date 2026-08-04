@@ -52,6 +52,8 @@
    ENG-032, ENG-033, ENG-006, ENG-034, ENG-035, and ENG-025 are closed; ENG-006, ENG-034, ENG-035, and ENG-025 were selected from the remaining accepted
    backlog after the colony slice.
 4. Hardening gaps из `docs/HARDENING_AUDIT.md` закрывать по одному, с тестами и обновлением handoff.
+5. PROC-005 Golden replay hashes закрыт 2026-08-04; следующий рекомендуемый feature — DX-003
+   Replay divergence bisector. ENG-036 и PROC-015 остаются human-owned и start-gated.
 
 Новые крупные фазы добавлять только после того, как backlog specs перестанут быть достаточно
 точным механизмом управления работой.
@@ -90,6 +92,7 @@
 | [x] | ENG-035 Resource extractor building | [ENG-035](../.claude/specs/done/ENG-035-resource-extractor.md) | Deterministic finite/infinite resource nodes, underlying/adjacent output-only extractor production, stable ENG-004 haul sources, partial final batch, and save v19/v1-v18 migration; ENG-023 belts remain separate | 2026-08-03 |
 | [x] | ENG-023 Conveyor transport MVP | [ENG-023](../.claude/specs/done/ENG-023-conveyor-transport-mvp.md) | Android-free straight/corner belts with content-defined ticks-per-cell, deterministic backpressure/endpoints, persisted items in save v20, replay and 100-belt benchmark | 2026-08-03 |
 | [x] | ENG-025 Flying enemies | [ENG-025](../.claude/specs/done/ENG-025-flying-enemies.md) | Ground/air movement modes with blocker-ignoring air routes, tower capability filters, air-coverage balance warning, save v21 migration, and mixed-wave replay/leak tests | 2026-08-03 |
+| [x] | PROC-005 Golden replay hashes | [PROC-005](../.claude/specs/done/PROC-005-golden-replay-hashes.md) | Checked-in canonical/kill/resist golden files asserted by replay tests and compared by `me-sim-replay`; intentional updates require a handoff reason; DX-003 remains separate | 2026-08-04 |
 
 ## Глобальные инварианты
 
@@ -1721,3 +1724,22 @@
 - VERIFICATION: Contract test, generated module test, full `gradlew test`, `projects`, content
   validation, replay, save-compat, benchmark, selfcheck, Android `assembleDebug`, and
   `git diff --check` passed.
+
+### 2026-08-04 - PROC-005 (golden replay hashes)
+
+- Status: Done / accepted; no new phase was created.
+- Owner: Codex / `me-docs`
+- Created/changed:
+  - `.claude/specs/done/PROC-005-golden-replay-hashes.md`
+  - `.claude/specs/ENGINE_ROADMAP.md`
+  - `STATE.md`, `.ai/handoff.md`, `.ai/DIGEST.md`, and `.ai/changes/agent-skill-log.md`
+  - `Plane/README.md` and `Plane/15_domain_systems_sequencing.md`
+- Verification:
+  - Sandbox/engine-devtools tests, full Gradle tests/projects, content validation, replay,
+    negative mismatch handling, save-compat, benchmark, selfcheck, headless inspect, Android
+    `assembleDebug`, and `git diff --check` -> pass
+- Decisions:
+  - Golden files are behavior contracts; an intentional update needs an explicit reason in
+    `.ai/handoff.md`. DX-003 remains separate.
+- Next:
+  - DX-003 replay divergence bisector; ENG-036 and PROC-015 remain human-owned/start-gated.

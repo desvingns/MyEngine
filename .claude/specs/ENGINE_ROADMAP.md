@@ -7,7 +7,7 @@ two or more games outranks single-game gaps of the same severity.
 Updated by: the `/me-spec` backlog bridge (new gaps / new demand) and `/me`
 close-out (status changes).
 
-Last updated: 2026-08-04 (DX-001 close-out)
+Last updated: 2026-08-04 (PROC-005 close-out)
 
 ## Capabilities
 
@@ -69,7 +69,7 @@ Last updated: 2026-08-04 (DX-001 close-out)
 | Spec board backsync | PROC-001 | process | - | backlog |
 | Domain roadmap sequencing | PROC-003 | process | - | **done** (2026-07-29; Plane/15 sequences flow-field [done], colony slice, storyteller; vision:* accepted as demand by owner amendment; successor ENG-010 adopted) |
 | Performance budgets | PROC-004 | process | - | backlog |
-| Golden replay hashes | PROC-005 | process | - | backlog |
+| Golden replay hashes | PROC-005 | process | - | **done** (2026-08-04; checked-in canonical/kill/resist golden files are asserted by replay tests and compared by `me-sim-replay`; intentional updates require an explicit `.ai/handoff.md` reason; DX-003 remains separate) |
 | CI pre-push lane | PROC-006 | process | - | **done** (2026-08-03; `.githooks/pre-push` runs tests, content validation, replay, save compatibility, schema drift and emits one blocking JSON result) |
 | Save migration matrix | PROC-007 | process | - | **done** (2026-08-02; checked-in v1-v10 fixtures, independent stable-hash migration matrix, and save-compat JSON result) |
 | Playtest bot | PROC-008 | process | - | backlog |

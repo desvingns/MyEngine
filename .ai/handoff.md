@@ -1,7 +1,43 @@
 # MyEngine Handoff
 
-Last updated: 2026-08-04 (DX-001 close-out; next backlog review)
-Owner: Codex
+Last updated: 2026-08-04 (PROC-005 close-out; next DX-003)
+Owner: Codex / me-docs
+
+## PROC-005 close-out (2026-08-04)
+
+### DONE
+
+- Moved the accepted card to `.claude/specs/done/PROC-005-golden-replay-hashes.md`.
+- Checked in `games/sandbox/src/test/resources/golden/canonical.hash`, `kill.hash`, and
+  `resist.hash`; sandbox and engine-devtools replay assertions load the resources instead of
+  embedding literal expected hashes.
+- `scripts/me-sim-replay.ps1` compares final hashes to the golden files, reports mismatches, and
+  retains generated-game scenario discovery.
+
+### DECISIONS
+
+- Golden files are deterministic behavior contracts. Any intentional golden update requires an
+  explicit reason in this handoff, including why the hash moved and which scenario changed.
+- DX-003 remains separate and is the next feature after PROC-005; per-tick divergence bisection is
+  not included in this close-out.
+- No production simulation, save, renderer, Android, device, emulator, or visual-golden scope was
+  added by the documentation close-out.
+
+### NEXT
+
+- Start DX-003 (replay divergence bisector) after PROC-005; keep ENG-036 and PROC-015 human-owned
+  and start-gated.
+
+### BLOCKERS
+
+- No implementation blocker. The known untracked `archive/` baseline is preserved and excluded.
+  No device, emulator, or visual-golden proof is claimed.
+
+### VERIFICATION
+
+- `:games:sandbox:test`, `:engine-devtools:test`, full `gradlew test`, `projects`, content
+  validation, replay, negative mismatch handling, save compatibility, benchmark, selfcheck,
+  required headless inspect, Android `assembleDebug`, and `git diff --check` passed.
 
 ## DX-001 close-out (2026-08-04)
 

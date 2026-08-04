@@ -65,11 +65,11 @@ class SandboxDamageTypeTest {
         val second = SandboxGame.runScriptedResistScenario()
         val zeroResist = SandboxGame.runScriptedUnresistedScenario()
 
-        assertEquals("3f02607020d48668", first.hash)
+        assertEquals(ReplayGoldenHashes.resist, first.hash)
         assertEquals(first.hash, second.hash)
         assertNotEquals(zeroResist.hash, first.hash)
-        assertEquals("e4892bcc18f9d8dc", SandboxGame.runScriptedScenario().hash)
-        assertEquals("a763da4ac32b15b4", SandboxGame.runScriptedKillScenario().hash)
+        assertEquals(ReplayGoldenHashes.canonical, SandboxGame.runScriptedScenario().hash)
+        assertEquals(ReplayGoldenHashes.kill, SandboxGame.runScriptedKillScenario().hash)
     }
 
     private fun typedRegistry(resistance: Int): ContentRegistry {

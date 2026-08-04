@@ -1,22 +1,45 @@
 # MyEngine Intake Digest
 
-Regenerated at close-out. Last updated: 2026-08-04 (DX-001 close-out).
+Regenerated at close-out. Last updated: 2026-08-04 (PROC-005 close-out).
 
 ## Current next action
 
-DX-001 (new-game scaffolder) is complete. Review the remaining accepted backlog before the next
-`/me --feature --next` run and assign owner, blocked_by, and start gates; ENG-036 and PROC-015
-remain human-owned start-gated work.
+PROC-005 (golden replay hashes) is complete. Start DX-003 (replay divergence bisector) next;
+ENG-036 and PROC-015 remain human-owned start-gated work.
 
 ## Active specs / roadmap
 
 - DX-001, DX-002, DX-005, DX-006, ENG-001, ENG-003, ENG-031, ENG-004, ENG-032, ENG-033, ENG-006, ENG-017,
-  ENG-023, ENG-025, ENG-034, ENG-035, and PROC-006 are done.
+  ENG-023, ENG-025, ENG-034, ENG-035, PROC-005, and PROC-006 are done.
 - ENG-003 is a post-Phase-14/Phase-15 feature close-out; no new phase was created.
 - ENG-002 remains the wave-enemy GoalField path; ENG-003 is the deterministic JobBoard/job-actor tick capability.
 - ENG-033's authored scope is implemented with no game-bundle traceability update. MySD TD Gate 1 is
   accepted for its TD reference inventory but is not treated as evidence for colony behavior.
 - No ADR or plugin/skill/pipeline contract change was needed.
+
+## PROC-005 close-out (2026-08-04)
+
+### DONE
+
+- Checked-in canonical/kill/resist golden resources are loaded by replay tests, and
+  `scripts/me-sim-replay.ps1` compares final hashes against those files while preserving
+  generated-game discovery.
+
+### DECISIONS
+
+- Any intentional golden update requires an explicit reason in `.ai/handoff.md`.
+- DX-003 remains a separate next feature for per-tick replay-divergence bisection; no device,
+  emulator, or visual-golden proof is claimed.
+
+### NEXT
+
+- Start DX-003 after PROC-005; ENG-036 and PROC-015 remain human-owned and start-gated.
+
+### VERIFICATION
+
+- Sandbox and engine-devtools tests, full Gradle tests/projects, content validation, replay,
+  negative mismatch handling, save-compat, benchmark, selfcheck, headless inspect, Android
+  `assembleDebug`, and `git diff --check` passed.
 
 ## DX-001 close-out
 

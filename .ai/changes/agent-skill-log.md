@@ -686,3 +686,13 @@ by: claude
   Save compatibility covers v1-v19 fixtures; replay hashes remained stable.
 - Baseline: known untracked `.ai/retro/retro-2026-08-03.md` was preserved and excluded.
 - No plugin version bump; no ADR.
+
+## 2026-08-04 - MyEngine PROC-005 documentation close-out
+
+- Owner: Codex / `me-docs`; changed only board, roadmap, state/handoff/digest, Plane, and
+  agent-skill telemetry-adjacent documentation after the implementation gates passed.
+- Summary: Moved PROC-005 to `done/`, recorded checked-in golden replay contracts and the
+  explicit `.ai/handoff.md` golden-change policy, and kept DX-003 as a separate next feature.
+- Verification: sandbox/engine-devtools tests, full Gradle and content/replay/save/benchmark gates,
+  selfcheck, headless inspect, Android `assembleDebug`, and `git diff --check` passed; no device,
+  emulator, or visual-golden proof claimed. No plugin/skill/adapter/pipeline version bump.
