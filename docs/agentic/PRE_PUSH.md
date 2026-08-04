@@ -15,6 +15,7 @@ powershell.exe -File scripts/me-schema-docs-drift-test.ps1
 powershell.exe -File scripts/me-content-validate.ps1
 powershell.exe -File scripts/me-sim-replay.ps1
 powershell.exe -File scripts/me-save-compat.ps1
+powershell.exe -File scripts/me-benchmark.ps1
 ```
 
 Run the aggregate directly on Windows with:
@@ -31,4 +32,4 @@ push. All checks must pass for exit 0.
 
 The hook is process tooling only; it does not change simulation, Android runtime, content saves,
 or replay state. Close-out verification may additionally run `gradlew projects`,
-`:android:assembleDebug`, `me-benchmark`, `me-selfcheck`, and `git diff --check`.
+`:android:assembleDebug`, `me-selfcheck`, and `git diff --check`.

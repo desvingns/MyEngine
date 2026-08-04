@@ -1,7 +1,43 @@
 # MyEngine Handoff
 
-Last updated: 2026-08-04 (DX-004 close-out)
+Last updated: 2026-08-04 (PROC-004 close-out)
 Owner: Codex / me-dev:me
+
+## PROC-004 close-out (2026-08-04)
+
+### DONE
+
+- Moved the completed card to `.claude/specs/done/PROC-004-perf-budgets.md` and synchronized the
+  roadmap, Plane status, STATE, digest, and change log.
+- Added `config/performance-budgets.v1.json`, benchmark report fixture seams, objective JSON
+  pass/fail/delta evaluation, numeric `sim_ms`/`frame_ms` telemetry, benchmark contract tests, and
+  pre-push enforcement. The canonical verifier rule now requires a passing budget verdict when
+  performance paths change.
+
+### DECISIONS
+
+- Canonical and kill workloads use per-tick simulation budgets; goal-field, spatial-index-1k, and
+  belt-transport use total workload budgets. JVM frame timing is `not_measured` until a renderer or
+  device clock exists; supplied frame values are checked against 16.67ms.
+- The `me-dev` plugin was bumped to `0.2.2` for the verifier prompt change. No engine runtime,
+  Android behavior, save schema, replay hash, ADR, or game-bundle traceability changed.
+
+### NEXT
+
+- Review the remaining accepted backlog and select the next feature. ENG-036 and PROC-015 remain
+  human-owned/start-gated.
+
+### BLOCKERS
+
+- No implementation blocker. Developer/tester/verifier/docs workers timed out after bounded waits;
+  local implementation, tests, runner, docs, and read-only boundary review completed. No
+  device/emulator or visual-golden proof is claimed beyond `assembleDebug`.
+
+### VERIFICATION
+
+- Contract tests, full Gradle tests/projects, content validation, replay, save compatibility,
+  benchmark, pre-push, selfcheck, required headless inspect hash `d599fc31843b5aa8`, Android
+  `assembleDebug`, and `git diff --check` passed.
 
 ## DX-004 close-out (2026-08-04)
 

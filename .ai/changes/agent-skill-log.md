@@ -717,3 +717,19 @@ by: claude
   stayed below 2 seconds.
 - Baseline: known untracked `archive/` was preserved and excluded.
 - No plugin version bump; no ADR; no save-version bump.
+
+## 2026-08-04 - MyEngine PROC-004 feature run
+
+- Owner: Codex / `me-dev:me`
+- Change type: process tooling feature; canonical verifier prompt changed and `claude-plugins/me-dev`
+  was bumped from `0.2.1` to `0.2.2`.
+- Summary: Added versioned `performance-budgets-v1`, objective benchmark JSON verdict/deltas,
+  numeric benchmark telemetry, fixture-based contract tests, pre-push benchmark enforcement, and
+  canonical verifier guidance for performance paths. No engine runtime, Android, save, replay,
+  content schema, or game-bundle behavior changed.
+- Pipeline: selfcheck passed; scout/architect/developer/tester/verifier/docs workers timed out after
+  bounded waits, so local implementation, test, runner, boundary-review, and documentation fallbacks
+  completed under the approved scope. No malformed JSON envelope was returned by a completed worker.
+- Verification: full Gradle tests/projects, content validation, replay, save compatibility, benchmark,
+  pre-push, selfcheck, headless inspect, Android `assembleDebug`, and `git diff --check` passed.
+- Baseline: known untracked `archive/` was preserved and excluded. No ADR or save-version bump.

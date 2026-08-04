@@ -1,0 +1,9 @@
+{
+  "scenarios": [
+    { "scenario": "canonical", "ticks": 35, "sim_ms": 700 },
+    { "scenario": "kill", "ticks": 35, "sim_ms": 140 }
+  ],
+  "goal_field_rebuild": { "rebuild_ns": 5000000 },
+  "spatial_index": { "sim_ms": 5.0 },
+  "belt_transport": {}
+}

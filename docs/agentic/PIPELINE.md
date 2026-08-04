@@ -70,6 +70,12 @@ A reviewer whose paths did not change is not invoked. `me-verifier` always runs.
 
 If a change touches none of the rows (docs, scripts, specs), only `me-verifier` reviews.
 
+Performance gate rule: when `changed_files` includes `scripts/me-benchmark.ps1`,
+`config/performance-budgets.v1.json`, or `scripts/me-record-run.ps1`, `me-verifier` must require
+the benchmark runner's `verdict: pass`, confirm the reported `budget_version` and measured
+`metrics.sim_ms`, and reject missing required benchmark metrics. A JVM-only run may report
+`frame_ms` as `not_measured`; a supplied frame value must still be checked against its budget.
+
 ## Adapter Strategy
 
 - `claude-plugins/*` and `codex-plugins/*` are adapters, not source of truth.

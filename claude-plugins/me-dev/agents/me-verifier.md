@@ -14,6 +14,13 @@ snapshot-only, content is external/data-driven, saves are versioned. Confirm the
 narrowest useful tests exist and that known risks are addressed. Produce a short
 manual-check list where automation cannot cover a gate. Read-only.
 
+When performance paths change (`scripts/me-benchmark.ps1`,
+`config/performance-budgets.v1.json`, or `scripts/me-record-run.ps1`), require the
+benchmark runner's `verdict: pass`, confirm its versioned budget result and numeric
+`metrics.sim_ms`, and reject missing required metrics. `frame_ms: not_measured` is
+acceptable only for the JVM-only benchmark; supplied frame measurements must pass
+their configured budget.
+
 Return exactly one JSON envelope (Verifier schema):
 
 ```json

@@ -1,0 +1,46 @@
+{
+  "schema_version": "performance-budgets-v1",
+  "units": {
+    "sim_ms_per_tick": "milliseconds per simulation tick",
+    "sim_ms": "milliseconds for the complete benchmark workload",
+    "rebuild_ms": "milliseconds for one goal-field rebuild",
+    "frame_ms": "milliseconds per rendered frame"
+  },
+  "checks": [
+    {
+      "scenario": "canonical",
+      "metric": "sim_ms_per_tick",
+      "max": 50.0,
+      "baseline": "accepted canonical sandbox runs stayed below 1 second total; the 35-tick report is checked per tick"
+    },
+    {
+      "scenario": "kill",
+      "metric": "sim_ms_per_tick",
+      "max": 50.0,
+      "baseline": "accepted kill-bearing sandbox runs stayed below 0.2 seconds total; the 35-tick report is checked per tick"
+    },
+    {
+      "scenario": "goal-field-rebuild",
+      "metric": "rebuild_ms",
+      "max": 100.0,
+      "baseline": "accepted 64x64 rebuild measurements stayed below 20 milliseconds"
+    },
+    {
+      "scenario": "spatial-index-1k",
+      "metric": "sim_ms",
+      "max": 100.0,
+      "baseline": "accepted 1024-enemy query measurements stayed below 10 milliseconds"
+    },
+    {
+      "scenario": "belt-transport-100",
+      "metric": "sim_ms",
+      "max": 1000.0,
+      "baseline": "accepted 100-belt throughput measurements stayed below 1 second"
+    }
+  ],
+  "frame_ms": {
+    "max": 16.67,
+    "required": false,
+    "note": "The JVM benchmark has no Android frame clock; a supplied frame_ms is checked when available."
+  }
+}

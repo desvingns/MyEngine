@@ -24,6 +24,8 @@ Last updated: 2026-07-02
 - Replay pass rate: 100% for committed scenarios.
 - Content validation: clean.
 - Save compatibility: v1 roundtrip clean.
-- Headless sim: advisory `sim_ms` recorded.
+- Headless sim: `scripts/me-benchmark.ps1` passes the versioned `performance-budgets-v1`
+  thresholds and records canonical `sim_ms` plus any supplied `frame_ms`.
 - Android assemble: pass.
-- Frame budget: pending real renderer.
+- Frame budget: the JVM gate reports `not_measured` until a real renderer/device feed exists;
+  supplied frame measurements are checked against the 16.67ms budget.

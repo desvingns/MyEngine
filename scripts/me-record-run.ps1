@@ -12,6 +12,8 @@ param(
     [string]$Replay = "not_run",
     [string]$SaveCompat = "not_run",
     [string]$Benchmark = "not_run",
+    [double]$SimMs = -1,
+    [double]$FrameMs = -1,
     [double]$DurationMin = 0,
     [int]$MalformedJsonCount = 0,
     [string]$GateFailures = "",
@@ -24,6 +26,9 @@ $root = Split-Path -Parent $PSScriptRoot
 $runs = Join-Path $root ".ai\runs"
 New-Item -ItemType Directory -Force -Path $runs | Out-Null
 $path = Join-Path $runs "telemetry.jsonl"
+
+$simMetric = if ($SimMs -ge 0) { $SimMs } else { $null }
+$frameMetric = if ($FrameMs -ge 0) { $FrameMs } else { $null }
 
 $event = [ordered]@{
     run_id = [guid]::NewGuid().ToString()
@@ -41,8 +46,8 @@ $event = [ordered]@{
         replay = $Replay
         save_compat = $SaveCompat
         benchmark = $Benchmark
-        frame_ms = $null
-        sim_ms = $null
+        frame_ms = $frameMetric
+        sim_ms = $simMetric
     }
     duration_min = $DurationMin
     malformed_json_count = $MalformedJsonCount

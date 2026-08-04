@@ -62,9 +62,11 @@ stable ordering under equivalent commands, and bounded incident budgets.
 
 ## Benchmark And Performance Tests
 
-Performance gates should measure simulation tick time, allocation pressure, content validation
-time, save/load time, and Android frame pacing. Early benchmarks are advisory; release gates become
-strict only after the vertical slice exists.
+Performance gates measure simulation tick time, allocation pressure, content validation time,
+save/load time, and Android frame pacing. `scripts/me-benchmark.ps1` evaluates the versioned
+`config/performance-budgets.v1.json` thresholds for the canonical, kill, goal-field, spatial-index,
+and belt workloads. The JVM benchmark reports `frame_ms` as `not_measured` until a renderer/device
+clock is available; any supplied frame value is evaluated against the configured budget.
 
 ## Android Smoke And Device Tests
 
@@ -88,4 +90,3 @@ scaling, and text overlap. Visual tests observe snapshots and fixture content.
 | Android lifecycle/input | Android smoke test or documented blocker |
 | rendering/camera | screenshot or pixel-smoke test |
 | dependency addition | ADR-0002 checklist plus boundary test |
-

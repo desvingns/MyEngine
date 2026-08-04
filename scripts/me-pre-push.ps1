@@ -71,12 +71,15 @@ try {
     Add-ScriptCheck 'save_compat' 'powershell.exe -File scripts/me-save-compat.ps1' {
         & powershell.exe -NoProfile -File (Join-Path $root 'scripts/me-save-compat.ps1')
     }
+    Add-ScriptCheck 'benchmark' 'powershell.exe -File scripts/me-benchmark.ps1' {
+        & powershell.exe -NoProfile -File (Join-Path $root 'scripts/me-benchmark.ps1')
+    }
 
     $exitCode = if ($failed.Count -eq 0) { 0 } else { 1 }
     $result = [ordered]@{
         agent = 'me-pre-push'
         verdict = if ($exitCode -eq 0) { 'pass' } else { 'fail' }
-        summary = if ($exitCode -eq 0) { 'DX-005 and PROC-006 pre-push gates passed.' } else { "Pre-push gates failed: $($failed -join ', ')." }
+        summary = if ($exitCode -eq 0) { 'DX-005, PROC-004, and PROC-006 pre-push gates passed.' } else { "Pre-push gates failed: $($failed -join ', ')." }
         checks = $checks
     }
     $result | ConvertTo-Json -Compress -Depth 10

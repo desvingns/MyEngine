@@ -1,8 +1,24 @@
 # MyEngine State
 
-Last updated: 2026-08-04 (DX-004 close-out)
-Active phase: Phase 00-14 complete; Phase 15 sequencing adopted; Signal Garden SG-001..005 complete; MyTD MTD-001..005 complete; DX-001, DX-002, DX-003, DX-004, DX-005, DX-006, DX-007, DX-008, ENG-001, ENG-002, ENG-003, ENG-004, ENG-005, ENG-006, ENG-007, ENG-008, ENG-009, ENG-010, ENG-011, ENG-012, ENG-013, ENG-014, ENG-015, ENG-016, ENG-017, ENG-018, ENG-019, ENG-020, ENG-021, ENG-023, ENG-025, ENG-026, ENG-027, ENG-028, ENG-029, ENG-030, ENG-031, ENG-032, ENG-033, ENG-034, ENG-035, PROC-002, PROC-003, PROC-005, PROC-006, PROC-007, and PROC-013 complete; pipeline at v0.2.0; next exact action is to review remaining accepted backlog and select the next feature; ENG-036 and PROC-015 remain human-owned/start-gated
-Owner of last update: Codex / me-dev:me (2026-08-04: DX-004 close-out)
+Last updated: 2026-08-04 (PROC-004 close-out)
+Active phase: Phase 00-14 complete; Phase 15 sequencing adopted; Signal Garden SG-001..005 complete; MyTD MTD-001..005 complete; DX-001, DX-002, DX-003, DX-004, DX-005, DX-006, DX-007, DX-008, ENG-001, ENG-002, ENG-003, ENG-004, ENG-005, ENG-006, ENG-007, ENG-008, ENG-009, ENG-010, ENG-011, ENG-012, ENG-013, ENG-014, ENG-015, ENG-016, ENG-017, ENG-018, ENG-019, ENG-020, ENG-021, ENG-023, ENG-025, ENG-026, ENG-027, ENG-028, ENG-029, ENG-030, ENG-031, ENG-032, ENG-033, ENG-034, ENG-035, PROC-002, PROC-003, PROC-004, PROC-005, PROC-006, PROC-007, and PROC-013 complete; pipeline at v0.2.2; next exact action is to review remaining accepted backlog and select the next feature; ENG-036 and PROC-015 remain human-owned/start-gated
+Owner of last update: Codex / me-dev:me (2026-08-04: PROC-004 close-out)
+
+## PROC-004 Close-out (2026-08-04)
+
+- DONE: Added the versioned `performance-budgets-v1` config and objective benchmark evaluation
+  for canonical/kill per-tick simulation, goal-field rebuild, spatial-index-1k, and belt-transport
+  workloads. The runner emits one JSON verdict with actual/budget/delta checks and fails on missing
+  required metrics or over-budget values.
+- DECISIONS: JVM frame timing is explicitly `not_measured` until a renderer/device clock is
+  available; supplied `frame_ms` values are checked against 16.67ms. `me-record-run.ps1` now
+  carries numeric `sim_ms` and `frame_ms` telemetry. The pre-push lane enforces the benchmark gate.
+- BLOCKERS: No implementation blocker. The bounded verifier worker timed out; local read-only
+  boundary review found no Android, renderer, save, or runtime ownership change. No device,
+  emulator, or visual-golden proof is claimed beyond `assembleDebug`.
+- VERIFICATION: Contract fixtures, full Gradle tests/projects, content validation, replay,
+  save-compatibility, benchmark, pre-push, selfcheck, required headless inspect hash
+  `d599fc31843b5aa8`, Android `assembleDebug`, and `git diff --check` passed.
 
 ## DX-004 Close-out (2026-08-04)
 
@@ -669,7 +685,7 @@ Owner of last update: Codex / me-dev:me (2026-08-04: DX-004 close-out)
 ## Next Exact Action
 
 Review the remaining accepted backlog, assign any missing owner/blocked_by/start gates, and select
-the next feature. ENG-036 and PROC-015 remain human-owned/start-gated.
+the next feature. ENG-036 and PROC-015 remain human-owned/start-gated; PROC-004 is complete.
 
 ## Known Blockers
 

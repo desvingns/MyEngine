@@ -1,22 +1,36 @@
 # MyEngine Intake Digest
 
-Regenerated at close-out. Last updated: 2026-08-04 (DX-004 close-out).
+Regenerated at close-out. Last updated: 2026-08-04 (PROC-004 close-out).
 
 ## Current next action
 
-DX-004 (desktop content hot-reload) is complete. Review the remaining accepted backlog, assign any
-missing owner/blocked_by/start gates, and select the next feature. ENG-036 and PROC-015 remain
+PROC-004 (numeric performance budgets) is complete. Review the remaining accepted backlog, assign
+any missing owner/blocked_by/start gates, and select the next feature. ENG-036 and PROC-015 remain
 human-owned start-gated work.
 
 ## Active specs / roadmap
 
 - DX-001, DX-002, DX-003, DX-004, DX-005, DX-006, DX-007, ENG-001, ENG-003, ENG-031, ENG-004, ENG-032, ENG-033, ENG-006,
-  ENG-017, ENG-023, ENG-025, ENG-034, ENG-035, PROC-005, and PROC-006 are done.
+  ENG-017, ENG-023, ENG-025, ENG-034, ENG-035, PROC-004, PROC-005, and PROC-006 are done.
 - ENG-003 is a post-Phase-14/Phase-15 feature close-out; no new phase was created.
 - ENG-002 remains the wave-enemy GoalField path; ENG-003 is the deterministic JobBoard/job-actor tick capability.
 - ENG-033's authored scope is implemented with no game-bundle traceability update. MySD TD Gate 1 is
   accepted for its TD reference inventory but is not treated as evidence for colony behavior.
-- No ADR or plugin/skill/pipeline contract change was needed.
+- No ADR was needed; the verifier guidance and plugin version were updated for the benchmark gate.
+
+## PROC-004 close-out (2026-08-04)
+
+### DONE
+
+- Added versioned simulation/goal-field/spatial/belt budgets, optional frame timing, one-line JSON
+  benchmark verdicts with deltas, numeric telemetry fields, contract fixtures, and pre-push
+  enforcement. The `me-dev` verifier prompt is version `0.2.2`.
+
+### VERIFICATION
+
+- Contract tests, full Gradle tests/projects, content validation, replay, save-compatibility,
+  benchmark, pre-push, selfcheck, headless inspect, Android `assembleDebug`, and diff-check passed.
+- JVM frame timing remains explicitly `not_measured`; no Android/runtime/save/replay behavior changed.
 
 ## DX-004 close-out (2026-08-04)
 

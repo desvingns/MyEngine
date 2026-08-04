@@ -68,7 +68,7 @@ Last updated: 2026-08-04 (DX-003 close-out)
 | ADR: JSON vs properties content format | DX-008 | agent pipeline | - | **done** (2026-07-16; ADR-0003 accepts `.properties` for flat definitions and JSON for nested assets) |
 | Spec board backsync | PROC-001 | process | - | backlog |
 | Domain roadmap sequencing | PROC-003 | process | - | **done** (2026-07-29; Plane/15 sequences flow-field [done], colony slice, storyteller; vision:* accepted as demand by owner amendment; successor ENG-010 adopted) |
-| Performance budgets | PROC-004 | process | - | backlog |
+| Performance budgets | PROC-004 | process | - | **done** (2026-08-04; versioned simulation/goal-field/spatial/belt budgets, optional frame budget, JSON benchmark verdict/deltas, numeric telemetry, and pre-push enforcement) |
 | Golden replay hashes | PROC-005 | process | - | **done** (2026-08-04; checked-in canonical/kill/resist golden files are asserted by replay tests and compared by `me-sim-replay`; intentional updates require an explicit `.ai/handoff.md` reason; DX-003 consumed the per-tick follow-up without changing these contracts) |
 | CI pre-push lane | PROC-006 | process | - | **done** (2026-08-03; `.githooks/pre-push` runs tests, content validation, replay, save compatibility, schema drift and emits one blocking JSON result) |
 | Save migration matrix | PROC-007 | process | - | **done** (2026-08-02; checked-in v1-v10 fixtures, independent stable-hash migration matrix, and save-compat JSON result) |
