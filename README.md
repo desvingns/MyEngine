@@ -70,6 +70,12 @@ $env:ANDROID_HOME = "$env:LOCALAPPDATA\Android\Sdk"
 .\gradlew.bat android:assembleDebug
 ```
 
+For desktop balance iteration with deterministic content restart on pack changes:
+
+```powershell
+.\gradlew.bat desktop:run --args="--watch --pack=D:\Pet\MyEngine\games\sandbox\content\sandbox --seed=7"
+```
+
 For Unix-like shells, use `./gradlew` and equivalent `JAVA_HOME` / `ANDROID_HOME` values.
 
 For a new agent session, start here:

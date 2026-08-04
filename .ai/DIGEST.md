@@ -1,22 +1,49 @@
 # MyEngine Intake Digest
 
-Regenerated at close-out. Last updated: 2026-08-04 (DX-003 close-out).
+Regenerated at close-out. Last updated: 2026-08-04 (DX-004 close-out).
 
 ## Current next action
 
-DX-003 (replay divergence bisector) is complete. DX-004 remains the next roadmap candidate, but its
-running/hot-reload scope needs clarification; no new DX-004 metadata is assigned. ENG-036 and
-PROC-015 remain human-owned start-gated work.
+DX-004 (desktop content hot-reload) is complete. Review the remaining accepted backlog, assign any
+missing owner/blocked_by/start gates, and select the next feature. ENG-036 and PROC-015 remain
+human-owned start-gated work.
 
 ## Active specs / roadmap
 
-- DX-001, DX-002, DX-003, DX-005, DX-006, DX-007, ENG-001, ENG-003, ENG-031, ENG-004, ENG-032, ENG-033, ENG-006,
+- DX-001, DX-002, DX-003, DX-004, DX-005, DX-006, DX-007, ENG-001, ENG-003, ENG-031, ENG-004, ENG-032, ENG-033, ENG-006,
   ENG-017, ENG-023, ENG-025, ENG-034, ENG-035, PROC-005, and PROC-006 are done.
 - ENG-003 is a post-Phase-14/Phase-15 feature close-out; no new phase was created.
 - ENG-002 remains the wave-enemy GoalField path; ENG-003 is the deterministic JobBoard/job-actor tick capability.
 - ENG-033's authored scope is implemented with no game-bundle traceability update. MySD TD Gate 1 is
   accepted for its TD reference inventory but is not treated as evidence for colony behavior.
 - No ADR or plugin/skill/pipeline contract change was needed.
+
+## DX-004 close-out (2026-08-04)
+
+### DONE
+
+- The desktop launcher now has an opt-in recursive `WatchService` that debounces pack changes,
+  validates them, and restarts the canonical scenario with the same seed. Typed invalid-pack or
+  restart errors preserve the last-good scenario; focused session/watcher tests and workflow docs
+  were added.
+
+### DECISIONS
+
+- Default `desktop:run` remains one-shot; `--watch --pack --seed` enables balance iteration.
+  Content swaps happen only after a complete deterministic restart, with no mid-tick mutation.
+  Scope is desktop/JVM only: no Android, save-schema, production runtime, renderer ownership, ADR,
+  or plugin-contract changes.
+
+### NEXT
+
+- Review the remaining accepted backlog, assign missing start metadata, and select the next feature.
+  ENG-036 and PROC-015 remain human-owned/start-gated.
+
+### VERIFICATION
+
+- Focused/full Gradle tests, projects, desktop smoke, content validation, replay, save-compat,
+  benchmark, selfcheck, headless inspect (`d599fc31843b5aa8`), Android `assembleDebug`, and
+  `git diff --check` passed. Sample reload stayed below 2 seconds.
 
 ## DX-003 close-out (2026-08-04)
 

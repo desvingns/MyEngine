@@ -2766,6 +2766,16 @@ object SandboxGame {
         runScriptedScenario(TilePosition(30, 32), seed, difficultyId, mapId)
 
     /**
+     * Runs the canonical scenario against an already validated immutable registry.
+     *
+     * Desktop tooling uses this overload to validate a changed pack before creating a new
+     * runtime. The registry is never mutated by the scenario, so a running session can keep its
+     * previous result until this call completes successfully.
+     */
+    fun runScriptedScenario(registry: ContentRegistry, seed: Long = 7): SandboxScenarioResult =
+        runScriptedTypedScenario(registry, TilePosition(30, 32), seed)
+
+    /**
      * Second canonical scenario that DOES exercise kills and the reward-deposit path. The pulse
      * tower at (2,2) sits next to the enemy spawn (1,1), so wave enemies die within the 35-tick
      * budget and their content-derived rewards are deposited into the inventory. Proven to kill by

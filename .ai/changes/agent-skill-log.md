@@ -696,3 +696,24 @@ by: claude
 - Verification: sandbox/engine-devtools tests, full Gradle and content/replay/save/benchmark gates,
   selfcheck, headless inspect, Android `assembleDebug`, and `git diff --check` passed; no device,
   emulator, or visual-golden proof claimed. No plugin/skill/adapter/pipeline version bump.
+
+## 2026-08-04 - MyEngine DX-004 feature run
+
+- Owner: Codex / `me-dev:me`
+- Change type: normal desktop tooling feature run; no agent, skill, adapter, plugin, or pipeline
+  contract change.
+- Summary: `/me --feature --next` selected DX-004 after the accepted-backlog intake. Added the
+  Android-free recursive desktop content watcher, debounced validate-then-restart session, same-seed
+  deterministic reload, typed invalid-pack handling with last-good preservation, launcher
+  `--watch --pack --seed` options, focused tests, and balance-iteration documentation. The card
+  moved to `.claude/specs/done/` and roadmap/Plane/state/handoff/digest docs were synchronized.
+- Pipeline: selfcheck passed; me-scout and me-architect workers timed out after bounded retries,
+  so local scope/boundary review supplied the architect/scout facts. Developer/tester/runner/
+  verifier roles were completed locally. No malformed JSON envelope was returned by a completed
+  worker; worker timeouts are recorded as the run limitation.
+- Verification: focused/full Gradle tests, projects, `desktop:run`, content validation, replay,
+  save compatibility, benchmark, selfcheck, required headless inspect, Android `assembleDebug`,
+  and `git diff --check` passed. Canonical replay hash remained `e4892bcc18f9d8dc`; sample reload
+  stayed below 2 seconds.
+- Baseline: known untracked `archive/` was preserved and excluded.
+- No plugin version bump; no ADR; no save-version bump.

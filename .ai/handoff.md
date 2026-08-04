@@ -1,7 +1,44 @@
 # MyEngine Handoff
 
-Last updated: 2026-08-04 (DX-003 close-out)
-Owner: Codex / me-docs
+Last updated: 2026-08-04 (DX-004 close-out)
+Owner: Codex / me-dev:me
+
+## DX-004 close-out (2026-08-04)
+
+### DONE
+
+- Moved the accepted card to `.claude/specs/done/DX-004-desktop-content-hot-reload.md` and
+  synchronized the roadmap and board status.
+- Added the Android-free `DesktopContentHotReloadSession`, recursive debounced `WatchService`,
+  typed validation/restart error reporting, and `DesktopLauncher --watch --pack --seed` options.
+  Valid changes restart the canonical sandbox with the same seed; invalid changes preserve the
+  last-good scenario. Added focused session/watcher tests and `desktop/README.md` workflow docs.
+
+### DECISIONS
+
+- Watch mode is opt-in so the existing one-shot `desktop:run` smoke remains finite and its
+  canonical hash remains unchanged. The session publishes a new result only after validation and
+  deterministic restart complete; no mid-tick content mutation is possible.
+- Scope is desktop/JVM dev tooling only. No Android, save schema, continuous runtime, renderer
+  ownership, ADR, plugin, or pipeline contract changes were made.
+
+### NEXT
+
+- Review the remaining accepted backlog, assign any missing owner/blocked_by/start gates, and
+  select the next feature. ENG-036 and PROC-015 remain human-owned/start-gated.
+
+### BLOCKERS
+
+- No DX-004 implementation blocker. The me-scout and me-architect workers timed out after bounded
+  retries; local scope and boundary review completed successfully. No device/emulator or
+  visual-golden proof is claimed beyond `assembleDebug`.
+
+### VERIFICATION
+
+- Focused/full Gradle tests, `projects`, `desktop:run` (hash `e4892bcc18f9d8dc`), content
+  validation, replay, save compatibility, benchmark, selfcheck, required headless inspect (hash
+  `d599fc31843b5aa8`), Android `assembleDebug`, and `git diff --check` passed. Sample reload was
+  below 2 seconds.
 
 ## DX-003 close-out (2026-08-04)
 

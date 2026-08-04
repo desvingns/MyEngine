@@ -88,7 +88,6 @@ systems that have no named game FR yet. Recorded here and on the PROC-003 card.
 
 ## Next
 
-- ENG-010 through ENG-035 and the ENG-023 conveyor follow-up are complete. PROC-005 is also
-  complete; DX-003 is the next recommended process/tooling feature after its golden replay
-  contracts. ENG-036 and PROC-015 remain explicitly human-owned until their start gates are
-  accepted.
+- ENG-010 through ENG-035 and the ENG-023 conveyor follow-up are complete. PROC-005, DX-003,
+  and DX-004 are also complete. Review the remaining accepted backlog before selecting the next
+  feature; ENG-036 and PROC-015 remain explicitly human-owned/start-gated work.

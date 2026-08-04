@@ -52,10 +52,10 @@
    ENG-032, ENG-033, ENG-006, ENG-034, ENG-035, and ENG-025 are closed; ENG-006, ENG-034, ENG-035, and ENG-025 were selected from the remaining accepted
    backlog after the colony slice.
 4. Hardening gaps из `docs/HARDENING_AUDIT.md` закрывать по одному, с тестами и обновлением handoff.
-5. PROC-005 Golden replay hashes, DX-007 ContentLoader/SaveCodec fuzz tests, and DX-003 Replay
-   divergence bisector are closed 2026-08-04. DX-004 remains the next roadmap candidate, but its
-   running/hot-reload scope needs clarification; no new DX-004 metadata is assigned. ENG-036 and
-   PROC-015 remain human-owned and start-gated.
+5. PROC-005 Golden replay hashes, DX-007 ContentLoader/SaveCodec fuzz tests, DX-003 Replay
+   divergence bisector, and DX-004 Desktop content hot-reload are closed 2026-08-04. Review the
+   remaining accepted backlog before selecting the next feature; ENG-036 and PROC-015 remain
+   human-owned and start-gated.
 
 Новые крупные фазы добавлять только после того, как backlog specs перестанут быть достаточно
 точным механизмом управления работой.
@@ -97,6 +97,7 @@
 | [x] | ENG-025 Flying enemies | [ENG-025](../.claude/specs/done/ENG-025-flying-enemies.md) | Ground/air movement modes with blocker-ignoring air routes, tower capability filters, air-coverage balance warning, save v21 migration, and mixed-wave replay/leak tests | 2026-08-03 |
 | [x] | PROC-005 Golden replay hashes | [PROC-005](../.claude/specs/done/PROC-005-golden-replay-hashes.md) | Checked-in canonical/kill/resist golden files asserted by replay tests and compared by `me-sim-replay`; intentional updates require a handoff reason; DX-003 was the separate per-tick follow-up and is now closed | 2026-08-04 |
 | [x] | DX-003 Replay divergence bisector | [DX-003](../.claude/specs/done/DX-003-replay-divergence-bisector.md) | Deterministic tick-0 + actual-tick `dx-003-trajectory-v1` JSONL, canonical/kill/resist fixtures matching PROC-005 final hashes, first-divergent-tick comparer with sorted fields and `hash_only` fallback, CLI exit codes 0/1/2, resistance=50 seam, and unchanged legacy replay/PROC-005 contracts | 2026-08-04 |
+| [x] | DX-004 Desktop content hot-reload | [DX-004](../.claude/specs/done/DX-004-desktop-content-hot-reload.md) | Android-free recursive desktop WatchService with debounced validate-then-restart, same-seed deterministic reload, typed invalid-pack errors preserving the last-good scenario, opt-in `--watch --pack --seed` CLI, focused tests, and balance-iteration docs | 2026-08-04 |
 
 ## Глобальные инварианты
 
@@ -105,6 +106,25 @@
 - Rendering/input не владеют authoritative game state.
 - Все важные решения фиксируются в ADR или docs, а не остаются в чате.
 - Контент data-driven: schemas, version fields, validation, migrations from day one.
+
+### 2026-08-04 - DX-004 (desktop content hot-reload)
+
+- Status: Done / accepted; no new phase was created.
+- Owner: Codex / `me-dev:me`
+- DONE: Added a desktop-only recursive content watcher and validate-then-restart session. Pack
+  changes are debounced, validated, and restarted deterministically with the same seed; invalid
+  or partially-written packs report typed errors and preserve the last-good scenario. The launcher
+  supports opt-in `--watch`, `--pack`, and `--seed` while the default one-shot smoke remains intact.
+- DECISIONS: The swap happens only after a complete scenario restart, so simulation content is never
+  mutated mid-tick. No Android, save-schema, production runtime, renderer ownership, ADR, or plugin
+  contract changes were made. The balance-iteration workflow is documented in `desktop/README.md`.
+- NEXT: Review the remaining accepted backlog and select the next feature; ENG-036 and PROC-015
+  remain human-owned/start-gated.
+- BLOCKERS: No implementation blocker. Scout/architect workers timed out after bounded retries;
+  local scope and boundary review passed. No device/emulator or visual-golden proof is claimed.
+- VERIFICATION: Focused/full Gradle tests, `projects`, `desktop:run`, content validation, replay,
+  save-compat, benchmark, selfcheck, headless inspect, Android `assembleDebug`, and
+  `git diff --check` passed. Sample reload was below 2 seconds.
 - Save files versioned from v1.
 - Every non-trivial engine behavior has a deterministic test, replay test or scenario test.
 - Референсы используются как источник решений, не как источник копипаста.

@@ -1,8 +1,28 @@
 # MyEngine State
 
-Last updated: 2026-08-04 (DX-003 close-out)
-Active phase: Phase 00-14 complete; Phase 15 sequencing adopted; Signal Garden SG-001..005 complete; MyTD MTD-001..005 complete; DX-001, DX-002, DX-003, DX-005, DX-006, DX-007, DX-008, ENG-001, ENG-002, ENG-003, ENG-004, ENG-005, ENG-006, ENG-007, ENG-008, ENG-009, ENG-010, ENG-011, ENG-012, ENG-013, ENG-014, ENG-015, ENG-016, ENG-017, ENG-018, ENG-019, ENG-020, ENG-021, ENG-023, ENG-025, ENG-026, ENG-027, ENG-028, ENG-029, ENG-030, ENG-031, ENG-032, ENG-033, ENG-034, ENG-035, PROC-002, PROC-003, PROC-005, PROC-006, PROC-007, and PROC-013 complete; pipeline at v0.2.0; next exact action is to clarify DX-004 running/hot-reload scope; ENG-036 and PROC-015 remain human-owned/start-gated
-Owner of last update: Codex / me-docs (2026-08-04: DX-003 close-out)
+Last updated: 2026-08-04 (DX-004 close-out)
+Active phase: Phase 00-14 complete; Phase 15 sequencing adopted; Signal Garden SG-001..005 complete; MyTD MTD-001..005 complete; DX-001, DX-002, DX-003, DX-004, DX-005, DX-006, DX-007, DX-008, ENG-001, ENG-002, ENG-003, ENG-004, ENG-005, ENG-006, ENG-007, ENG-008, ENG-009, ENG-010, ENG-011, ENG-012, ENG-013, ENG-014, ENG-015, ENG-016, ENG-017, ENG-018, ENG-019, ENG-020, ENG-021, ENG-023, ENG-025, ENG-026, ENG-027, ENG-028, ENG-029, ENG-030, ENG-031, ENG-032, ENG-033, ENG-034, ENG-035, PROC-002, PROC-003, PROC-005, PROC-006, PROC-007, and PROC-013 complete; pipeline at v0.2.0; next exact action is to review remaining accepted backlog and select the next feature; ENG-036 and PROC-015 remain human-owned/start-gated
+Owner of last update: Codex / me-dev:me (2026-08-04: DX-004 close-out)
+
+## DX-004 Close-out (2026-08-04)
+
+- DONE: Added the desktop-only `DesktopContentHotReloadSession` and recursive `WatchService`.
+  Pack changes are debounced, validated, and restarted as a new canonical sandbox scenario with
+  the same seed. Typed validation or restart errors leave the last-good scenario untouched.
+  `DesktopLauncher` supports opt-in `--watch`, `--pack`, and `--seed` arguments; default
+  one-shot `desktop:run` behavior and canonical replay remain unchanged.
+- DECISIONS: Content is swapped only after validation and a completed deterministic restart; no
+  mid-tick mutation is possible. The implementation stays in the JVM desktop harness and adds no
+  Android, save-schema, continuous-runtime, ADR, or plugin-contract scope.
+- NEXT: Review remaining accepted backlog, assign any missing owner/blocked_by/start gates, and
+  select the next feature. ENG-036 and PROC-015 remain human-owned/start-gated.
+- BLOCKERS: No DX-004 implementation blocker. The me-scout and me-architect workers timed out
+  after bounded retries; local scope/boundary review was completed instead. No device/emulator or
+  visual-golden proof is claimed beyond the Android assemble gate.
+- VERIFICATION: Focused/full Gradle tests, `projects`, `desktop:run` (hash
+  `e4892bcc18f9d8dc`), content validation, replay, save-compat, benchmark, selfcheck, required
+  headless inspect (hash `d599fc31843b5aa8`), Android `assembleDebug`, and `git diff --check`
+  passed. Sample reload measured below 2 seconds.
 
 ## DX-003 Close-out (2026-08-04)
 
@@ -58,6 +78,11 @@ Owner of last update: Codex / me-docs (2026-08-04: DX-003 close-out)
   selfcheck, required headless inspect, Android `assembleDebug`, and `git diff --check` passed.
 
 ## Current Status
+
+- DX-004 is complete: the desktop launcher has an opt-in recursive content watcher with
+  validate-then-restart semantics, same-seed deterministic reloads, typed invalid-pack errors,
+  last-good preservation, focused tests, and a documented balance-iteration workflow. No Android,
+  save, renderer ownership, or production runtime boundary changed.
 
 - DX-001 is complete: `scripts/me-new-game.ps1` generates a deterministic 28-file lower-kebab
   game/module/content/spec scaffold, wires `settings.gradle.kts`, refuses existing or unsafe
@@ -643,8 +668,8 @@ Owner of last update: Codex / me-docs (2026-08-04: DX-003 close-out)
 
 ## Next Exact Action
 
-DX-003 is complete. DX-004 remains the next roadmap candidate; clarify its running/hot-reload scope
-before intake. ENG-036 and PROC-015 remain human-owned/start-gated.
+Review the remaining accepted backlog, assign any missing owner/blocked_by/start gates, and select
+the next feature. ENG-036 and PROC-015 remain human-owned/start-gated.
 
 ## Known Blockers
 
