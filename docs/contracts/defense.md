@@ -37,8 +37,8 @@ so wall placement cannot invalidate their route. `TowerContent.canTargetGround` 
 `canTargetAir` default to `true`; content validation requires at least one capability. Target
 selection and splash candidates filter by the enemy movement mode before applying the existing
 stable priority/entity-id ordering. Balance reports warn when an authored air wave has no
-air-capable tower. `SandboxSaveCodec` v21 persists the movement mode; older saves decode it as
-ground.
+air-capable tower. `SandboxSaveCodec` v22 persists the movement mode and frozen meta-unlock
+context; older saves decode those fields as ground/empty respectively.
 
 ## ENG-011 damage and resistance semantics
 

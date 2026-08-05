@@ -1,8 +1,24 @@
 # MyEngine State
 
-Last updated: 2026-08-04 (PROC-001 close-out)
-Active phase: Phase 00-14 complete; Phase 15 sequencing adopted; Signal Garden SG-001..005 complete; MyTD MTD-001..005 complete; DX-001, DX-002, DX-003, DX-004, DX-005, DX-006, DX-007, DX-008, ENG-001, ENG-002, ENG-003, ENG-004, ENG-005, ENG-006, ENG-007, ENG-008, ENG-009, ENG-010, ENG-011, ENG-012, ENG-013, ENG-014, ENG-015, ENG-016, ENG-017, ENG-018, ENG-019, ENG-020, ENG-021, ENG-023, ENG-025, ENG-026, ENG-027, ENG-028, ENG-029, ENG-030, ENG-031, ENG-032, ENG-033, ENG-034, ENG-035, PROC-001, PROC-002, PROC-003, PROC-004, PROC-005, PROC-006, PROC-007, and PROC-013 complete; pipeline at v0.2.2; next exact action is to review remaining accepted backlog and select the next feature; ENG-036 and PROC-015 remain human-owned/start-gated
-Owner of last update: Codex / me-dev:me (2026-08-04: PROC-001 close-out)
+Last updated: 2026-08-05 (ENG-022 close-out)
+Active phase: Phase 00-14 complete; Phase 15 sequencing adopted; Signal Garden SG-001..005 complete; MyTD MTD-001..005 complete; DX-001, DX-002, DX-003, DX-004, DX-005, DX-006, DX-007, DX-008, ENG-001, ENG-002, ENG-003, ENG-004, ENG-005, ENG-006, ENG-007, ENG-008, ENG-009, ENG-010, ENG-011, ENG-012, ENG-013, ENG-014, ENG-015, ENG-016, ENG-017, ENG-018, ENG-019, ENG-020, ENG-021, ENG-022, ENG-023, ENG-025, ENG-026, ENG-027, ENG-028, ENG-029, ENG-030, ENG-031, ENG-032, ENG-033, ENG-034, ENG-035, PROC-001, PROC-002, PROC-003, PROC-004, PROC-005, PROC-006, PROC-007, and PROC-013 complete; pipeline at v0.2.2; next exact action is to review remaining accepted backlog and select the next feature; ENG-036 and PROC-015 remain human-owned/start-gated
+Owner of last update: Codex / me-dev:me (2026-08-05: ENG-022 close-out)
+
+## ENG-022 Close-out (2026-08-05)
+
+- DONE: Implemented the optional content-defined meta-progression surface, deterministic profile
+  codec/store, idempotent terminal-run currency crediting, meta unlock validation/gating, frozen
+  scenario unlock context, run-save v22 migration, and replay `unlock_ids` metadata.
+- DECISIONS: Profile currency/unlock/credited-run state is separate from run saves; duplicate
+  terminal run ids are ignored; legacy saves and replays use an empty unlock set; the sandbox is
+  the proof surface and no new Android-facing module was added.
+- NEXT: Review the remaining accepted backlog; ENG-036 and PROC-015 remain human-owned/start-gated.
+- BLOCKERS: None known. The pre-existing untracked `archive/` baseline remains preserved and
+  excluded from the change set.
+- VERIFICATION: Focused and full Gradle tests, `projects`, Android assemble, content validation,
+  replay, save compatibility, benchmark, headless inspect, selfcheck, and diff-check passed.
+  The report-only game-spec sync was not applicable to this internal engine-gap source and made
+  no changes.
 
 ## PROC-001 Close-out (2026-08-04)
 

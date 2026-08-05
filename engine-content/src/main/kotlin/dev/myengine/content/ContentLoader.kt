@@ -61,6 +61,7 @@ object ContentPackLoader {
             ?: emptyMap()
         val maps = parseMaps(root, tiles, resources, errors)
         val techNodes = parseTechTree(root, errors)
+        val metaProgression = parseMetaProgression(root, errors)
 
         if (manifest != null && manifest.schemaVersion != SUPPORTED_SCHEMA_VERSION) {
             errors += ContentValidationError("manifest.properties", manifest.id, "schemaVersion", "Unsupported schema version ${manifest.schemaVersion}.")
@@ -88,6 +89,7 @@ object ContentPackLoader {
         validateTerminalRules(maps, waves, endlessWave, errors)
         validateLocalization(damageTypes, resources, towers, buildings, strings, errors)
         validateTechTree(techNodes, resources, towers, buildings, recipes, errors)
+        validateMetaProgression(metaProgression, resources, towers, buildings, recipes, errors)
 
         if (errors.isNotEmpty() || manifest == null) {
             return ContentLoadResult(null, errors)
@@ -114,6 +116,7 @@ object ContentPackLoader {
                 workers = workers,
                 needs = needs,
                 techNodes = techNodes,
+                metaProgression = metaProgression,
             ),
             errors = emptyList(),
         )
@@ -387,6 +390,50 @@ object ContentPackLoader {
             }
         }
         return parsed.toSortedMap()
+    }
+
+    private fun parseMetaProgression(root: Path, errors: MutableList<ContentValidationError>): MetaProgressionContent? {
+        val file = "meta-progression.json"
+        val path = root.resolve(file)
+        if (!Files.exists(path)) return null
+        val document = try {
+            Files.newBufferedReader(path).use { reader -> Json.parseToJsonElement(reader.readText()) as? JsonObject }
+        } catch (error: Exception) {
+            errors += ContentValidationError(file, "file", "json", "Invalid JSON: ${error.message ?: error::class.simpleName}.")
+            return null
+        }
+        if (document == null) {
+            errors += ContentValidationError(file, "file", "json", "Expected a top-level JSON object.")
+            return null
+        }
+        val currencyResourceId = document.requiredString("currencyResource", file, "pack", "currencyResource", errors)
+            ?: return null
+        val definitions = document["unlockables"] as? JsonArray
+        if (definitions == null) {
+            errors += ContentValidationError(file, "pack", "unlockables", "Expected an 'unlockables' array.")
+            return null
+        }
+        val parsed = linkedMapOf<String, MetaUnlockableContent>()
+        definitions.forEachIndexed { index, value ->
+            val objectValue = value as? JsonObject
+            if (objectValue == null) {
+                errors += ContentValidationError(file, "unlockables[$index]", "entry", "Expected an unlockable object.")
+                return@forEachIndexed
+            }
+            val fallbackId = "unlockables[$index]"
+            val id = objectValue.requiredString("id", file, fallbackId, "id", errors) ?: return@forEachIndexed
+            val typeId = objectValue.requiredString("type", file, id, "type", errors) ?: return@forEachIndexed
+            val type = TechUnlockType.fromId(typeId)
+            if (type == null) {
+                errors += ContentValidationError(file, id, "type", "Expected tower, building, or recipe.")
+                return@forEachIndexed
+            }
+            val targetId = objectValue.requiredString("target", file, id, "target", errors) ?: return@forEachIndexed
+            if (parsed.put(id, MetaUnlockableContent(id, type, targetId)) != null) {
+                errors += ContentValidationError(file, id, "id", "Duplicate meta unlock id.")
+            }
+        }
+        return MetaProgressionContent(currencyResourceId, parsed.toSortedMap())
     }
 
     private fun parseTechUnlocks(
@@ -1333,6 +1380,50 @@ object ContentPackLoader {
             states[id] = 2
         }
         techNodes.keys.sorted().forEach { visit(it, emptyList()) }
+    }
+
+    private fun validateMetaProgression(
+        metaProgression: MetaProgressionContent?,
+        resources: Map<String, ResourceContent>,
+        towers: Map<String, TowerContent>,
+        buildings: Map<String, BuildingContent>,
+        recipes: Map<String, RecipeContent>,
+        errors: MutableList<ContentValidationError>,
+    ) {
+        if (metaProgression == null) return
+        val file = "meta-progression.json"
+        if (metaProgression.currencyResourceId !in resources) {
+            errors += ContentValidationError(
+                file,
+                "pack",
+                "currencyResource",
+                "Unknown resource '${metaProgression.currencyResourceId}'.",
+            )
+        }
+        val targetOwners = mutableMapOf<String, String>()
+        metaProgression.unlockables.toSortedMap().forEach { (id, unlock) ->
+            val known = when (unlock.type) {
+                TechUnlockType.TOWER -> unlock.targetId in towers
+                TechUnlockType.BUILDING -> unlock.targetId in buildings
+                TechUnlockType.RECIPE -> unlock.targetId in recipes
+            }
+            if (!known) {
+                errors += ContentValidationError(
+                    file,
+                    id,
+                    "target",
+                    "Unknown ${unlock.type.id} '${unlock.targetId}'.",
+                )
+            }
+            targetOwners.putIfAbsent(unlock.stableKey, id)?.let { owner ->
+                errors += ContentValidationError(
+                    file,
+                    id,
+                    "target",
+                    "Duplicate meta unlock target '${unlock.stableKey}' already declared by '$owner'.",
+                )
+            }
+        }
     }
 
     private fun validateReferences(

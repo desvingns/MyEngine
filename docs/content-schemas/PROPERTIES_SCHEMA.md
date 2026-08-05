@@ -1,7 +1,7 @@
 # MyEngine Content Properties Schema
 
-Status: Phase 06 accepted; DX-008 hybrid format accepted; ENG-016, ENG-028, ENG-009, ENG-007, ENG-011, ENG-004, and ENG-017 fields documented
-Last updated: 2026-08-03
+Status: Phase 06 accepted; DX-008 hybrid format accepted; ENG-016, ENG-028, ENG-009, ENG-007, ENG-011, ENG-004, ENG-017, and ENG-022 fields documented
+Last updated: 2026-08-05
 
 Content packs use the DX-008 hybrid format defined by
 [`ADR-0003-content-format-hybrid.md`](../DECISIONS/ADR-0003-content-format-hybrid.md): flat entity
@@ -43,6 +43,28 @@ duplicate unlock ownership across nodes. Prerequisite references are traversed i
 must form an acyclic DAG; diagnostics identify `tech-tree.json`, node id, and field path. The
 loader returns sorted node data to the Android-free simulation, while research progress is runtime
 state rather than content metadata.
+
+## Meta-progression
+
+`meta-progression.json` is optional and declares persistent profile unlocks separately from the
+run-local `tech-tree.json`. A pack that omits it has no persistent unlock gates and preserves legacy
+behavior. The top-level object requires `currencyResource` and an `unlockables` array:
+
+```json
+{
+  "currencyResource": "bolt",
+  "unlockables": [
+    {"id": "pulse-profile", "type": "tower", "target": "pulse"}
+  ]
+}
+```
+
+Each unlockable id is unique and its `type` must be `tower`, `building`, or `recipe`; `target` is
+resolved against the same pack. A target can have only one persistent unlock id. The profile codec
+is independently versioned (`PROFILE_VERSION=1`) and stores currency, unlocked ids, and credited
+terminal run ids. Profile data is never embedded in the sandbox run save. A running scenario
+receives a frozen sorted unlock-id set; that set is persisted as scenario provenance in run-save
+version 22 and embedded in replay metadata, while older saves/replays default to an empty set.
 
 ## Manifest
 

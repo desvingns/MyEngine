@@ -7,7 +7,7 @@ two or more games outranks single-game gaps of the same severity.
 Updated by: the `/me-spec` backlog bridge (new gaps / new demand) and `/me`
 close-out (status changes).
 
-Last updated: 2026-08-04 (DX-003 close-out)
+Last updated: 2026-08-05 (ENG-022 close-out)
 
 ## Capabilities
 
@@ -42,7 +42,7 @@ Last updated: 2026-08-04 (DX-003 close-out)
 | Walls + player-placed blockers | ENG-019 | vision:td, vision:mindustry-like | 2 | **done** (2026-08-02; validated 1x1 wall content, atomic place/remove commands with prospective path rejection and refund, immutable snapshot health, save v12/v1-v11 migration, forced-corridor replay and full gates) |
 | Spatial index + 1k-entity benchmark | ENG-020 | mytd, vision:td, vision:rimworld-like, vision:mindustry-like | 4 | **done** (2026-07-29; internal non-persisted grid index powers targeting/splash candidate queries, and the deterministic 1024-enemy benchmark reports `5.3045 ms`) |
 | Save slots + autosave policy | ENG-021 | vision:td, vision:rimworld-like, vision:mindustry-like | 3 | **done** (2026-08-02; named `slots/`, rotating `autosave/`, atomic writes, metadata-only inspection, corruption-only fallback, codec v10 and Android Bundle path preserved) |
-| Meta-progression store | ENG-022 | vision:td | 1 | backlog |
+| Meta-progression store | ENG-022 | vision:td | 1 | **done** (2026-08-05; independently versioned profile codec/store with idempotent terminal-run currency crediting, optional content-defined unlockables, immutable scenario unlock context, save v22 migration, replay metadata, and focused tests) |
 | Sprite/atlas references in content schema | ENG-028 | mytd, vision:td, vision:rimworld-like, vision:mindustry-like | 4 | **done** (2026-07-28; validated opaque refs for tiles/towers/tower tiers/enemies/buildings, pack-relative file/atlas-key checks, deterministic palette fallback, desktop/Android consumers, and replay/save boundaries unchanged) |
 | Audio event hooks (snapshot event feed) | ENG-029 | vision:td, vision:rimworld-like, vision:mindustry-like | 3 | **done** (2026-08-02; transient deterministic `GameplayEvent` feed, optional `sounds.properties` file validation, Android `SoundPool` consumer, no save-version/hash change) |
 | Wave preview + early wave call | ENG-030 | mytd, vision:td | 2 | **done** (2026-07-21; typed early-call command, deterministic HUD composition/countdown, content-defined bonus validation, SAVE_VERSION v8 migration, replay/save/gate verification pass; balance review partial: current packs valid/no hardcoded bonus, schema gap closed in docs close-out, optional bonus unconfigured pending approved balance value) |

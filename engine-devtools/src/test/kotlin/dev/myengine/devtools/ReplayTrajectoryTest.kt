@@ -83,6 +83,31 @@ class ReplayTrajectoryTest {
     }
 
     @Test
+    fun replayMetadataRoundTripsFrozenMetaUnlockIds() {
+        val baseline = ReplayTrajectory.read(fixtureRoot.resolve("canonical.jsonl"))
+        val withUnlocks = baseline.copy(
+            metadata = baseline.metadata.copy(metaUnlockIds = setOf("zeta", "alpha")),
+        )
+
+        val encoded = withUnlocks.toJsonLines()
+        assertTrue(encoded.lineSequence().first().contains("\"unlock_ids\":[\"alpha\",\"zeta\"]"))
+        assertEquals(setOf("alpha", "zeta"), ReplayTrajectory.parse(encoded).metadata.metaUnlockIds)
+    }
+
+    @Test
+    fun comparerRejectsDifferentFrozenMetaUnlockIds() {
+        val baseline = ReplayTrajectory.read(fixtureRoot.resolve("canonical.jsonl"))
+        val expected = baseline.copy(metadata = baseline.metadata.copy(metaUnlockIds = setOf("alpha")))
+        val actual = baseline.copy(metadata = baseline.metadata.copy(metaUnlockIds = setOf("beta")))
+
+        val comparison = ReplayTrajectoryComparer.compare(expected, actual)
+
+        assertEquals("invalid", comparison.status)
+        assertEquals(2, comparison.exitCode)
+        assertEquals(listOf("metadata.unlock_ids"), comparison.changedFields)
+    }
+
+    @Test
     fun comparerReportsDeterministicSemanticDiffAndHashOnlyFallback() {
         val actual = ReplayTrajectoryCapture.capture(ReplayDefinition("canonical"))
         val perturbed = ReplayTrajectory.read(fixtureRoot.resolve("canonical-perturbed.jsonl"))

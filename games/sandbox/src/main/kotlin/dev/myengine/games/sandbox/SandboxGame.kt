@@ -162,7 +162,13 @@ data class SandboxState(
     var constructionSites: ConstructionSiteStore = ConstructionSiteStore(),
     var belts: BeltTransportState = BeltTransportState(),
     var researchedTechIds: Set<String> = emptySet(),
+    var metaUnlockIds: Set<String> = emptySet(),
 ) : HashableState {
+    init {
+        researchedTechIds = Collections.unmodifiableSet(researchedTechIds.toSortedSet())
+        metaUnlockIds = Collections.unmodifiableSet(metaUnlockIds.toSortedSet())
+    }
+
     override fun appendHash(hash: StableHash) {
         hash.add(tick.value)
         hash.add(registry.manifest.id).add(registry.manifest.version)
@@ -175,6 +181,10 @@ data class SandboxState(
         belts.appendHash(hash)
         if (registry.techNodes.isNotEmpty()) {
             researchedTechIds.sorted().forEach { hash.add("researched-tech").add(it) }
+        }
+        if (metaUnlockIds.isNotEmpty()) {
+            hash.add("meta-unlock-context")
+            metaUnlockIds.sorted().forEach { hash.add(it) }
         }
         inventory.appendHash(hash)
         producers.sortedBy { it.id }.forEach {
@@ -717,10 +727,15 @@ class SandboxRuntime(
     }
 
     private fun isUnlockAvailable(type: dev.myengine.content.TechUnlockType, targetId: String): Boolean {
-        val refs = state.registry.techNodes.values
+        val techRefs = state.registry.techNodes.values
             .flatMap { node -> node.unlocks.map { node.id to it } }
             .filter { (_, ref) -> ref.type == type && ref.id == targetId }
-        return refs.isEmpty() || refs.any { (nodeId, _) -> nodeId in state.researchedTechIds }
+        val techAvailable = techRefs.isEmpty() || techRefs.any { (nodeId, _) -> nodeId in state.researchedTechIds }
+        val metaRefs = state.registry.metaProgression?.unlockables?.values
+            ?.filter { it.type == type && it.targetId == targetId }
+            .orEmpty()
+        val metaAvailable = metaRefs.isEmpty() || metaRefs.any { it.id in state.metaUnlockIds }
+        return techAvailable && metaAvailable
     }
 
     private fun research(command: ResearchCommand) {
@@ -1692,7 +1707,7 @@ class SandboxRuntime(
 private fun VisualAssetRef.toRenderAssetRef(): RenderAssetRef = RenderAssetRef(path = path, atlasKey = atlasKey)
 
 object SandboxSaveCodec {
-    const val SAVE_VERSION: Int = 21
+    const val SAVE_VERSION: Int = 22
 
     fun encode(state: SandboxState, seed: Long, pendingCommands: List<EngineCommand> = emptyList()): String {
         val props = Properties()
@@ -1756,6 +1771,7 @@ object SandboxSaveCodec {
             }
         }.joinToString(";")
         props["researchedTechIds"] = state.researchedTechIds.sorted().joinToString(",") { encodeToken(it) }
+        props["metaUnlockIds"] = state.metaUnlockIds.sorted().joinToString(",") { encodeToken(it) }
         props["producers"] = state.producers.sortedBy { it.id }.joinToString(";") {
             listOf(
                 it.id,
@@ -1921,6 +1937,9 @@ object SandboxSaveCodec {
         if (version >= 19) restoreResourceNodes(state, props.getProperty("resourceNodes", ""))
         state.researchedTechIds = if (version >= 18) {
             parseResearchedTechIds(props.getProperty("researchedTechIds", ""), registry)
+        } else emptySet()
+        state.metaUnlockIds = if (version >= 22) {
+            parseMetaUnlockIds(props.getProperty("metaUnlockIds", ""), registry)
         } else emptySet()
         state.producers = props.getProperty("producers", "")
             .split(';')
@@ -2462,6 +2481,21 @@ object SandboxSaveCodec {
         return ids
     }
 
+    private fun parseMetaUnlockIds(text: String, registry: ContentRegistry): Set<String> {
+        if (text.isBlank()) return emptySet()
+        val encodedIds = text.split(',')
+        require(encodedIds.all { it.isNotBlank() }) { "Meta unlock ids cannot contain empty tokens." }
+        val decodedIds = encodedIds.map(::decodeToken)
+        require(decodedIds.size == decodedIds.toSet().size) { "Meta unlock ids cannot contain duplicates." }
+        val ids = decodedIds.toSortedSet()
+        if (ids.isNotEmpty()) {
+            val unlockables = registry.metaProgression?.unlockables
+                ?: error("Save contains meta unlock ids but the loaded pack has no meta progression.")
+            ids.forEach { id -> require(id in unlockables) { "Unknown meta unlock '$id' in save." } }
+        }
+        return Collections.unmodifiableSet(ids)
+    }
+
     private fun parseStockpileCommandPayload(
         payload: String,
     ): Triple<String, List<TileCoordinate>, Set<String>> {
@@ -2697,10 +2731,11 @@ object SandboxGame {
         seed: Long = 7L,
         wallDensityPercent: Int = 18,
         maxAttempts: Int = 16,
+        metaUnlockIds: Set<String> = emptySet(),
     ): SandboxRuntime {
         val generated = generateProceduralMap(registry, seed, wallDensityPercent, maxAttempts)
         val generatedRegistry = registry.copy(maps = registry.maps + (generated.map.id to generated.map))
-        return createRuntime(generatedRegistry, mapId = generated.map.id, seed = seed)
+        return createRuntime(generatedRegistry, mapId = generated.map.id, seed = seed, metaUnlockIds = metaUnlockIds)
     }
 
     fun createInitialState(
@@ -2708,8 +2743,10 @@ object SandboxGame {
         difficultyId: String? = null,
         mapId: String? = null,
         seed: Long = 7L,
+        metaUnlockIds: Set<String> = emptySet(),
     ): SandboxState {
         val effectiveRegistry = difficultyId?.let(registry::resolveDifficulty) ?: registry
+        val normalizedMetaUnlockIds = normalizeMetaUnlockIds(effectiveRegistry, metaUnlockIds)
         val map = effectiveRegistry.requireMap(mapId)
         val world = createWorld(effectiveRegistry, map)
         return SandboxState(
@@ -2722,6 +2759,7 @@ object SandboxGame {
             producers = listOf(Producer("generator-1", "bolt-generator")),
             defense = DefenseState(coreHealth = 20),
             randomCursor = SeededRandom(seed).snapshot(),
+            metaUnlockIds = normalizedMetaUnlockIds,
         )
     }
 
@@ -2730,8 +2768,9 @@ object SandboxGame {
         difficultyId: String? = null,
         mapId: String? = null,
         seed: Long = 7L,
+        metaUnlockIds: Set<String> = emptySet(),
     ): SandboxRuntime =
-        SandboxRuntime(createInitialState(registry, difficultyId, mapId, seed), seed = seed)
+        SandboxRuntime(createInitialState(registry, difficultyId, mapId, seed, metaUnlockIds), seed = seed)
 
     /**
      * Narrow devtools seam for deterministic replay inspection. It selects the same typed
@@ -2743,6 +2782,7 @@ object SandboxGame {
         packRoot: Path = contentRoot(),
         seed: Long = 7L,
         resistPercent: Int = 50,
+        metaUnlockIds: Set<String> = emptySet(),
     ): SandboxRuntime {
         require(scenarioId in setOf("default", "canonical", "kill", "resist")) {
             "Unknown sandbox devtools replay scenario '$scenarioId'."
@@ -2753,7 +2793,16 @@ object SandboxGame {
         } else {
             base
         }
-        return createRuntime(registry, seed = seed)
+        return createRuntime(registry, seed = seed, metaUnlockIds = metaUnlockIds)
+    }
+
+    private fun normalizeMetaUnlockIds(registry: ContentRegistry, ids: Set<String>): Set<String> {
+        val normalized = ids.toSortedSet()
+        if (normalized.isEmpty()) return emptySet()
+        val unlockables = registry.metaProgression?.unlockables
+            ?: error("Scenario contains meta unlock ids but the loaded pack has no meta progression.")
+        normalized.forEach { id -> require(id in unlockables) { "Unknown meta unlock '$id' in scenario." } }
+        return Collections.unmodifiableSet(normalized)
     }
 
     /**

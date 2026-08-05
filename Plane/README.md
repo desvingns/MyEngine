@@ -54,8 +54,9 @@
 4. Hardening gaps из `docs/HARDENING_AUDIT.md` закрывать по одному, с тестами и обновлением handoff.
 5. PROC-005 Golden replay hashes, DX-007 ContentLoader/SaveCodec fuzz tests, DX-003 Replay
    divergence bisector, DX-004 Desktop content hot-reload, and PROC-004 Performance budgets are
-   closed 2026-08-04. Review the remaining accepted backlog before selecting the next feature;
-   ENG-036 and PROC-015 remain human-owned and start-gated.
+   closed 2026-08-04. ENG-022 Meta-progression store closed 2026-08-05; review the remaining
+   accepted backlog before selecting the next feature. ENG-036 and PROC-015 remain human-owned
+   and start-gated.
 
 Новые крупные фазы добавлять только после того, как backlog specs перестанут быть достаточно
 точным механизмом управления работой.
@@ -98,6 +99,7 @@
 | [x] | PROC-005 Golden replay hashes | [PROC-005](../.claude/specs/done/PROC-005-golden-replay-hashes.md) | Checked-in canonical/kill/resist golden files asserted by replay tests and compared by `me-sim-replay`; intentional updates require a handoff reason; DX-003 was the separate per-tick follow-up and is now closed | 2026-08-04 |
 | [x] | DX-003 Replay divergence bisector | [DX-003](../.claude/specs/done/DX-003-replay-divergence-bisector.md) | Deterministic tick-0 + actual-tick `dx-003-trajectory-v1` JSONL, canonical/kill/resist fixtures matching PROC-005 final hashes, first-divergent-tick comparer with sorted fields and `hash_only` fallback, CLI exit codes 0/1/2, resistance=50 seam, and unchanged legacy replay/PROC-005 contracts | 2026-08-04 |
 | [x] | DX-004 Desktop content hot-reload | [DX-004](../.claude/specs/done/DX-004-desktop-content-hot-reload.md) | Android-free recursive desktop WatchService with debounced validate-then-restart, same-seed deterministic reload, typed invalid-pack errors preserving the last-good scenario, opt-in `--watch --pack --seed` CLI, focused tests, and balance-iteration docs | 2026-08-04 |
+| [x] | ENG-022 Meta-progression store | [ENG-022](../.claude/specs/done/ENG-022-meta-progression-store.md) | Independently versioned profile codec/store, idempotent terminal-run currency crediting, optional content-defined unlockables, immutable scenario unlock context, save v22 migration, and replay metadata | 2026-08-05 |
 | [x] | PROC-004 Numeric performance budgets | [PROC-004](../.claude/specs/done/PROC-004-perf-budgets.md) | Versioned simulation/goal-field/spatial/belt budgets, optional frame budget, one-line JSON verdict/deltas, numeric telemetry, pre-push enforcement, and verifier rule | 2026-08-04 |
 
 ## Глобальные инварианты
@@ -107,6 +109,24 @@
 - Rendering/input не владеют authoritative game state.
 - Все важные решения фиксируются в ADR или docs, а не остаются в чате.
 - Контент data-driven: schemas, version fields, validation, migrations from day one.
+
+### 2026-08-05 - ENG-022 (meta-progression store)
+
+- Status: Done / accepted; no new phase was created.
+- Owner: Codex / `me-dev:me`
+- DONE: Added an Android-free, independently versioned meta profile codec/store with currency,
+  unlock ids, and idempotent credited terminal runs. Added optional `meta-progression.json`
+  content with target cross-references; locked tower/building/recipe commands now require the
+  frozen scenario unlock set. Run-save v22 persists that set, and replay metadata carries it with
+  legacy empty defaults.
+- DECISIONS: Profile state remains separate from run saves. The sandbox remains the proof surface;
+  no new engine module or Android wiring was introduced. Profile encoding is deterministic and
+  duplicate terminal run ids cannot double-credit currency.
+- NEXT: Review the remaining accepted backlog; ENG-036 and PROC-015 remain human-owned/start-gated.
+- BLOCKERS: None known after the focused and required verification lanes.
+- VERIFICATION: Focused `engine-content`, `games:sandbox`, and `engine-devtools` tests passed.
+  Full content/replay/save-compatibility/benchmark/project/Android/headless/selfcheck lanes are
+  recorded in the final close-out below.
 
 ### 2026-08-04 - DX-004 (desktop content hot-reload)
 

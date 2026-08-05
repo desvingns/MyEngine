@@ -1,7 +1,45 @@
 # MyEngine Handoff
 
-Last updated: 2026-08-04 (PROC-001 close-out)
+Last updated: 2026-08-05 (ENG-022 close-out)
 Owner: Codex / me-dev:me
+
+## ENG-022 close-out (2026-08-05)
+
+### DONE
+
+- Added optional `meta-progression.json` content with validated currency and unlockable target
+  references.
+- Added deterministic, independently versioned profile persistence for meta currency, unlock ids,
+  and credited terminal run ids; duplicate run ids are idempotent.
+- Added immutable scenario unlock context to sandbox state, meta gating for tower/building/recipe
+  commands, save v22 migration/defaults, and replay `unlock_ids` metadata with legacy compatibility.
+
+### DECISIONS
+
+- Profile state stays outside run saves; run saves store only the frozen scenario unlock set needed
+  to reproduce a run. No new engine module or Android production wiring was needed for this proof
+  surface.
+- Profile encoding is manually ordered because `Properties.store` adds a wall-clock timestamp.
+- The existing sandbox pack declares the optional file with no unlockables, preserving canonical
+  replay behavior while tests exercise a registry with a meta-gated tower.
+
+### NEXT
+
+- Review the remaining accepted backlog; ENG-036 and PROC-015 remain human-owned/start-gated.
+
+### BLOCKERS
+
+- None known. Preserve and exclude the pre-existing untracked `archive/` baseline.
+
+### VERIFICATION
+
+- Focused and full Gradle tests, `projects`, Android assemble, content validation, replay, save
+  compatibility, benchmark, headless inspect, selfcheck, and diff-check passed. A report-only
+  `me-spec-sync` attempt was not applicable: this card came from the internal engine gap sweep,
+  not an `EG-*` game-spec source bundle; it made no changes.
+- Reflection: `scripts/me-record-run.ps1` recorded the pass as telemetry event 90 and triggered
+  the mandatory retro. `.ai/retro/retro-2026-08-05.md` was written; no new pipeline/skill proposal
+  survived this feature-local review.
 
 ## PROC-001 close-out (2026-08-04)
 

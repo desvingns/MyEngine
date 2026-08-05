@@ -31,7 +31,7 @@ class SandboxEndlessWaveTest {
         assertEquals(uninterrupted.state.stableHash(), restored.state.stableHash())
         assertEquals(uninterrupted.state.randomCursor, restored.state.randomCursor)
         assertTrue(save.contains("randomCursor="))
-        assertEquals(21, SandboxSaveCodec.SAVE_VERSION)
+        assertEquals(22, SandboxSaveCodec.SAVE_VERSION)
     }
 
     private fun endlessRegistry(): ContentRegistry {

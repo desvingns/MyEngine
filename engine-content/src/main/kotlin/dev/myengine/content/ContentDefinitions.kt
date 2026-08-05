@@ -333,6 +333,30 @@ data class TechNodeContent(
     }
 }
 
+/** A persistent profile unlock that gates one content target across runs. */
+data class MetaUnlockableContent(
+    override val id: String,
+    val type: TechUnlockType,
+    val targetId: String,
+) : ContentDefinition {
+    init {
+        require(id.isNotBlank()) { "Meta unlock id cannot be blank." }
+        require(targetId.isNotBlank()) { "Meta unlock target id cannot be blank." }
+    }
+
+    val stableKey: String get() = "${type.id}:$targetId"
+}
+
+/** Optional pack-owned meta-progression declarations. */
+data class MetaProgressionContent(
+    val currencyResourceId: String,
+    val unlockables: Map<String, MetaUnlockableContent> = emptyMap(),
+) {
+    init {
+        require(currencyResourceId.isNotBlank()) { "Meta currency resource id cannot be blank." }
+    }
+}
+
 data class WaveSpawn(
     val enemyId: String,
     val count: Int,
@@ -589,6 +613,7 @@ data class ContentRegistry(
     val workers: Map<String, WorkerContent> = emptyMap(),
     val needs: Map<String, NeedContent> = emptyMap(),
     val techNodes: Map<String, TechNodeContent> = emptyMap(),
+    val metaProgression: MetaProgressionContent? = null,
 ) {
     /** Alias kept for callers that refer to the optional pack feature as simply `endless`. */
     val endless: EndlessWaveContent? get() = endlessWave

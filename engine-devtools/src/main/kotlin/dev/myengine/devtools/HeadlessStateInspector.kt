@@ -27,6 +27,14 @@ interface HeadlessScenarioFactory {
     val id: String
 
     fun create(packRoot: Path, scenarioId: String, seed: Long): HeadlessScenario
+
+    /** Optional scenario context; legacy factories remain valid with an empty unlock set. */
+    fun create(
+        packRoot: Path,
+        scenarioId: String,
+        seed: Long,
+        metaUnlockIds: Set<String>,
+    ): HeadlessScenario = create(packRoot, scenarioId, seed)
 }
 
 data class HeadlessEntityDump(

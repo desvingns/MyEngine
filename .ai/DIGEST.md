@@ -1,12 +1,21 @@
 # MyEngine Intake Digest
 
-Regenerated at close-out. Last updated: 2026-08-04 (PROC-001 close-out).
+Regenerated at close-out. Last updated: 2026-08-05 (ENG-022 close-out).
 
 ## Current next action
 
-PROC-001 (automated spec back-sync) is complete. Review the remaining accepted backlog, assign
-any missing owner/blocked_by/start gates, and select the next feature. ENG-036 and PROC-015 remain
+ENG-022 (meta-progression store) is complete. Review the remaining accepted backlog, assign any
+missing owner/blocked_by/start gates, and select the next feature. ENG-036 and PROC-015 remain
 human-owned start-gated work.
+
+## ENG-022 close-out (2026-08-05)
+
+- Added optional `meta-progression.json` content and validated unlockable target references.
+- Added deterministic profile codec/store with meta currency, unlock ids, and idempotent credited
+  terminal runs; profile state remains separate from run saves.
+- Added immutable scenario unlock context, command gating, run-save v22 migration, and replay
+  `unlock_ids` metadata with empty defaults for legacy data.
+- Focused tests passed; final required gate results are recorded in `STATE.md` and `.ai/handoff.md`.
 
 ## Active specs / roadmap
 

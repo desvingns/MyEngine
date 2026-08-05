@@ -31,6 +31,7 @@ data class ReplayDefinition(
     val requestedTicks: Int = 35,
     val commands: List<String> = defaultCommands(scenario),
     val resistPercent: Int? = if (scenario == "resist") 50 else null,
+    val metaUnlockIds: Set<String> = emptySet(),
 ) {
     init {
         require(scenario in setOf("canonical", "kill", "resist")) {
@@ -42,6 +43,7 @@ data class ReplayDefinition(
             "Resistance must be between 0 and 100 percent."
         }
         require(commands.all { it.isNotBlank() }) { "Replay commands cannot be blank." }
+        require(metaUnlockIds.all { it.isNotBlank() }) { "Replay meta unlock ids cannot be blank." }
     }
 
     fun metadata(): ReplayTrajectoryMetadata = ReplayTrajectoryMetadata(
@@ -53,6 +55,7 @@ data class ReplayDefinition(
         requestedTicks = requestedTicks,
         commands = commands,
         resistPercent = resistPercent,
+        metaUnlockIds = metaUnlockIds.toSortedSet(),
     )
 
     companion object {
@@ -66,6 +69,7 @@ data class ReplayDefinition(
                 requestedTicks = metadata.requestedTicks,
                 commands = metadata.commands,
                 resistPercent = metadata.resistPercent,
+                metaUnlockIds = metadata.metaUnlockIds,
             )
     }
 }
@@ -79,6 +83,7 @@ data class ReplayTrajectoryMetadata(
     val requestedTicks: Int,
     val commands: List<String>,
     val resistPercent: Int?,
+    val metaUnlockIds: Set<String> = emptySet(),
 ) {
     fun toJson(): String = buildJson(
         "format" to format,
@@ -89,6 +94,7 @@ data class ReplayTrajectoryMetadata(
         "requested_ticks" to requestedTicks,
         "commands" to RawJson(commands.joinToString(",", prefix = "[", postfix = "]") { "\"${escape(it)}\"" }),
         "resist_percent" to resistPercent,
+        "unlock_ids" to RawJson(metaUnlockIds.toSortedSet().joinToString(",", prefix = "[", postfix = "]") { "\"${escape(it)}\"" }),
     )
 }
 
@@ -164,11 +170,9 @@ data class ReplayTrajectory(
         }
 
         private fun parseMetadata(value: JsonObject): ReplayTrajectoryMetadata {
-            requireKeys(
-                value,
-                setOf("format", "factory", "scenario", "pack", "seed", "requested_ticks", "commands", "resist_percent"),
-                "metadata",
-            )
+            val legacyKeys = setOf("format", "factory", "scenario", "pack", "seed", "requested_ticks", "commands", "resist_percent")
+            val currentKeys = legacyKeys + "unlock_ids"
+            requireFormat(value.keys == legacyKeys || value.keys == currentKeys, "metadata keys are invalid.")
             val format = requiredString(value, "format")
             requireFormat(format == DX003_TRAJECTORY_FORMAT, "Unsupported trajectory format '$format'.")
             val factory = requiredString(value, "factory")
@@ -190,8 +194,17 @@ data class ReplayTrajectory(
                     ?: invalid("resist_percent must be an integer or null.")
             }
             requireFormat(resistPercent == null || resistPercent in 0..100, "resist_percent must be between 0 and 100.")
+            val metaUnlockIds = value["unlock_ids"]?.let { element ->
+                element.jsonArray.mapIndexed { index, item ->
+                    val id = item.jsonPrimitive.content
+                    requireFormat(id.isNotBlank(), "unlock_ids[$index] cannot be blank.")
+                    id
+                }.also { ids ->
+                    requireFormat(ids.size == ids.toSet().size, "unlock_ids cannot contain duplicates.")
+                }.toSortedSet()
+            } ?: emptySet()
             return try {
-                ReplayTrajectoryMetadata(format, factory, scenario, pack, seed, requestedTicks, commands, resistPercent)
+                ReplayTrajectoryMetadata(format, factory, scenario, pack, seed, requestedTicks, commands, resistPercent, metaUnlockIds)
             } catch (error: IllegalArgumentException) {
                 throw ReplayTrajectoryFormatException(error.message ?: "Invalid trajectory metadata.", error)
             }
@@ -253,7 +266,12 @@ object ReplayTrajectoryCapture {
         require(factory.id == definition.factory) {
             "Replay factory '${factory.id}' does not match '${definition.factory}'."
         }
-        val scenario = factory.create(definition.packRoot, definition.scenario, definition.seed)
+        val scenario = factory.create(
+            definition.packRoot,
+            definition.scenario,
+            definition.seed,
+            definition.metaUnlockIds,
+        )
         definition.commands.forEach(scenario::submitScriptCommand)
         val records = mutableListOf<ReplayTrajectoryRecord>()
         var previousTick = -1L
@@ -356,6 +374,7 @@ object ReplayTrajectoryComparer {
         expected.requestedTicks != actual.requestedTicks -> "metadata.requested_ticks"
         expected.commands != actual.commands -> "metadata.commands"
         expected.resistPercent != actual.resistPercent -> "metadata.resist_percent"
+        expected.metaUnlockIds != actual.metaUnlockIds -> "metadata.unlock_ids"
         else -> null
     }
 
