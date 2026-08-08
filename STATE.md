@@ -1,8 +1,24 @@
 # MyEngine State
 
-Last updated: 2026-08-05 (ENG-022 close-out)
-Active phase: Phase 00-14 complete; Phase 15 sequencing adopted; Signal Garden SG-001..005 complete; MyTD MTD-001..005 complete; DX-001, DX-002, DX-003, DX-004, DX-005, DX-006, DX-007, DX-008, ENG-001, ENG-002, ENG-003, ENG-004, ENG-005, ENG-006, ENG-007, ENG-008, ENG-009, ENG-010, ENG-011, ENG-012, ENG-013, ENG-014, ENG-015, ENG-016, ENG-017, ENG-018, ENG-019, ENG-020, ENG-021, ENG-022, ENG-023, ENG-025, ENG-026, ENG-027, ENG-028, ENG-029, ENG-030, ENG-031, ENG-032, ENG-033, ENG-034, ENG-035, PROC-001, PROC-002, PROC-003, PROC-004, PROC-005, PROC-006, PROC-007, and PROC-013 complete; pipeline at v0.2.2; next exact action is to review remaining accepted backlog and select the next feature; ENG-036 and PROC-015 remain human-owned/start-gated
-Owner of last update: Codex / me-dev:me (2026-08-05: ENG-022 close-out)
+Last updated: 2026-08-08 (PROC-011 close-out)
+Active phase: Phase 00-14 complete; Phase 15 sequencing adopted; Signal Garden SG-001..005 complete; MyTD MTD-001..005 complete; DX-001, DX-002, DX-003, DX-004, DX-005, DX-006, DX-007, DX-008, ENG-001, ENG-002, ENG-003, ENG-004, ENG-005, ENG-006, ENG-007, ENG-008, ENG-009, ENG-010, ENG-011, ENG-012, ENG-013, ENG-014, ENG-015, ENG-016, ENG-017, ENG-018, ENG-019, ENG-020, ENG-021, ENG-022, ENG-023, ENG-025, ENG-026, ENG-027, ENG-028, ENG-029, ENG-030, ENG-031, ENG-032, ENG-033, ENG-034, ENG-035, PROC-001, PROC-002, PROC-003, PROC-004, PROC-005, PROC-006, PROC-007, PROC-011, and PROC-013 complete; pipeline at v0.2.2; next exact action is to review the remaining accepted backlog, assign missing metadata, and select the next feature; ENG-036 and PROC-015 remain human-owned/start-gated
+Owner of last update: Codex / me-dev:me (2026-08-08: PROC-011 close-out)
+
+## PROC-011 Close-out (2026-08-08)
+
+- DONE: Completed the Codex adapter parity audit. Both Codex shims now expose the same `/me` and
+  `/me-spec` modes as their Claude counterparts; Codex manifests and `.codex` registration are
+  checked by a deterministic parity contract.
+- DECISIONS: The canonical `docs/agentic` and `docs/GAME_SPEC_PIPELINE.md` documents remain the
+  source of truth. The parity test is read-only and is invoked by `scripts/me-selfcheck.ps1`.
+  Codex manifests were bumped to `me-dev 0.1.2` and `me-spec 0.1.1`.
+- NEXT: Review the remaining accepted backlog, assign missing owner/blocked_by/start gates, and
+  select the next feature; ENG-036 and PROC-015 remain human-owned/start-gated.
+- BLOCKERS: No implementation blocker. The pre-existing untracked `archive/` baseline was preserved
+  and excluded. Roster scout/architect/verifier workers timed out after bounded waits; local
+  contract and boundary review supplied the fallback evidence.
+- VERIFICATION: Adapter parity test, selfcheck, full Gradle tests, projects, and diff-check passed.
+  A Codex smoke run is recorded in `.ai/runs/2026-08-08-proc-011-codex-smoke.md`.
 
 ## ENG-022 Close-out (2026-08-05)
 

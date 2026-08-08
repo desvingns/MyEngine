@@ -1,12 +1,21 @@
 # MyEngine Intake Digest
 
-Regenerated at close-out. Last updated: 2026-08-05 (ENG-022 close-out).
+Regenerated at close-out. Last updated: 2026-08-08 (PROC-011 close-out).
 
 ## Current next action
 
-ENG-022 (meta-progression store) is complete. Review the remaining accepted backlog, assign any
-missing owner/blocked_by/start gates, and select the next feature. ENG-036 and PROC-015 remain
+ENG-022 and PROC-011 are complete. Review the remaining accepted backlog, assign any missing
+owner/blocked_by/start gates, and select the next feature. ENG-036 and PROC-015 remain
 human-owned start-gated work.
+
+## PROC-011 close-out (2026-08-08)
+
+- Added Claude/Codex parity coverage for every `/me` and `/me-spec` mode, canonical references,
+  Codex plugin manifests, and `.codex` registration.
+- `scripts/me-selfcheck.ps1` now invokes the deterministic adapter parity contract test.
+- Codex manifests are `me-dev 0.1.2` and `me-spec 0.1.1`; the smoke record is in `.ai/runs/`.
+- Adapter parity, selfcheck, Gradle tests/projects, and diff-check passed; runtime/Android/save/
+  replay/content behavior is unchanged.
 
 ## ENG-022 close-out (2026-08-05)
 
@@ -20,7 +29,7 @@ human-owned start-gated work.
 ## Active specs / roadmap
 
 - DX-001, DX-002, DX-003, DX-004, DX-005, DX-006, DX-007, ENG-001, ENG-003, ENG-031, ENG-004, ENG-032, ENG-033, ENG-006,
-  ENG-017, ENG-023, ENG-025, ENG-034, ENG-035, PROC-001, PROC-004, PROC-005, and PROC-006 are done.
+  ENG-017, ENG-023, ENG-025, ENG-034, ENG-035, PROC-001, PROC-004, PROC-005, PROC-006, and PROC-011 are done.
 - ENG-003 is a post-Phase-14/Phase-15 feature close-out; no new phase was created.
 - ENG-002 remains the wave-enemy GoalField path; ENG-003 is the deterministic JobBoard/job-actor tick capability.
 - ENG-033's authored scope is implemented with no game-bundle traceability update. MySD TD Gate 1 is

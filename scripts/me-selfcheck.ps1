@@ -23,8 +23,12 @@ $artifacts = @(
     "claude-plugins/me-dev/skills/me/SKILL.md",
     "claude-plugins/me-spec/.claude-plugin/plugin.json",
     "claude-plugins/me-spec/skills/me-spec/SKILL.md",
+    "codex-plugins/me-dev/.codex-plugin/plugin.json",
     "codex-plugins/me-dev/skills/me-dev/SKILL.md",
-    "codex-plugins/me-spec/skills/me-spec/SKILL.md"
+    "codex-plugins/me-spec/.codex-plugin/plugin.json",
+    "codex-plugins/me-spec/skills/me-spec/SKILL.md",
+    ".codex/skills/README.md",
+    ".codex/agents/README.md"
 )
 
 $missing = @()
@@ -37,7 +41,10 @@ $refChecks = @(
     @{ file = "claude-plugins/me-dev/skills/me/SKILL.md";        needle = "docs/agentic" },
     @{ file = "claude-plugins/me-spec/skills/me-spec/SKILL.md";  needle = "GAME_SPEC_PIPELINE" },
     @{ file = "codex-plugins/me-dev/skills/me-dev/SKILL.md";     needle = "docs/agentic" },
-    @{ file = "codex-plugins/me-spec/skills/me-spec/SKILL.md";   needle = "GAME_SPEC_PIPELINE" }
+    @{ file = "codex-plugins/me-spec/skills/me-spec/SKILL.md";   needle = "GAME_SPEC_PIPELINE" },
+    @{ file = ".codex/skills/README.md";                         needle = "codex-plugins/me-dev/skills/me-dev" },
+    @{ file = ".codex/skills/README.md";                         needle = "codex-plugins/me-spec/skills/me-spec" },
+    @{ file = ".codex/agents/README.md";                         needle = "AGENT_CONTRACTS" }
 )
 $refMissing = @()
 foreach ($c in $refChecks) {
@@ -50,7 +57,7 @@ foreach ($c in $refChecks) {
 
 # JSON manifests must parse.
 $jsonBad = @()
-foreach ($rel in @(".claude-plugin/marketplace.json", "claude-plugins/me-dev/.claude-plugin/plugin.json", "claude-plugins/me-spec/.claude-plugin/plugin.json")) {
+foreach ($rel in @(".claude-plugin/marketplace.json", "claude-plugins/me-dev/.claude-plugin/plugin.json", "claude-plugins/me-spec/.claude-plugin/plugin.json", "codex-plugins/me-dev/.codex-plugin/plugin.json", "codex-plugins/me-spec/.codex-plugin/plugin.json")) {
     $p = Join-Path $root $rel
     if (Test-Path $p) {
         try { Get-Content -Raw -Path $p | ConvertFrom-Json -ErrorAction Stop | Out-Null }
@@ -98,6 +105,21 @@ try {
     $schemaDriftExit = 1
 }
 if ($schemaDriftExit -ne 0 -or $null -eq $schemaDrift -or $schemaDrift.verdict -ne "pass") { $failures++ }
+
+$parityRaw = & powershell.exe -NoProfile -File (Join-Path $root "scripts/tests/me-adapter-parity.tests.ps1") 2>$null | Out-String
+$parityExit = $LASTEXITCODE
+$parity = $null
+try {
+    $parity = $parityRaw.Trim() | ConvertFrom-Json -ErrorAction Stop
+} catch {
+    $parity = [ordered]@{
+        agent = "me-adapter-parity-test"
+        verdict = "fail"
+        summary = "adapter parity test did not return one JSON result"
+    }
+    $parityExit = 1
+}
+if ($parityExit -ne 0 -or $null -eq $parity -or $parity.verdict -ne "pass") { $failures++ }
 $verdict = if ($failures -eq 0) { "pass" } else { "fail" }
 
 $result = [ordered]@{
@@ -107,8 +129,10 @@ $result = [ordered]@{
     adapters_not_referencing_canon = @($refMissing)
     unparseable_json               = @($jsonBad)
     marketplace_missing_sources    = @($mkMissing)
+    codex_registration_missing     = @($refMissing | Where-Object { $_ -like ".codex/*" })
     spec_board_check               = $boardCheck
     schema_docs_drift              = $schemaDrift
+    adapter_parity                 = $parity
 }
 $result | ConvertTo-Json -Compress -Depth 6
 if ($verdict -eq "pass") { exit 0 } else { exit 1 }

@@ -75,7 +75,7 @@ Last updated: 2026-08-05 (ENG-022 close-out)
 | Playtest bot | PROC-008 | process | - | backlog |
 | Android visual smoke | PROC-009 | process | - | backlog |
 | Cost telemetry | PROC-010 | process | - | backlog |
-| Codex adapter parity audit + selfcheck coverage | PROC-011 | process | - | backlog |
+| Codex adapter parity audit + selfcheck coverage | PROC-011 | process | - | **done** (2026-08-08; Claude/Codex mode parity, Codex manifest/.codex registration checks, and selfcheck contract coverage) |
 | Emulator provisioning lane (managed devices) | PROC-012 | process | - | backlog |
 | Spec board hygiene | PROC-013 | process | - | **done** (2026-07-29; Variant B migrated 23 cards and wired board checker into selfcheck) |
 | Android release build lane | PROC-014 | process | - | backlog |

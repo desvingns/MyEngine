@@ -1,7 +1,40 @@
 # MyEngine Handoff
 
-Last updated: 2026-08-05 (ENG-022 close-out)
+Last updated: 2026-08-08 (PROC-011 close-out)
 Owner: Codex / me-dev:me
+
+## PROC-011 close-out (2026-08-08)
+
+### DONE
+
+- Moved `PROC-011` to `.claude/specs/done/` and synchronized the roadmap and state.
+- Added deterministic parity coverage for all `/me` and `/me-spec` modes across Claude/Codex
+  adapters, canonical references, Codex manifests, and `.codex` registration.
+- Wired `scripts/tests/me-adapter-parity.tests.ps1` into `scripts/me-selfcheck.ps1` and recorded
+  the Codex smoke run under `.ai/runs/`.
+
+### DECISIONS
+
+- Canonical process/spec documents remain authoritative; adapters only enumerate supported entry
+  points and point back to those documents.
+- Codex plugin manifests are now `me-dev 0.1.2` and `me-spec 0.1.1`.
+- No engine/runtime, Android, save, replay, or content behavior changed.
+
+### NEXT
+
+- Review the remaining accepted backlog, assign missing owner/blocked_by/start gates, and select
+  the next feature. ENG-036 and PROC-015 remain human-owned/start-gated.
+
+### BLOCKERS
+
+- No implementation blocker. Preserve and exclude the pre-existing untracked `archive/` baseline.
+- The bounded scout/architect/verifier workers did not return envelopes; local contract and
+  boundary review completed the run.
+
+### VERIFICATION
+
+- Adapter parity test, selfcheck, full `gradlew test`, `gradlew projects`, and `git diff --check`
+  passed. No device/emulator or runtime-gate evidence was needed for this process-only card.
 
 ## ENG-022 close-out (2026-08-05)
 

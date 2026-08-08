@@ -54,9 +54,9 @@
 4. Hardening gaps из `docs/HARDENING_AUDIT.md` закрывать по одному, с тестами и обновлением handoff.
 5. PROC-005 Golden replay hashes, DX-007 ContentLoader/SaveCodec fuzz tests, DX-003 Replay
    divergence bisector, DX-004 Desktop content hot-reload, and PROC-004 Performance budgets are
-   closed 2026-08-04. ENG-022 Meta-progression store closed 2026-08-05; review the remaining
-   accepted backlog before selecting the next feature. ENG-036 and PROC-015 remain human-owned
-   and start-gated.
+   closed 2026-08-04. ENG-022 Meta-progression store closed 2026-08-05. PROC-011 Codex adapter
+   parity and selfcheck coverage closed 2026-08-08; review the remaining accepted backlog before
+   selecting the next feature. ENG-036 and PROC-015 remain human-owned and start-gated.
 
 Новые крупные фазы добавлять только после того, как backlog specs перестанут быть достаточно
 точным механизмом управления работой.
@@ -1852,3 +1852,16 @@
   `assembleDebug`, headless inspect, and `git diff --check` passed.
 - Decisions: No external MyTD files, engine runtime, save schema, Android, ADR, or plugin version
   were changed. The next action is remaining backlog review; ENG-036 and PROC-015 stay human-owned.
+
+### 2026-08-08 - PROC-011 (Codex adapter parity)
+
+- Status: Done / accepted; no new phase was created.
+- Owner: Codex / `me-dev:me` (local role fallback; roster workers timed out after bounded waits)
+- DONE: Added explicit parity coverage for all `/me` and `/me-spec` modes, canonical references,
+  Codex plugin manifests, and `.codex` registration. `me-selfcheck` now invokes the parity test.
+- DECISIONS: The canonical agentic/spec docs remain the source of truth; no runtime, Android, save,
+  replay, or content behavior changed. Codex manifests are `me-dev 0.1.2` and `me-spec 0.1.1`.
+- NEXT: Review remaining accepted backlog, assign owner/blocked_by/start gates, and select the next
+  feature; ENG-036 and PROC-015 remain human-owned/start-gated.
+- VERIFICATION: Adapter parity test, selfcheck, full Gradle tests, projects, and `git diff --check`
+  passed. Codex smoke is recorded in `.ai/runs/2026-08-08-proc-011-codex-smoke.md`.

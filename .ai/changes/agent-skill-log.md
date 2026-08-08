@@ -748,3 +748,19 @@ by: claude
   projects, content validation, replay, save compatibility, benchmark, Android assemble, headless
   inspect, and diff-check passed. External MyTD files were preserved unchanged.
 - Baseline: known untracked `archive/` was preserved and excluded. No ADR or save-version bump.
+
+## 2026-08-08 - MyEngine PROC-011 feature run
+
+- Owner: Codex / `me-dev:me`.
+- Change type: adapter/selfcheck process feature; no engine/runtime, Android, save, replay, or
+  content behavior change.
+- Changed: Codex `/me` and `/me-spec` shims now enumerate the same modes as Claude; `.codex`
+  registration docs, both Codex plugin manifests, `scripts/tests/me-adapter-parity.tests.ps1`,
+  and `scripts/me-selfcheck.ps1` were updated. Codex versions are `me-dev 0.1.2` and
+  `me-spec 0.1.1`.
+- Pipeline: scout/architect/verifier workers timed out after bounded waits; local scope, contract,
+  runner, and boundary-review fallbacks completed. No malformed JSON envelope was returned by a
+  completed worker.
+- Verification: adapter parity test, selfcheck, full Gradle tests/projects, and `git diff --check`
+  passed. Codex smoke run recorded in `.ai/runs/2026-08-08-proc-011-codex-smoke.md`.
+- Baseline: known untracked `archive/` was preserved and excluded. No ADR or save-version bump.
