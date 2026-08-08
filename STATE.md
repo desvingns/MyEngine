@@ -1,8 +1,31 @@
 # MyEngine State
 
-Last updated: 2026-08-08 (PROC-011 close-out)
-Active phase: Phase 00-14 complete; Phase 15 sequencing adopted; Signal Garden SG-001..005 complete; MyTD MTD-001..005 complete; DX-001, DX-002, DX-003, DX-004, DX-005, DX-006, DX-007, DX-008, ENG-001, ENG-002, ENG-003, ENG-004, ENG-005, ENG-006, ENG-007, ENG-008, ENG-009, ENG-010, ENG-011, ENG-012, ENG-013, ENG-014, ENG-015, ENG-016, ENG-017, ENG-018, ENG-019, ENG-020, ENG-021, ENG-022, ENG-023, ENG-025, ENG-026, ENG-027, ENG-028, ENG-029, ENG-030, ENG-031, ENG-032, ENG-033, ENG-034, ENG-035, PROC-001, PROC-002, PROC-003, PROC-004, PROC-005, PROC-006, PROC-007, PROC-011, and PROC-013 complete; pipeline at v0.2.2; next exact action is to review the remaining accepted backlog, assign missing metadata, and select the next feature; ENG-036 and PROC-015 remain human-owned/start-gated
-Owner of last update: Codex / me-dev:me (2026-08-08: PROC-011 close-out)
+Last updated: 2026-08-08 (PROC-012 close-out)
+Active phase: Phase 00-14 complete; Phase 15 sequencing adopted; Signal Garden SG-001..005 complete; MyTD MTD-001..005 complete; DX-001, DX-002, DX-003, DX-004, DX-005, DX-006, DX-007, DX-008, ENG-001, ENG-002, ENG-003, ENG-004, ENG-005, ENG-006, ENG-007, ENG-008, ENG-009, ENG-010, ENG-011, ENG-012, ENG-013, ENG-014, ENG-015, ENG-016, ENG-017, ENG-018, ENG-019, ENG-020, ENG-021, ENG-022, ENG-023, ENG-025, ENG-026, ENG-027, ENG-028, ENG-029, ENG-030, ENG-031, ENG-032, ENG-033, ENG-034, ENG-035, PROC-001, PROC-002, PROC-003, PROC-004, PROC-005, PROC-006, PROC-007, PROC-011, PROC-012, and PROC-013 complete; pipeline at v0.2.2; next exact action is to review the remaining accepted backlog and select the next feature; PROC-009 is now dependency-unblocked, while ENG-036 and PROC-015 remain human-owned/start-gated
+Owner of last update: Codex / me-dev:me (2026-08-08: PROC-012 close-out)
+
+## PROC-012 Close-out (2026-08-08)
+
+- DONE: Added a Windows PowerShell scripted-AVD lane that preflights the Android SDK/emulator,
+  builds the debug and instrumentation APKs, boots or reuses an emulator, runs the AndroidX
+  instrumentation smoke, and emits one compact JSON result. A deterministic contract test covers
+  blocked preflight, one-line output, manifest/test discovery, and Gradle dependencies.
+- DECISIONS: The lane uses the existing `Pixel_5` AVD profile; missing SDK, emulator, system image,
+  or virtualization returns typed `status: blocked` / `verdict: blocked` with a documented fallback.
+  Polling is bounded by `BootTimeoutSeconds`; only an emulator started by the lane is stopped.
+  No simulation, save, content, renderer authority, or screenshot-golden behavior changed.
+- NEXT: Review the remaining accepted backlog and select the next feature. PROC-009 is now
+  dependency-unblocked; ENG-036 and PROC-015 remain human-owned/start-gated.
+- BLOCKERS: No implementation blocker. The pre-existing untracked `archive/` baseline remains
+  preserved and excluded. The verifier and docs workers timed out after bounded waits; local
+  boundary review supplied the final evidence.
+- VERIFICATION: Contract test, full Gradle tests/projects, content validation, replay, save
+  compatibility, benchmark (`sim_ms=538`, `frame_ms=not_measured`), selfcheck, required headless
+  inspect, Android assembleDebug/assembleDebugAndroidTest, `git diff --check`, and actual
+  Pixel_5/emulator-5554 instrumentation smoke passed. Android performance re-review passed after
+  replacing unbounded `adb wait-for-device` with bounded `adb get-state` polling. No screenshot
+  golden or frame-metrics evidence is claimed. Report-only `me-spec-sync` was not applicable:
+  this process card has no `EG-*` source id and made no external bundle changes.
 
 ## PROC-011 Close-out (2026-08-08)
 

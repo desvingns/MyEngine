@@ -2,6 +2,9 @@ id: ENG-036
 title: Reusable Android-free runtime and game session API
 status: backlog
 owner: human
+blocked_by: none
+start_gates:
+  - human_start_approval
 phase: engine
 source: MySD foundation gap analysis 2026-07-18 (repository evidence)
 requirements:

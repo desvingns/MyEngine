@@ -1,6 +1,12 @@
 id: PROC-014
 title: Android release build lane
 status: backlog
+owner: codex
+blocked_by: none
+start_gates:
+  - baseline_selfcheck_pass
+  - android_project_buildable
+  - release_variant_policy_defined
 phase: process
 source: engine gap sweep 2026-07-06 (project review; games ship exclusively on Android)
 

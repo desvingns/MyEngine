@@ -42,3 +42,8 @@ Owner: Android shipping shell
 - Input-to-command mapping test.
 - Save directory access test.
 
+The Windows device-lane entry point is `powershell.exe -File scripts/me-android-device-smoke.ps1`.
+It runs the AndroidX instrumentation smoke against the scripted `Pixel_5` AVD and emits one compact
+JSON result. Missing SDK/emulator/system-image/virtualization is reported as typed `blocked` with a
+fallback rather than a false pass; `scripts/me-android-device-smoke-test.ps1` covers that contract.
+This lane is device evidence only and does not move simulation authority into Android.

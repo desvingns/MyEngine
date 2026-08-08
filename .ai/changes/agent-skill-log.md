@@ -764,3 +764,18 @@ by: claude
 - Verification: adapter parity test, selfcheck, full Gradle tests/projects, and `git diff --check`
   passed. Codex smoke run recorded in `.ai/runs/2026-08-08-proc-011-codex-smoke.md`.
 - Baseline: known untracked `archive/` was preserved and excluded. No ADR or save-version bump.
+
+## 2026-08-08 - MyEngine PROC-012 feature run
+
+- Owner: Codex / `me-dev:me`.
+- Change type: Android process/device lane; no plugin version bump, adapter change, or engine
+  runtime/save/content behavior change. Added the Windows scripted-AVD smoke lane, AndroidX
+  instrumentation fixture, deterministic blocked-preflight contract, and backlog metadata hygiene.
+- Pipeline: selfcheck passed; scout returned needs_human facts, architect/developer/verifier/docs
+  workers timed out after bounded waits, tester and runner returned pass envelopes, and Android
+  performance review passed after the bounded polling fix. No malformed JSON envelope was observed.
+- Verification: focused contract, full Gradle tests/projects, content validation, replay, save
+  compatibility, benchmark (`sim_ms=538`), selfcheck, headless inspect, Android assemble/debug
+  instrumentation APKs, actual Pixel_5/emulator-5554 smoke, and diff-check passed. `frame_ms` is
+  not measured and no screenshot golden claim is made.
+- Baseline: known untracked `archive/` was preserved and excluded. No ADR or save-version bump.

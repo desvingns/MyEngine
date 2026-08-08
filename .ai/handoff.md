@@ -1,7 +1,46 @@
 # MyEngine Handoff
 
-Last updated: 2026-08-08 (PROC-011 close-out)
+Last updated: 2026-08-08 (PROC-012 close-out)
 Owner: Codex / me-dev:me
+
+## PROC-012 close-out (2026-08-08)
+
+### DONE
+
+- Moved `PROC-012` to `.claude/specs/done/` and synchronized the roadmap/state.
+- Added the Windows PowerShell scripted-AVD lane, AndroidX instrumentation smoke fixture, and
+  deterministic blocked-preflight contract test. The lane emits one compact JSON result, supports
+  an existing `Pixel_5` AVD, bounds boot polling, and cleans up only an emulator it started.
+- Added explicit owner/blocked_by/start-gates metadata to the remaining inactive backlog cards;
+  `PROC-009` now records its dependency on the completed `PROC-012` lane.
+
+### DECISIONS
+
+- Missing SDK, emulator, system image, or virtualization is a typed `blocked` result with a
+  documented fallback; it does not masquerade as a passing device run.
+- This feature is test-harness/process scope only: no simulation authority, save version, content
+  schema, renderer, screenshot-golden, or release-lane behavior changed.
+- The known untracked `archive/` baseline is preserved and excluded from the feature.
+
+### NEXT
+
+- Review the remaining accepted backlog and choose the next feature. `PROC-009` is now dependency-
+  unblocked; `ENG-036` and `PROC-015` remain human-owned/start-gated.
+
+### BLOCKERS
+
+- No implementation blocker. The bounded verifier and docs workers timed out; local boundary review
+  plus the full runner evidence completed the close-out.
+- Frame metrics remain not measured; no screenshot golden claim is made.
+
+### VERIFICATION
+
+- Selfcheck, focused contract test, full Gradle test/projects, content validation, replay, save
+  compatibility, benchmark (`sim_ms=538`), required headless inspect, Android assembleDebug and
+  assembleDebugAndroidTest, `git diff --check`, and actual Pixel_5/emulator-5554 instrumentation
+  smoke passed. Android performance review passed after bounded `adb get-state` polling replaced
+  the unbounded `adb wait-for-device` path. Report-only `me-spec-sync` was not applicable because
+  this process card has no `EG-*` source id; no external bundle was changed.
 
 ## PROC-011 close-out (2026-08-08)
 

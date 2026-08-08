@@ -1,6 +1,12 @@
 id: PROC-008
 title: Headless playtest bot for balance tuning
 status: backlog
+owner: codex
+blocked_by: none
+start_gates:
+  - baseline_selfcheck_pass
+  - baseline_replay_pass
+  - baseline_content_validate
 phase: process
 source: architecture review 2026-07-04 (P4.1)
 

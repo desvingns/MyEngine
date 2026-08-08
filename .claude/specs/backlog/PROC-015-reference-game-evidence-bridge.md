@@ -2,6 +2,10 @@ id: PROC-015
 title: Reference-game evidence bridge for me-spec
 status: backlog
 owner: human
+blocked_by: none
+start_gates:
+  - human_start_approval
+  - gate_1_inventory_acceptance
 phase: process
 source: MySD reference-spec pipeline 2026-07-18
 requirements:

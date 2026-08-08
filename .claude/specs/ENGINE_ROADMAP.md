@@ -7,7 +7,7 @@ two or more games outranks single-game gaps of the same severity.
 Updated by: the `/me-spec` backlog bridge (new gaps / new demand) and `/me`
 close-out (status changes).
 
-Last updated: 2026-08-05 (ENG-022 close-out)
+Last updated: 2026-08-08 (PROC-012 close-out)
 
 ## Capabilities
 
@@ -76,7 +76,7 @@ Last updated: 2026-08-05 (ENG-022 close-out)
 | Android visual smoke | PROC-009 | process | - | backlog |
 | Cost telemetry | PROC-010 | process | - | backlog |
 | Codex adapter parity audit + selfcheck coverage | PROC-011 | process | - | **done** (2026-08-08; Claude/Codex mode parity, Codex manifest/.codex registration checks, and selfcheck contract coverage) |
-| Emulator provisioning lane (managed devices) | PROC-012 | process | - | backlog |
+| Emulator provisioning lane (managed devices) | PROC-012 | process | - | **done** (2026-08-08; Windows PowerShell scripted Pixel_5 lane, deterministic blocked-preflight JSON fallback, bounded boot polling, instrumentation smoke, and owned-emulator cleanup) |
 | Spec board hygiene | PROC-013 | process | - | **done** (2026-07-29; Variant B migrated 23 cards and wired board checker into selfcheck) |
 | Android release build lane | PROC-014 | process | - | backlog |
 | Reference-game evidence bridge for me-spec | PROC-015 | process, mysd | - | backlog (state-graph.v1 + mechanic claims, clone-strict coverage, traceability, and gap dedup) |

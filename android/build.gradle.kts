@@ -42,6 +42,8 @@ kotlin {
 dependencies {
     implementation(dependencies.project(":games:sandbox"))
     implementation(libs.gdx)
+    androidTestImplementation(libs.androidx.test.runner)
+    androidTestImplementation(libs.junit4)
     testImplementation(libs.kotlin.test.junit5)
     testImplementation(libs.junit.jupiter)
 }

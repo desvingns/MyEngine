@@ -1,6 +1,11 @@
 id: PROC-010
 title: Pipeline cost telemetry (tokens/time per run)
 status: backlog
+owner: codex
+blocked_by: none
+start_gates:
+  - baseline_selfcheck_pass
+  - telemetry_contract_tests
 phase: process
 source: architecture review 2026-07-04 (P4.3)
 

@@ -3,14 +3,18 @@ agp = "9.2.1"
 androidCompileSdk = "36"
 androidMinSdk = "26"
 androidTargetSdk = "36"
+androidxTestRunner = "1.6.2"
 gdx = "1.14.2"
 junitJupiter = "5.14.4"
+junit4 = "4.13.2"
 kotlin = "2.4.0"
 
 [libraries]
 gdx = { module = "com.badlogicgames.gdx:gdx", version.ref = "gdx" }
 gdx-backend-lwjgl3 = { module = "com.badlogicgames.gdx:gdx-backend-lwjgl3", version.ref = "gdx" }
+androidx-test-runner = { module = "androidx.test:runner", version.ref = "androidxTestRunner" }
 junit-jupiter = { module = "org.junit.jupiter:junit-jupiter", version.ref = "junitJupiter" }
+junit4 = { module = "junit:junit", version.ref = "junit4" }
 kotlin-test-junit5 = { module = "org.jetbrains.kotlin:kotlin-test-junit5", version.ref = "kotlin" }
 kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version = "1.9.0" }
 

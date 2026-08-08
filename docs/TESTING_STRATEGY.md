@@ -74,6 +74,23 @@ Android checks should verify startup, lifecycle pause/resume, input forwarding, 
 access, orientation handling if supported, and basic frame pacing. They belong in Android modules
 or device scripts, not simulation modules.
 
+The Windows device lane is:
+
+```powershell
+powershell.exe -File scripts/me-android-device-smoke.ps1
+```
+
+It uses the scripted `Pixel_5` AVD profile, builds the debug and instrumentation APKs, boots or
+reuses an emulator, runs the AndroidX instrumentation smoke headlessly, and emits one compact JSON
+result. `status: blocked` / `verdict: blocked` is the expected typed fallback when the SDK, system
+image, emulator, or virtualization is unavailable; the JVM/build and contract lanes remain usable.
+`BootTimeoutSeconds` bounds device readiness polling, and cleanup stops only an emulator started by
+the lane. The deterministic contract is checked with:
+
+```powershell
+powershell.exe -File scripts/me-android-device-smoke-test.ps1
+```
+
 ## Visual And Screenshot Gates
 
 Rendering changes need screenshot or pixel-smoke checks for camera framing, debug overlays, UI

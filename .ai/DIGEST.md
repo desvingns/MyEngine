@@ -1,12 +1,23 @@
 # MyEngine Intake Digest
 
-Regenerated at close-out. Last updated: 2026-08-08 (PROC-011 close-out).
+Regenerated at close-out. Last updated: 2026-08-08 (PROC-012 close-out).
 
 ## Current next action
 
-ENG-022 and PROC-011 are complete. Review the remaining accepted backlog, assign any missing
-owner/blocked_by/start gates, and select the next feature. ENG-036 and PROC-015 remain
-human-owned start-gated work.
+ENG-022, PROC-011, and PROC-012 are complete. Review the remaining accepted backlog and select
+the next feature; PROC-009 is now dependency-unblocked. ENG-036 and PROC-015 remain human-owned
+start-gated work.
+
+## PROC-012 close-out (2026-08-08)
+
+- Added a Windows PowerShell scripted-AVD lane with one-line JSON output, bounded boot polling,
+  AndroidX instrumentation smoke, deterministic blocked-preflight contract coverage, and cleanup
+  of only lane-owned emulator processes.
+- Full Gradle/gate suite, headless inspect, Android assembleDebug/assembleDebugAndroidTest, and
+  actual Pixel_5/emulator-5554 instrumentation passed; benchmark `sim_ms=538`, `frame_ms` remains
+  `not_measured`.
+- Android review passed after replacing unbounded `adb wait-for-device` with bounded `get-state`;
+  verifier/docs workers timed out, so local boundary/documentation fallbacks were used.
 
 ## PROC-011 close-out (2026-08-08)
 

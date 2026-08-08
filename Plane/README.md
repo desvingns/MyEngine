@@ -55,8 +55,9 @@
 5. PROC-005 Golden replay hashes, DX-007 ContentLoader/SaveCodec fuzz tests, DX-003 Replay
    divergence bisector, DX-004 Desktop content hot-reload, and PROC-004 Performance budgets are
    closed 2026-08-04. ENG-022 Meta-progression store closed 2026-08-05. PROC-011 Codex adapter
-   parity and selfcheck coverage closed 2026-08-08; review the remaining accepted backlog before
-   selecting the next feature. ENG-036 and PROC-015 remain human-owned and start-gated.
+   parity and selfcheck coverage closed 2026-08-08; PROC-012 emulator provisioning closed
+   2026-08-08; review the remaining accepted backlog before selecting the next feature. PROC-009
+   is now dependency-unblocked; ENG-036 and PROC-015 remain human-owned and start-gated.
 
 Новые крупные фазы добавлять только после того, как backlog specs перестанут быть достаточно
 точным механизмом управления работой.
