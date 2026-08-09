@@ -91,6 +91,18 @@ the lane. The deterministic contract is checked with:
 powershell.exe -File scripts/me-android-device-smoke-test.ps1
 ```
 
+The signed release lane is:
+
+```powershell
+powershell.exe -File scripts/me-android-release.ps1 -KeystorePropertiesPath keystore.properties
+```
+
+It validates untracked signing properties, builds `bundleRelease`/`assembleRelease` with R8,
+checks packaged sandbox assets, and records release AAB size plus cold-start timings. A missing
+release keystore or device is typed `blocked`; `-PreflightOnly -SkipDevice` is build-only evidence
+and does not claim a cold-start metric. Its contract test is
+`powershell.exe -File scripts/tests/me-android-release.tests.ps1`.
+
 ## Visual And Screenshot Gates
 
 Rendering changes need screenshot or pixel-smoke checks for camera framing, debug overlays, UI

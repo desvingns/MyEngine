@@ -1,8 +1,30 @@
 # MyEngine State
 
 Last updated: 2026-08-09 (PROC-010 close-out)
-Active phase: Phase 00-14 complete; Phase 15 sequencing adopted; Signal Garden SG-001..005 complete; MyTD MTD-001..005 complete; DX-001, DX-002, DX-003, DX-004, DX-005, DX-006, DX-007, DX-008, ENG-001, ENG-002, ENG-003, ENG-004, ENG-005, ENG-006, ENG-007, ENG-008, ENG-009, ENG-010, ENG-011, ENG-012, ENG-013, ENG-014, ENG-015, ENG-016, ENG-017, ENG-018, ENG-019, ENG-020, ENG-021, ENG-022, ENG-023, ENG-025, ENG-026, ENG-027, ENG-028, ENG-029, ENG-030, ENG-031, ENG-032, ENG-033, ENG-034, ENG-035, PROC-001, PROC-002, PROC-003, PROC-004, PROC-005, PROC-006, PROC-007, PROC-008, PROC-009, PROC-010, PROC-011, PROC-012, and PROC-013 complete; pipeline at v0.2.2; next exact action is to review the remaining accepted backlog and select the next feature; ENG-036 and PROC-015 remain human-owned/start-gated
-Owner of last update: Codex / me-docs (2026-08-09: PROC-010 close-out)
+Active phase: Phase 00-14 complete; Phase 15 sequencing adopted; Signal Garden SG-001..005 complete; MyTD MTD-001..005 complete; DX-001, DX-002, DX-003, DX-004, DX-005, DX-006, DX-007, DX-008, ENG-001, ENG-002, ENG-003, ENG-004, ENG-005, ENG-006, ENG-007, ENG-008, ENG-009, ENG-010, ENG-011, ENG-012, ENG-013, ENG-014, ENG-015, ENG-016, ENG-017, ENG-018, ENG-019, ENG-020, ENG-021, ENG-022, ENG-023, ENG-025, ENG-026, ENG-027, ENG-028, ENG-029, ENG-030, ENG-031, ENG-032, ENG-033, ENG-034, ENG-035, PROC-001, PROC-002, PROC-003, PROC-004, PROC-005, PROC-006, PROC-007, PROC-008, PROC-009, PROC-010, PROC-011, PROC-012, PROC-013, and PROC-014 complete; pipeline at v0.2.2; next exact action is to review the remaining accepted backlog and select the next feature; ENG-036 and PROC-015 remain human-owned/start-gated
+Owner of last update: Codex / me-docs (2026-08-09: PROC-014 close-out)
+
+## PROC-014 Close-out (2026-08-09)
+
+- DONE: Added the signed Android release lane. `android/build.gradle.kts` reads ignored keystore
+  properties, validates release signing, enables R8/resource shrinking, and accepts monotonic
+  version plus per-game application-id overrides. `android/proguard-rules.pro` preserves Android,
+  simulation, content, render, and sandbox entry points.
+- DONE: Added `scripts/me-android-release.ps1` and its deterministic contract test. The lane builds
+  `bundleRelease`/`assembleRelease`, inspects required sandbox assets in the AAB, installs the
+  release APK, records cold-start timing, and requires the running SurfaceView/content shell.
+- DECISIONS: Signing secrets remain local in ignored `keystore.properties`; report schema is
+  `proc-014-android-release-v1`; build-only or missing-device runs do not claim cold-start evidence.
+  No engine, save, replay, content schema, plugin, or adapter contract changed; no ADR was needed.
+- NEXT: Review the remaining accepted backlog and select the next feature. `ENG-036` and `PROC-015`
+  remain human-owned/start-gated.
+- BLOCKERS: No implementation blocker. Roster `Task` delegation was unavailable in this Codex
+  session, so scout/architect/developer/tester/runner/reviewer/docs roles used documented local
+  fallback; no malformed worker envelope was produced. No external files were changed.
+- VERIFICATION: Signed release AAB/APK passed on Pixel_5; AAB 697589 bytes, required content present,
+  cold starts 995/656/642 ms (min 642, median 656, max 995), content smoke passed. Full tests,
+  projects, content validation, replay, save-compat, benchmark (`sim_ms=507`), selfcheck,
+  headless inspect, Android `assembleDebug`, and diff-check passed.
 
 ## PROC-010 Close-out (2026-08-09)
 

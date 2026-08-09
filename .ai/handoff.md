@@ -1,7 +1,49 @@
 # MyEngine Handoff
 
-Last updated: 2026-08-09 (PROC-010 close-out)
+Last updated: 2026-08-09 (PROC-014 close-out)
 Owner: Codex / me-docs
+
+## PROC-014 close-out (2026-08-09)
+
+### DONE
+
+- Moved `PROC-014` to `.claude/specs/done/` and synchronized the roadmap, state, Plane, digest,
+  release checklist, and Android/testing contracts.
+- Added the ignored-keystore release configuration in `android/build.gradle.kts`, R8/resource
+  shrinking, `android/proguard-rules.pro`, version/application-id overrides, and the
+  `scripts/me-android-release.ps1` lane plus deterministic contract test.
+- The lane emits `proc-014-android-release-v1` JSON with signed AAB size, packaged content checks,
+  and cold-start metrics; it never emits signing secrets.
+
+### DECISIONS
+
+- Release signing requires local ignored `keystore.properties` (or an explicit Gradle property);
+  missing credentials are a typed preflight block. `dev.myengine.<game>` is the per-game ID policy,
+  with monotonic version codes and explicit version-name overrides.
+- R8 keeps Android, simulation, content, render, and sandbox entry-point packages stable. The AAB
+  content check and release APK SurfaceView smoke are the release-variant proof. No ADR, save
+  version, plugin/adapter, engine runtime, or game-bundle change was needed.
+
+### NEXT
+
+- Review the remaining accepted backlog and select the next feature. `ENG-036` and `PROC-015`
+  remain human-owned/start-gated.
+
+### BLOCKERS
+
+- No implementation blocker. The separate `Task` roster tool was unavailable in this Codex session;
+  documented local role fallbacks supplied facts, implementation, tests, runner evidence, boundary
+  review, and docs. No malformed worker envelope was produced.
+
+### VERIFICATION
+
+- `scripts/tests/me-android-release.tests.ps1`: pass.
+- Signed `bundleRelease`/`assembleRelease`: pass; AAB size `697589` bytes; sandbox manifest/maps
+  entries present.
+- Pixel_5 release smoke: pass; cold-start samples `995/656/642 ms`, min `642`, median `656`, max
+  `995`; SurfaceView/content load passed for every sample.
+- Full `test`/`projects`, content validation, replay, save-compatibility, benchmark (`sim_ms=507`),
+  selfcheck, required headless inspect, `android:assembleDebug`, and `git diff --check`: pass.
 
 ## PROC-010 close-out (2026-08-09)
 

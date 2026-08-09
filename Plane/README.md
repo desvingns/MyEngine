@@ -57,8 +57,8 @@
    closed 2026-08-04. ENG-022 Meta-progression store closed 2026-08-05. PROC-010 cost telemetry,
    PROC-011 Codex adapter
    parity and selfcheck coverage closed 2026-08-08; PROC-012 emulator provisioning closed
-   2026-08-08; PROC-009 Android visual smoke, PROC-008 playtest bot, and PROC-010 cost telemetry
-   closed 2026-08-09; review the remaining accepted
+   2026-08-08; PROC-009 Android visual smoke, PROC-008 playtest bot, PROC-010 cost telemetry, and
+   PROC-014 Android release lane closed 2026-08-09; review the remaining accepted
    backlog before selecting the next feature. ENG-036 and PROC-015 remain human-owned and
    start-gated.
 
@@ -70,6 +70,7 @@
 | Status | Feature | Spec | Result | Date |
 |---|---|---|---|---|
 | [x] | PROC-010 Pipeline cost telemetry | [PROC-010](../.claude/specs/done/PROC-010-cost-telemetry.md) | Optional explicit/orchestrator/chars-per-4 token estimates, deterministic retro aggregation by workflow/agent, and human-gated cost proposal | 2026-08-09 |
+| [x] | PROC-014 Android release build lane | [PROC-014](../.claude/specs/done/PROC-014-android-release-lane.md) | Signed release AAB/APK lane with ignored keystore properties, R8/content smoke, version/application-id policy, and AAB/cold-start metrics | 2026-08-09 |
 | [x] | ENG-020 Spatial index + 1k-entity benchmark | [ENG-020](../.claude/specs/done/ENG-020-spatial-index-benchmark.md) | Internal non-persisted grid index for targeting/splash queries plus deterministic machine-readable 1024-enemy benchmark | 2026-07-29 |
 | [x] | PROC-013 Spec board hygiene | [PROC-013](../.claude/specs/done/PROC-013-spec-board-hygiene.md) | Variant B migrated 23 cards and wired the board checker into selfcheck | 2026-07-29 |
 | [x] | PROC-003 Domain roadmap sequencing | [PROC-003](../.claude/specs/done/PROC-003-domain-roadmap.md) | Plane/15 sequencing adopted; ENG-010 named successor to ENG-020 | 2026-07-29 |

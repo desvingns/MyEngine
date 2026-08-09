@@ -825,3 +825,18 @@ by: claude
   boundary checks true. A future large-pack materialization limit remains non-blocking.
 - Scope guard: no production code, scripts, golden, archive, staging, commit, or push changes were
   made by this docs close-out.
+
+## 2026-08-09 - MyEngine PROC-014 feature run
+
+- Owner: Codex / `me-dev:me` with documented local role fallback because the separate `Task` roster
+  tool was unavailable in this session.
+- Change type: Android release process lane; no plugin version bump or adapter/canonical contract
+  change. Added ignored-keystore signing validation, R8/resource shrinking, version/application-id
+  policy, release AAB/APK packaging, content inspection, Pixel_5 cold-start smoke, and a JSON report
+  schema `proc-014-android-release-v1` with a deterministic PowerShell contract test.
+- Verification: signed release build passed; AAB `697589` bytes; Pixel_5 cold starts were
+  `995/656/642 ms` with SurfaceView/content smoke pass. Full tests/projects, content validation,
+  replay, save compatibility, benchmark (`sim_ms=507`), selfcheck, headless inspect, Android
+  assembleDebug, and diff-check passed. No malformed worker envelope was produced.
+- Baseline: the pre-existing untracked `archive/` was preserved and excluded; local ignored
+  `keystore.properties` was not staged. No ADR or save-version bump.

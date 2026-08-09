@@ -58,3 +58,13 @@ fixture is Pixel_5 portrait, default sandbox, seed 7, tick 0; app-window semanti
 80 and bottom 120 pixels. Per-channel tolerance is 8 and the allowed difference ratio is 0.005.
 Golden updates require an explicit reason. A typed `blocked` preflight result is never considered
 a pass. The script contract is covered by `scripts/tests/me-android-visual-smoke.tests.ps1`.
+
+## Release lane
+
+`powershell.exe -File scripts/me-android-release.ps1 -KeystorePropertiesPath keystore.properties`
+validates an ignored local keystore properties file, builds signed `bundleRelease`/`assembleRelease`
+with R8/resource shrinking, verifies packaged sandbox content assets, and records release APK cold
+starts plus a SurfaceView/content smoke result. The report schema is
+`proc-014-android-release-v1`; missing credentials or device capability is typed `blocked`. Version
+code/name and per-game `dev.myengine.<game>` application IDs are explicit Gradle/environment
+overrides, documented in `docs/ANDROID_RELEASE.md`.
