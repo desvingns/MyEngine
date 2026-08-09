@@ -1,8 +1,27 @@
 # MyEngine State
 
-Last updated: 2026-08-09 (PROC-010 close-out)
-Active phase: Phase 00-14 complete; Phase 15 sequencing adopted; Signal Garden SG-001..005 complete; MyTD MTD-001..005 complete; DX-001, DX-002, DX-003, DX-004, DX-005, DX-006, DX-007, DX-008, ENG-001, ENG-002, ENG-003, ENG-004, ENG-005, ENG-006, ENG-007, ENG-008, ENG-009, ENG-010, ENG-011, ENG-012, ENG-013, ENG-014, ENG-015, ENG-016, ENG-017, ENG-018, ENG-019, ENG-020, ENG-021, ENG-022, ENG-023, ENG-025, ENG-026, ENG-027, ENG-028, ENG-029, ENG-030, ENG-031, ENG-032, ENG-033, ENG-034, ENG-035, PROC-001, PROC-002, PROC-003, PROC-004, PROC-005, PROC-006, PROC-007, PROC-008, PROC-009, PROC-010, PROC-011, PROC-012, PROC-013, and PROC-014 complete; pipeline at v0.2.2; next exact action is to review the remaining accepted backlog and select the next feature; ENG-036 and PROC-015 remain human-owned/start-gated
-Owner of last update: Codex / me-docs (2026-08-09: PROC-014 close-out)
+Last updated: 2026-08-09 (ENG-036 close-out)
+Active phase: Phase 00-14 complete; Phase 15 sequencing adopted; Signal Garden SG-001..005 complete; MyTD MTD-001..005 complete; DX-001, DX-002, DX-003, DX-004, DX-005, DX-006, DX-007, DX-008, ENG-001, ENG-002, ENG-003, ENG-004, ENG-005, ENG-006, ENG-007, ENG-008, ENG-009, ENG-010, ENG-011, ENG-012, ENG-013, ENG-014, ENG-015, ENG-016, ENG-017, ENG-018, ENG-019, ENG-020, ENG-021, ENG-022, ENG-023, ENG-025, ENG-026, ENG-027, ENG-028, ENG-029, ENG-030, ENG-031, ENG-032, ENG-033, ENG-034, ENG-035, ENG-036, PROC-001, PROC-002, PROC-003, PROC-004, PROC-005, PROC-006, PROC-007, PROC-008, PROC-009, PROC-010, PROC-011, PROC-012, PROC-013, and PROC-014 complete; pipeline at v0.2.2; next exact action is to review the remaining accepted backlog and select the next feature; PROC-015 remains human-owned/start-gated
+Owner of last update: Codex / me-dev:me (2026-08-09: ENG-036 close-out)
+
+## ENG-036 Close-out (2026-08-09)
+
+- DONE: Added the Android-free `engine-runtime` module with immutable runtime descriptors,
+  generic session/factory/restore contracts, explicit command admission, and bounded deterministic
+  queue dispatch. Added contract tests with a tiny fake backend.
+- DONE: Adapted `SandboxSession` to generic queue ownership and fixed-tick backend dispatch while
+  preserving the existing sandbox `String` save API and direct `SandboxRuntime` compatibility path.
+- DECISIONS: `SandboxSaveCodec.SAVE_VERSION` remains 22; no persisted shape or replay golden changed.
+  Concrete games own snapshot projections and save payloads; `engine-runtime` has no Android,
+  desktop, or games dependency.
+- NEXT: Review the remaining accepted backlog; `PROC-015` requires human Gate 1 inventory acceptance.
+- BLOCKERS: No implementation blocker. Roster `Task` was unavailable, so local role fallback was
+  used and documented; no malformed worker envelope was produced.
+- VERIFICATION: Focused/full tests, projects, content validation, replay, save-compatibility,
+  benchmark (`sim_ms=413`), selfcheck, headless inspect hash `d599fc31843b5aa8`, Android
+  `assembleDebug`, and `git diff --check` passed. Report-only `me-spec-sync` is not applicable to
+  this repository-evidence card: it returned typed fail because no `EG-*` source-bundle ids exist;
+  no external source was modified.
 
 ## PROC-014 Close-out (2026-08-09)
 

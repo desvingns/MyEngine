@@ -256,6 +256,8 @@ class SandboxRuntime(
     private val commandQueue: CommandQueue = CommandQueue(),
     seed: Long = 7L,
 ) {
+    /** Compatibility queue for direct JVM callers; lifecycle sessions own their queue. */
+    private var sessionPendingCommands: List<EngineCommand>? = null
     private val producerSystem = ProducerSystem(state.registry.recipes) { recipeId ->
         isUnlockAvailable(dev.myengine.content.TechUnlockType.RECIPE, recipeId)
     }
@@ -302,8 +304,13 @@ class SandboxRuntime(
         return true
     }
 
-    /** Non-destructive snapshot of the runtime's not-yet-drained pending commands. */
-    fun pendingCommands(): List<EngineCommand> = commandQueue.pending()
+    /** Non-destructive snapshot of pending commands owned by this runtime or its session adapter. */
+    fun pendingCommands(): List<EngineCommand> = sessionPendingCommands ?: commandQueue.pending()
+
+    /** Mirrors the generic session queue for legacy sandbox inspection APIs. */
+    internal fun attachSessionPendingCommands(commands: List<EngineCommand>) {
+        sessionPendingCommands = commands.toList()
+    }
 
     /** Submits a command batch subject to the same terminal rejection as [submit]. */
     fun submitAll(commands: List<EngineCommand>) {
@@ -320,13 +327,22 @@ class SandboxRuntime(
 
     fun step(ticks: Int = 1) {
         repeat(ticks) {
-            if (state.run.isTerminal) return
-            state.tick = state.tick.next()
+            if (state.run.isTerminal) return@repeat
+            stepOne(commandQueue.drainFor(state.tick.next()))
+        }
+    }
+
+    /** Session-owned queue path: the runtime receives only the commands for this tick. */
+    internal fun step(commands: List<EngineCommand>) {
+        if (!state.run.isTerminal) stepOne(commands)
+    }
+
+    private fun stepOne(commands: List<EngineCommand>) {
+        state.tick = state.tick.next()
             advanceIncidentModifiers()
             val commandEvents = mutableListOf<GameplayEvent>()
             val scheduledWaveEvents = mutableListOf<GameplayEvent>()
             val incidentWaveEvents = mutableListOf<GameplayEvent>()
-            val commands = commandQueue.drainFor(state.tick)
             commands.forEach { applyCommand(it, commandEvents) }
             needsSystem.tick(state.entities, state.jobBoard)
             ensureConstructionJobs()
@@ -432,7 +448,6 @@ class SandboxRuntime(
                 towerResult.events,
                 incidentWaveEvents,
             )
-        }
     }
 
     private fun aggregateGameplayEvents(

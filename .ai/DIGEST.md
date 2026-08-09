@@ -1,12 +1,22 @@
 # MyEngine Intake Digest
 
-Regenerated at close-out. Last updated: 2026-08-09 (PROC-014 close-out).
+Regenerated at close-out. Last updated: 2026-08-09 (ENG-036 close-out).
 
 ## Current next action
 
-ENG-022, PROC-008, PROC-009, PROC-010, PROC-011, PROC-012, and PROC-014 are complete. Review the
-remaining accepted backlog and select the next feature; ENG-036 and PROC-015 remain human-owned/
+ENG-022, ENG-036, PROC-008, PROC-009, PROC-010, PROC-011, PROC-012, and PROC-014 are complete.
+Review the remaining accepted backlog and select the next feature; PROC-015 remains human-owned/
 start-gated.
+
+## ENG-036 close-out (2026-08-09)
+
+- Added the Android-free `engine-runtime` module with runtime descriptor, generic session/factory,
+  typed restore, stable command ordering, bounded stepping, and fake-backend contract tests.
+- Adapted `SandboxSession` to generic queue ownership and backend dispatch without changing the
+  concrete v22 properties save format or replay goldens. Direct `SandboxRuntime` queue calls remain
+  a compatibility path for existing JVM tests.
+- Full tests/projects, content/replay/save/benchmark gates (`sim_ms=413`), selfcheck, headless
+  inspect (`d599fc31843b5aa8`), Android assembleDebug, and diff-check passed.
 
 ## PROC-014 close-out (2026-08-09)
 

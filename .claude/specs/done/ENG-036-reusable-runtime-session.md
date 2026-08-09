@@ -1,6 +1,6 @@
 id: ENG-036
 title: Reusable Android-free runtime and game session API
-status: backlog
+status: done
 owner: human
 blocked_by: none
 start_gates:
@@ -146,3 +146,13 @@ Scenario: Incompatible restore fails explicitly
 
 If implementation requires changes in more than three existing modules or roughly twelve
 production files, split sandbox adaptation and generic persistence into follow-up cards before code.
+
+# Implementation close-out (2026-08-09)
+
+- Added the Android-free `engine-runtime` module with `GameRuntimeDescriptor`, `GameSession`,
+  `GameRuntimeFactory`, typed restore results, and deterministic `QueuedGameSession` dispatch.
+- Adapted `SandboxSession` to generic queue ownership while preserving the existing sandbox save
+  text API and direct `SandboxRuntime` JVM compatibility path.
+- No sandbox save-schema bump was needed: properties encoding remains v22 and replay goldens are
+  unchanged. Focused/full tests, content/replay/save/benchmark gates, Android assemble, projects,
+  selfcheck, headless inspect, and diff-check passed.

@@ -1,7 +1,7 @@
 # MyEngine Architecture
 
-Status: Draft accepted for Phase 03  
-Last updated: 2026-07-02
+Status: Draft accepted for Phase 03; ENG-036 runtime/session boundary accepted
+Last updated: 2026-08-09
 
 This document defines the intended module boundaries before production engine behavior is
 implemented. The scaffold contains only the first buildable modules; later modules should be added
@@ -12,6 +12,7 @@ when their phase starts and should follow these contracts.
 ```mermaid
 flowchart LR
     core["engine-core"]
+    runtime["engine-runtime"]
     world["engine-world"]
     content["engine-content"]
     testkit["engine-testkit"]
@@ -27,6 +28,7 @@ flowchart LR
     android["android"]
 
     world --> core
+    runtime --> core
     content --> core
     testkit --> core
     entities --> core
@@ -48,6 +50,7 @@ flowchart LR
     render --> world
     render --> content
     sandbox --> core
+    sandbox --> runtime
     sandbox --> world
     sandbox --> content
     desktop --> sandbox
@@ -66,12 +69,12 @@ authoritative world state directly.
 1. A launcher starts a game descriptor from `games/sandbox` or a future game module.
 2. The game descriptor selects content packs and initial scenario data.
 3. `engine-content` validates and materializes definitions into a `ContentRegistry`.
-4. `engine-core` creates an `Engine` with a fixed tick scheduler, command queue, seed, and system
-   ordering.
+4. `engine-runtime` creates a session descriptor, owns pending-command order, and dispatches each
+   bounded fixed-tick step to the concrete game backend.
 5. Simulation modules update authoritative state on fixed ticks only.
 6. Rendering receives immutable snapshots or read-only views.
-7. Persistence stores versioned world state, content references, command/replay metadata, and
-   migration markers.
+7. The concrete game adapter persists versioned world state, content references, command/replay
+   metadata, and migration markers.
 
 ## Simulation Tick Flow
 
@@ -132,6 +135,7 @@ Content validation must run in JVM tests without Android.
 | Module | Required tests before production behavior is done |
 |---|---|
 | `engine-core` | fixed tick, command ordering, RNG repeatability, replay hash |
+| `engine-runtime` | descriptor validation, command admission/ordering, bounded step, save callback, restore result |
 | `engine-world` | coordinate math, occupancy, buildability, serialization boundaries |
 | `engine-content` | schema validation, cross-reference validation, migration samples |
 | `engine-entities` | stable IDs, system ordering, component persistence |
@@ -150,4 +154,3 @@ Content validation must run in JVM tests without Android.
 - A full editor before deterministic runtime, save/load, and replay gates are proven.
 - Production campaign scope, monetization, or release tooling.
 - Copying reference game mechanics, content, art, schemas, or file layouts.
-

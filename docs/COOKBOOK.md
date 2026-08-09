@@ -231,7 +231,44 @@ Commit `270e667` (`feat: add HUD snapshot and UI commands`) demonstrates the fie
 `games/sandbox/src/test/kotlin/dev/myengine/games/sandbox/SandboxHudSnapshotTest.kt`, and the
 Android `SandboxRenderView.kt` plus its layout test.
 
-## Recipe 6 — Create a new game with the scaffolder
+## Recipe 6 — Add a reusable runtime/session adapter
+
+Use this when a game lifecycle currently owns its command queue and orchestration, but another
+game must consume the same Android-free session boundary.
+
+Why: `engine-runtime` owns the generic queue and fixed-step dispatch while each game keeps its
+content, authoritative state, snapshot projection, and concrete save payload. This prevents a
+future game from depending on `games:sandbox` and keeps Android as a command/snapshot adapter.
+
+### Files to inspect or change
+
+- `engine-runtime/src/main/kotlin/dev/myengine/runtime/GameRuntime.kt` — descriptor, session,
+  command ordering, backend, and restore contracts.
+- `engine-runtime/src/test/kotlin/dev/myengine/runtime/GameRuntimeTest.kt` — fake-backend contract
+  coverage for admission, ordering, bounded steps, save callbacks, and restore rejection.
+- `<game>/src/main/kotlin/.../Session.kt` — adapter that supplies the concrete backend and save
+  callback while preserving the game's established save API when compatibility requires it.
+- `settings.gradle.kts` and the game module build file — add the Android-free module dependency.
+- `docs/API_STABILITY.md` and `docs/ARCHITECTURE.md` — record the Experimental boundary and graph.
+
+### Procedure and gates
+
+1. Keep `engine-runtime` free of `android/**`, `desktop/**`, and `games/**` dependencies.
+2. Make the generic session own pending-command insertion order and drain ready commands with a
+   game-supplied stable comparator; reject commands before queue mutation.
+3. Pass immutable snapshots out and route concrete persistence through a game-owned save callback.
+4. Preserve the concrete save schema unless the adaptation changes persisted shape; if it does,
+   bump the schema and add migrations before claiming completion.
+5. Run the runtime/game focused tests, full `test`/`projects`, content/replay/save/benchmark gates,
+   Android assemble, the default headless inspect, and `git diff --check`.
+
+### Historical validation
+
+ENG-036 is the first implementation of this recipe. Its sandbox adapter preserves the existing
+properties save format and replay behavior while moving lifecycle queue ownership to the generic
+session.
+
+## Recipe 7 — Create a new game with the scaffolder
 
 Use this when a new game needs a safe repository entry point with a module, a minimal data-driven
 pack, a deterministic replay example, and the initial spec bundle.

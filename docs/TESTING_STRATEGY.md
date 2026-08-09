@@ -1,7 +1,7 @@
 # MyEngine Testing Strategy
 
-Status: Draft accepted for Phase 03  
-Last updated: 2026-07-02
+Status: Draft accepted for Phase 03; ENG-036 contract lane accepted
+Last updated: 2026-08-09
 
 Testing is part of the engine contract. A feature is not done until the narrowest useful gate exists
 and the result is recorded in the phase handoff.
@@ -24,6 +24,10 @@ On Unix-like shells, use `./gradlew` and set equivalent `JAVA_HOME` / `ANDROID_H
 Use JVM unit tests for deterministic algorithms, value objects, validation rules, command ordering,
 system ordering, world coordinate math, and save serialization boundaries. Unit tests must not
 require Android.
+
+The `engine-runtime` contract tests use a tiny fake backend to verify descriptor identity,
+explicit command admission, stable pending-command dispatch, positive bounded steps, opaque
+save callbacks, and typed restore rejection without depending on a game or Android module.
 
 ## Deterministic Replay Tests
 

@@ -1,7 +1,48 @@
 # MyEngine Handoff
 
-Last updated: 2026-08-09 (PROC-014 close-out)
-Owner: Codex / me-docs
+Last updated: 2026-08-09 (ENG-036 close-out)
+Owner: Codex / me-dev:me
+
+## ENG-036 close-out (2026-08-09)
+
+### DONE
+
+- Added `engine-runtime`, an Android-free module containing `GameRuntimeDescriptor`, generic
+  `GameSession`/`GameRuntimeFactory` contracts, typed restore outcomes, and `QueuedGameSession`.
+- `SandboxSession` now adapts the generic queue/backend boundary. The existing sandbox text-save
+  API remains compatible, while concrete content/state/snapshot/save ownership stays in sandbox.
+- Moved `.claude/specs/backlog/ENG-036-reusable-runtime-session.md` to
+  `.claude/specs/done/ENG-036-reusable-runtime-session.md` and synchronized roadmap/Plane docs.
+
+### DECISIONS
+
+- `engine-runtime` depends only on `engine-core`; it has no Android, desktop, or games dependency.
+- Generic sessions own pending-command insertion order and ready-command dispatch. Sandbox keeps a
+  direct runtime queue only for existing JVM callers; lifecycle sessions use the generic queue.
+- Save encoding remains concrete-game-owned. `SandboxSaveCodec.SAVE_VERSION` stays v22 and replay
+  goldens remain unchanged; no ADR was needed.
+
+### NEXT
+
+- Review the remaining accepted backlog. `PROC-015` remains human-owned and requires Gate 1
+  inventory acceptance before implementation.
+
+### BLOCKERS
+
+- No implementation blocker. The roster `Task` tool was unavailable in this Codex session, so
+  local architect/developer/tester/runner/reviewer/verifier/docs fallbacks were used. No malformed
+  worker envelope was produced.
+
+### VERIFICATION
+
+- `:engine-runtime:test`, `:games:sandbox:test`, full `test`, and `projects`: pass.
+- Content validation, replay, save compatibility, and benchmark: pass; benchmark `sim_ms=413`,
+  `performance-budgets-v1`.
+- Selfcheck: pass. Default headless inspect hash: `d599fc31843b5aa8`.
+- Android `assembleDebug` and `git diff --check`: pass.
+- `me-spec-sync.ps1` report-only returned typed `fail` because this card's `source:` is repository
+  evidence prose without `EG-*` IDs, not a game-bundle source requiring traceability back-sync;
+  no external source was modified.
 
 ## PROC-014 close-out (2026-08-09)
 

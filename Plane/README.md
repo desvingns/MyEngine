@@ -58,9 +58,9 @@
    PROC-011 Codex adapter
    parity and selfcheck coverage closed 2026-08-08; PROC-012 emulator provisioning closed
    2026-08-08; PROC-009 Android visual smoke, PROC-008 playtest bot, PROC-010 cost telemetry, and
-   PROC-014 Android release lane closed 2026-08-09; review the remaining accepted
-   backlog before selecting the next feature. ENG-036 and PROC-015 remain human-owned and
-   start-gated.
+   PROC-014 Android release lane and ENG-036 runtime/session boundary closed 2026-08-09; review
+   the remaining accepted backlog before selecting the next feature. PROC-015 remains
+   human-owned and start-gated.
 
 Новые крупные фазы добавлять только после того, как backlog specs перестанут быть достаточно
 точным механизмом управления работой.
@@ -69,6 +69,7 @@
 
 | Status | Feature | Spec | Result | Date |
 |---|---|---|---|---|
+| [x] | ENG-036 Reusable Android-free runtime/session API | [ENG-036](../.claude/specs/done/ENG-036-reusable-runtime-session.md) | Added the Android-free `engine-runtime` descriptor/session/factory contracts and deterministic queue dispatch; sandbox preserves save v22 and replay compatibility | 2026-08-09 |
 | [x] | PROC-010 Pipeline cost telemetry | [PROC-010](../.claude/specs/done/PROC-010-cost-telemetry.md) | Optional explicit/orchestrator/chars-per-4 token estimates, deterministic retro aggregation by workflow/agent, and human-gated cost proposal | 2026-08-09 |
 | [x] | PROC-014 Android release build lane | [PROC-014](../.claude/specs/done/PROC-014-android-release-lane.md) | Signed release AAB/APK lane with ignored keystore properties, R8/content smoke, version/application-id policy, and AAB/cold-start metrics | 2026-08-09 |
 | [x] | ENG-020 Spatial index + 1k-entity benchmark | [ENG-020](../.claude/specs/done/ENG-020-spatial-index-benchmark.md) | Internal non-persisted grid index for targeting/splash queries plus deterministic machine-readable 1024-enemy benchmark | 2026-07-29 |
@@ -1920,3 +1921,22 @@
 - VERIFICATION: Contract test, selfcheck, full tests/projects, content validation, replay,
   save-compatibility, benchmark (`sim_ms=313`), pre-push, headless inspect, Android assembleDebug,
   and diff-check passed.
+
+### 2026-08-09 - ENG-036 (reusable Android-free runtime/session)
+
+- Status: Done / accepted; no new phase was created.
+- Owner: Codex / `me-dev:me` with documented local role fallback because the roster `Task` tool was
+  unavailable in this session.
+- DONE: Added `engine-runtime` with `GameRuntimeDescriptor`, `GameSession`, factory/restore
+  contracts, and `QueuedGameSession`; adapted `SandboxSession` so the generic session owns pending
+  command order and fixed-tick dispatch while sandbox retains concrete content/state/save details.
+- DECISIONS: The existing sandbox properties save format remains v22; no migration or replay golden
+  update was required. Direct `SandboxRuntime` queue calls remain as a compatibility path for JVM
+  tests, while lifecycle consumers use the generic session queue.
+- NEXT: Review the remaining accepted backlog; `PROC-015` remains human-owned and requires Gate 1
+  inventory acceptance before implementation.
+- BLOCKERS: No implementation blocker. No Android production, renderer, content schema, or ADR
+  change was needed.
+- VERIFICATION: Focused/full Gradle tests, projects, content validation, replay, save compatibility,
+  benchmark (`sim_ms=413`), selfcheck, required headless inspect (`d599fc31843b5aa8`), Android
+  `assembleDebug`, and `git diff --check` passed. Runtime and sandbox boundary review passed.

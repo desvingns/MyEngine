@@ -840,3 +840,16 @@ by: claude
   assembleDebug, and diff-check passed. No malformed worker envelope was produced.
 - Baseline: the pre-existing untracked `archive/` was preserved and excluded; local ignored
   `keystore.properties` was not staged. No ADR or save-version bump.
+
+## 2026-08-09 - MyEngine ENG-036 feature run
+
+- Owner: Codex / `me-dev:me`.
+- Change type: engine feature; added the Android-free `engine-runtime` module and adapted the
+  sandbox lifecycle session. No plugin version bump or adapter/canonical pipeline change.
+- Pipeline: selfcheck passed; roster `Task` was unavailable, so scout/architect/developer/tester/
+  runner/reviewer/verifier/docs roles used the documented local fallback. No malformed JSON envelope
+  was produced.
+- Verification: focused/full Gradle tests, projects, content validation, replay, save compatibility,
+  benchmark (`sim_ms=413`), selfcheck, headless inspect, Android `assembleDebug`, and diff-check
+  passed. `SandboxSaveCodec.SAVE_VERSION` remains 22 and replay goldens are unchanged.
+- Baseline: clean `main` at `0a309b1`; no unrelated files were staged. No ADR was needed.
