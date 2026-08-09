@@ -1,7 +1,43 @@
 # MyEngine Handoff
 
-Last updated: 2026-08-08 (PROC-012 close-out)
-Owner: Codex / me-dev:me
+Last updated: 2026-08-09 (PROC-009 close-out)
+Owner: Codex / me-docs
+
+## PROC-009 close-out (2026-08-09)
+
+### DONE
+
+- Moved `PROC-009` to `.claude/specs/done/` and synchronized the roadmap, state, Plane, digest,
+  and Android/testing contracts.
+- Documented the app-private `AndroidContentPackMaterializer`, visual-smoke activity extra and
+  bounded 15-second window, adb/screencap/pull/System.Drawing comparator, and deterministic contract
+  tests.
+
+### DECISIONS
+
+- Canonical fixture: Pixel_5 portrait, default sandbox, seed 7, tick 0.
+- App-window semantics ignore top 80 and bottom 120 pixels; per-channel tolerance is 8 and allowed
+  difference ratio is 0.005.
+- Golden updates require an explicit reason. Typed `blocked` is not pass.
+
+### NEXT
+
+- Review the remaining accepted backlog and select the next feature; ENG-036 and PROC-015 remain
+  human-owned/start-gated.
+
+### BLOCKERS
+
+- No implementation blocker. A low-severity Android profiling/lifecycle follow-up remains recorded;
+  the future large-pack materialization limit is non-blocking.
+
+### VERIFICATION
+
+- Pixel_5 visual smoke passed twice with difference ratios 0.0007069 and 0.0004784.
+- Focused Android gates, full Gradle test/projects, content validation, replay, save compatibility,
+  benchmark, selfcheck, required headless inspect, and `git diff --check` passed.
+- PROC-012 contract remains typed blocked for missing-SDK preflight; Android performance review
+  finished with a pass and low profiling follow-up. `me-verifier` passed with all five boundary
+  checks true.
 
 ## PROC-012 close-out (2026-08-08)
 

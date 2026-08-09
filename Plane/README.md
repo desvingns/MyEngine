@@ -56,8 +56,9 @@
    divergence bisector, DX-004 Desktop content hot-reload, and PROC-004 Performance budgets are
    closed 2026-08-04. ENG-022 Meta-progression store closed 2026-08-05. PROC-011 Codex adapter
    parity and selfcheck coverage closed 2026-08-08; PROC-012 emulator provisioning closed
-   2026-08-08; review the remaining accepted backlog before selecting the next feature. PROC-009
-   is now dependency-unblocked; ENG-036 and PROC-015 remain human-owned and start-gated.
+   2026-08-08; PROC-009 Android visual smoke closed 2026-08-09; review the remaining accepted
+   backlog before selecting the next feature. ENG-036 and PROC-015 remain human-owned and
+   start-gated.
 
 Новые крупные фазы добавлять только после того, как backlog specs перестанут быть достаточно
 точным механизмом управления работой.
@@ -102,6 +103,7 @@
 | [x] | DX-004 Desktop content hot-reload | [DX-004](../.claude/specs/done/DX-004-desktop-content-hot-reload.md) | Android-free recursive desktop WatchService with debounced validate-then-restart, same-seed deterministic reload, typed invalid-pack errors preserving the last-good scenario, opt-in `--watch --pack --seed` CLI, focused tests, and balance-iteration docs | 2026-08-04 |
 | [x] | ENG-022 Meta-progression store | [ENG-022](../.claude/specs/done/ENG-022-meta-progression-store.md) | Independently versioned profile codec/store, idempotent terminal-run currency crediting, optional content-defined unlockables, immutable scenario unlock context, save v22 migration, and replay metadata | 2026-08-05 |
 | [x] | PROC-004 Numeric performance budgets | [PROC-004](../.claude/specs/done/PROC-004-perf-budgets.md) | Versioned simulation/goal-field/spatial/belt budgets, optional frame budget, one-line JSON verdict/deltas, numeric telemetry, pre-push enforcement, and verifier rule | 2026-08-04 |
+| [x] | PROC-009 Android visual smoke | [PROC-009](../.claude/specs/done/PROC-009-android-visual-smoke.md) | Deterministic Pixel_5 portrait screenshot-vs-golden gate for default sandbox seed 7 tick 0, app-window crop, explicit golden-update reason, and typed blocked preflight | 2026-08-09 |
 
 ## Глобальные инварианты
 
@@ -1866,3 +1868,17 @@
   feature; ENG-036 and PROC-015 remain human-owned/start-gated.
 - VERIFICATION: Adapter parity test, selfcheck, full Gradle tests, projects, and `git diff --check`
   passed. Codex smoke is recorded in `.ai/runs/2026-08-08-proc-011-codex-smoke.md`.
+
+### 2026-08-09 - PROC-009 (Android visual smoke)
+
+- Status: Done / accepted; no new phase was created.
+- Owner: Codex / `me-docs` for documentation close-out.
+- DONE: Closed the Pixel_5 portrait visual smoke gate for the default sandbox at seed 7, tick 0;
+  implementation and contract details are recorded in the done card and Android/testing contracts.
+- DECISIONS: App-window semantics ignore top 80 and bottom 120 pixels; tolerance is 8 per channel
+  with allowed ratio 0.005. Golden updates require an explicit reason, and typed blocked is not pass.
+- VERIFICATION: Visual smoke passed twice with ratios 0.0007069 and 0.0004784; focused/full Android
+  and repository gates, content/replay/save/benchmark/selfcheck/headless/diff-check passed. PROC-012
+  remains typed blocked for missing-SDK preflight. Android performance review passed with a low
+  profiling/lifecycle follow-up; `me-verifier` passed with all five boundary checks true. A future
+  large-pack materialization limit remains non-blocking.

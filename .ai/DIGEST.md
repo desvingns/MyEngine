@@ -1,12 +1,24 @@
 # MyEngine Intake Digest
 
-Regenerated at close-out. Last updated: 2026-08-08 (PROC-012 close-out).
+Regenerated at close-out. Last updated: 2026-08-09 (PROC-009 close-out).
 
 ## Current next action
 
-ENG-022, PROC-011, and PROC-012 are complete. Review the remaining accepted backlog and select
-the next feature; PROC-009 is now dependency-unblocked. ENG-036 and PROC-015 remain human-owned
-start-gated work.
+ENG-022, PROC-009, PROC-011, and PROC-012 are complete. Review the remaining accepted backlog
+and select the next feature; ENG-036 and PROC-015 remain human-owned start-gated work.
+
+## PROC-009 close-out (2026-08-09)
+
+- Closed the Android visual smoke gate with the app-private sandbox asset materializer, bounded
+  15-second visual-smoke activity mode, adb PNG capture/pull, System.Drawing comparison, and
+  deterministic contract tests.
+- Canonical fixture: Pixel_5 portrait, default sandbox, seed 7, tick 0. App-window semantics use
+  top-80/bottom-120 cropping; tolerance is 8 per channel and allowed ratio is 0.005.
+- Golden updates require an explicit reason; typed `blocked` is not pass. Visual smoke passed twice
+  at ratios 0.0007069 and 0.0004784. PROC-012 missing-SDK preflight remains typed blocked.
+- Focused/full Android and repository gates passed. Android performance review passed with a
+  low-severity profiling/lifecycle follow-up; `me-verifier` passed with all five boundary checks
+  true. A future large-pack materialization limit remains non-blocking.
 
 ## PROC-012 close-out (2026-08-08)
 

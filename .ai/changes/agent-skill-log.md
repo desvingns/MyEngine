@@ -779,3 +779,22 @@ by: claude
   instrumentation APKs, actual Pixel_5/emulator-5554 smoke, and diff-check passed. `frame_ms` is
   not measured and no screenshot golden claim is made.
 - Baseline: known untracked `archive/` was preserved and excluded. No ADR or save-version bump.
+
+## 2026-08-09 - MyEngine PROC-009 feature run
+
+- Owner: Codex / `me-docs` for documentation close-out.
+- Change type: Android visual-smoke process close-out; production implementation and scripts were
+  already completed by the feature pipeline. This documentation-only pass moved the card to
+  `.claude/specs/done/` and synchronized roadmap, testing/Android contracts, state, handoff, digest,
+  Plane, and this append-only log.
+- Summary: Recorded the Pixel_5 portrait/default sandbox/seed 7/tick 0 visual contract, app-window
+  crop of top 80 and bottom 120 pixels, tolerance 8, allowed ratio 0.005, explicit golden-update
+  reason, and typed blocked-not-pass semantics. Recorded the asset materializer, bounded 15-second
+  visual mode, adb/System.Drawing comparator, and deterministic contract tests.
+- Verification: Visual smoke passed twice with difference ratios 0.0007069 and 0.0004784; focused
+  Android gates, full test/projects, content, replay, save, benchmark, selfcheck, headless inspect,
+  and diff-check passed. PROC-012 missing-SDK preflight remains typed blocked. Android performance
+  review passed with a low profiling/lifecycle follow-up; `me-verifier` passed with all five
+  boundary checks true. A future large-pack materialization limit remains non-blocking.
+- Scope guard: no production code, scripts, golden, archive, staging, commit, or push changes were
+  made by this docs close-out.

@@ -47,3 +47,14 @@ It runs the AndroidX instrumentation smoke against the scripted `Pixel_5` AVD an
 JSON result. Missing SDK/emulator/system-image/virtualization is reported as typed `blocked` with a
 fallback rather than a false pass; `scripts/me-android-device-smoke-test.ps1` covers that contract.
 This lane is device evidence only and does not move simulation authority into Android.
+
+## Visual smoke contract
+
+`AndroidContentPackMaterializer` materializes packaged sandbox assets into an app-private directory
+so the existing path-based content boundary remains intact on Android. Visual smoke enables the
+activity extra for a bounded 15-second capture window and renders the deterministic tick-0 frame.
+The PowerShell lane uses adb `screencap -p`/pull and a System.Drawing comparator. Its canonical
+fixture is Pixel_5 portrait, default sandbox, seed 7, tick 0; app-window semantics ignore the top
+80 and bottom 120 pixels. Per-channel tolerance is 8 and the allowed difference ratio is 0.005.
+Golden updates require an explicit reason. A typed `blocked` preflight result is never considered
+a pass. The script contract is covered by `scripts/tests/me-android-visual-smoke.tests.ps1`.

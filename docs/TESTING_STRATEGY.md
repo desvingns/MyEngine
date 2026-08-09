@@ -96,6 +96,19 @@ powershell.exe -File scripts/me-android-device-smoke-test.ps1
 Rendering changes need screenshot or pixel-smoke checks for camera framing, debug overlays, UI
 scaling, and text overlap. Visual tests observe snapshots and fixture content.
 
+The Android visual gate is:
+
+```powershell
+powershell.exe -File scripts/me-android-visual-smoke.ps1 -AvdName Pixel_5
+```
+
+Its canonical contract is Pixel_5 portrait, the default sandbox, seed 7, and tick 0. The
+comparator applies app-window semantics by ignoring the top 80 and bottom 120 pixels, uses
+per-channel tolerance 8, and allows at most 0.005 differing-pixel ratio. Updating the checked-in
+golden requires a non-empty explicit reason. Missing SDK/emulator capability is emitted as typed
+`blocked` and is not a pass. The deterministic contract test is
+`scripts/tests/me-android-visual-smoke.tests.ps1`.
+
 ## Done Gates By Change Type
 
 | Change type | Minimum gate |

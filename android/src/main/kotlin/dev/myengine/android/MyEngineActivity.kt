@@ -20,10 +20,13 @@ class MyEngineActivity : Activity() {
     private val fixedTickLoop = FixedTickFrameLoop()
     private var presentationSpeed = PresentationSpeed.ONE_X
     private var loopRunning = false
+    private var visualSmokeMode = false
+    private var visualSmokeStopRunnable: Runnable? = null
     private val frameCallback = Choreographer.FrameCallback(::onFrame)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        visualSmokeMode = intent.getBooleanExtra(VISUAL_SMOKE_EXTRA, false)
         nextCommandId = savedInstanceState?.getLong(NEXT_COMMAND_ID_KEY, FIRST_COMMAND_ID) ?: FIRST_COMMAND_ID
         presentationSpeed = PresentationSpeed.fromMultiplier(
             savedInstanceState?.getInt(SPEED_KEY, PresentationSpeed.ONE_X.multiplier)
@@ -31,8 +34,11 @@ class MyEngineActivity : Activity() {
         )
         fixedTickLoop.presentationSpeed = presentationSpeed
         val started = runCatching {
+            val registry = SandboxGame.loadRegistry(
+                AndroidContentPackMaterializer.materialize(assets, filesDir),
+            )
             val saved = savedInstanceState?.getString(SAVE_KEY)
-            if (saved != null) SandboxSession.restore(saved) else SandboxSession.start()
+            if (saved != null) SandboxSession.restore(saved, registry) else SandboxSession.start(registry = registry)
         }
         started.onSuccess {
             session = it
@@ -72,9 +78,11 @@ class MyEngineActivity : Activity() {
     override fun onResume() {
         super.onResume()
         startLoop()
+        if (visualSmokeMode) scheduleVisualSmokeStop()
     }
 
     override fun onPause() {
+        cancelVisualSmokeStop()
         stopLoop()
         // Save after all frame callbacks are removed: the state and pending command queue now
         // describe exactly the next frame that a recreated activity restores.
@@ -91,6 +99,22 @@ class MyEngineActivity : Activity() {
         presentationSpeed = speed
         fixedTickLoop.presentationSpeed = speed
         renderView?.renderLatestFrame()
+    }
+
+    private fun scheduleVisualSmokeStop() {
+        val view = renderView ?: return
+        cancelVisualSmokeStop()
+        val runnable = Runnable {
+            visualSmokeStopRunnable = null
+            if (visualSmokeMode && !isFinishing && !isDestroyed) stopLoop()
+        }
+        visualSmokeStopRunnable = runnable
+        view.postDelayed(runnable, VISUAL_SMOKE_RENDER_WINDOW_MILLIS)
+    }
+
+    private fun cancelVisualSmokeStop() {
+        visualSmokeStopRunnable?.let { renderView?.removeCallbacks(it) }
+        visualSmokeStopRunnable = null
     }
 
     private fun startLoop() {
@@ -110,13 +134,19 @@ class MyEngineActivity : Activity() {
         if (!loopRunning) return
         val activeSession = session
         if (activeSession != null) {
-            val ticks = fixedTickLoop.advance(frameTimeNanos)
-            repeat(ticks) {
-                activeSession.step()
+            if (!visualSmokeMode) {
+                val ticks = fixedTickLoop.advance(frameTimeNanos)
+                repeat(ticks) {
+                    activeSession.step()
+                    latestSnapshot = activeSession.runtime.snapshot()
+                    latestSnapshot?.let { snapshot -> soundConsumer?.consume(snapshot) }
+                }
+                if (ticks == 0) latestSnapshot = activeSession.runtime.snapshot()
+            } else {
+                // Keep the canonical visual-smoke frame at tick 0 while continuously
+                // republishing it until SurfaceView composition is stable.
                 latestSnapshot = activeSession.runtime.snapshot()
-                latestSnapshot?.let { snapshot -> soundConsumer?.consume(snapshot) }
             }
-            if (ticks == 0) latestSnapshot = activeSession.runtime.snapshot()
             renderView?.renderLatestFrame()
         }
         if (loopRunning) Choreographer.getInstance().postFrameCallback(frameCallback)
@@ -126,6 +156,8 @@ class MyEngineActivity : Activity() {
     private fun issueCommandId(): CommandId = CommandId(nextCommandId++)
 
     override fun onDestroy() {
+        cancelVisualSmokeStop()
+        stopLoop()
         soundConsumer?.release()
         soundConsumer = null
         super.onDestroy()
@@ -135,6 +167,8 @@ class MyEngineActivity : Activity() {
         private const val SAVE_KEY = "me_sandbox_save"
         private const val NEXT_COMMAND_ID_KEY = "me_sandbox_next_command_id"
         private const val SPEED_KEY = "me_sandbox_presentation_speed"
+        private const val VISUAL_SMOKE_EXTRA = "me_visual_smoke"
+        private const val VISUAL_SMOKE_RENDER_WINDOW_MILLIS = 15_000L
         private const val FIRST_COMMAND_ID = 1L
     }
 }

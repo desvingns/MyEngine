@@ -7,7 +7,7 @@ two or more games outranks single-game gaps of the same severity.
 Updated by: the `/me-spec` backlog bridge (new gaps / new demand) and `/me`
 close-out (status changes).
 
-Last updated: 2026-08-08 (PROC-012 close-out)
+Last updated: 2026-08-09 (PROC-009 close-out)
 
 ## Capabilities
 
@@ -73,7 +73,7 @@ Last updated: 2026-08-08 (PROC-012 close-out)
 | CI pre-push lane | PROC-006 | process | - | **done** (2026-08-03; `.githooks/pre-push` runs tests, content validation, replay, save compatibility, schema drift and emits one blocking JSON result) |
 | Save migration matrix | PROC-007 | process | - | **done** (2026-08-02; checked-in v1-v10 fixtures, independent stable-hash migration matrix, and save-compat JSON result) |
 | Playtest bot | PROC-008 | process | - | backlog |
-| Android visual smoke | PROC-009 | process | - | backlog |
+| Android visual smoke | PROC-009 | process | - | **done** (2026-08-09; deterministic Pixel_5 portrait screenshot-vs-golden gate for default sandbox seed 7 tick 0, typed blocked preflight, and explicit golden-update reason) |
 | Cost telemetry | PROC-010 | process | - | backlog |
 | Codex adapter parity audit + selfcheck coverage | PROC-011 | process | - | **done** (2026-08-08; Claude/Codex mode parity, Codex manifest/.codex registration checks, and selfcheck contract coverage) |
 | Emulator provisioning lane (managed devices) | PROC-012 | process | - | **done** (2026-08-08; Windows PowerShell scripted Pixel_5 lane, deterministic blocked-preflight JSON fallback, bounded boot polling, instrumentation smoke, and owned-emulator cleanup) |
