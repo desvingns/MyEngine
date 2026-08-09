@@ -1,7 +1,44 @@
 # MyEngine Handoff
 
-Last updated: 2026-08-09 (PROC-009 close-out)
+Last updated: 2026-08-09 (PROC-008 close-out)
 Owner: Codex / me-docs
+
+## PROC-008 close-out (2026-08-09)
+
+### DONE
+
+- Moved `PROC-008` to `.claude/specs/done/` and synchronized the roadmap, state, Plane, and
+  digest.
+- Added the Android-free `engine-devtools` `PlaytestBot` plus `playtest`/`playtest-bot` CLI
+  commands. Built-in `no-build`, `spawn-tower`, and `late-tower` strategies run a contiguous
+  seed range under a bounded tick budget and emit typed per-run outcomes, win-rate/leak
+  aggregates, and a stable content-derived wave difficulty curve.
+- Added `PlaytestBotTest` for byte-identical repeatability, seed/strategy cardinality, curve
+  semantics, and typed timeout behavior. The report schema is `proc-008-playtest-v1`.
+
+### DECISIONS
+
+- The bot is report-only and remains in `engine-devtools`; it does not mutate authored content or
+  proposal state. No sandbox runtime, save schema, replay golden, Android, renderer, or ADR scope
+  was added.
+- No conditional domain reviewer matched the changed paths. Human-owned/start-gated ENG-036 and
+  PROC-015 remain untouched.
+
+### NEXT
+
+- Review the remaining accepted backlog and select the next feature; ENG-036 and PROC-015 remain
+  human-owned/start-gated.
+
+### BLOCKERS
+
+- No implementation blocker. Scout, architect, developer, and verifier workers timed out after
+  bounded waits; local contract and boundary review supplied final evidence.
+
+### VERIFICATION
+
+- Focused/full tests, projects, content validation, replay goldens, save-compatibility, benchmark,
+  selfcheck, required headless inspect, Android `assembleDebug`, CLI smoke, and `git diff --check`
+  passed.
 
 ## PROC-009 close-out (2026-08-09)
 

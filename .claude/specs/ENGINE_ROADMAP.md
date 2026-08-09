@@ -72,7 +72,7 @@ Last updated: 2026-08-09 (PROC-009 close-out)
 | Golden replay hashes | PROC-005 | process | - | **done** (2026-08-04; checked-in canonical/kill/resist golden files are asserted by replay tests and compared by `me-sim-replay`; intentional updates require an explicit `.ai/handoff.md` reason; DX-003 consumed the per-tick follow-up without changing these contracts) |
 | CI pre-push lane | PROC-006 | process | - | **done** (2026-08-03; `.githooks/pre-push` runs tests, content validation, replay, save compatibility, schema drift and emits one blocking JSON result) |
 | Save migration matrix | PROC-007 | process | - | **done** (2026-08-02; checked-in v1-v10 fixtures, independent stable-hash migration matrix, and save-compat JSON result) |
-| Playtest bot | PROC-008 | process | - | backlog |
+| Playtest bot | PROC-008 | process | - | **done** (2026-08-09; deterministic seeded no-build/spawn-tower/late-tower strategies, typed run outcomes, win-rate/leak aggregates, and content-derived per-wave difficulty JSON) |
 | Android visual smoke | PROC-009 | process | - | **done** (2026-08-09; deterministic Pixel_5 portrait screenshot-vs-golden gate for default sandbox seed 7 tick 0, typed blocked preflight, and explicit golden-update reason) |
 | Cost telemetry | PROC-010 | process | - | backlog |
 | Codex adapter parity audit + selfcheck coverage | PROC-011 | process | - | **done** (2026-08-08; Claude/Codex mode parity, Codex manifest/.codex registration checks, and selfcheck contract coverage) |

@@ -47,6 +47,15 @@ fun main(args: Array<String>) {
             val seed = args.getOrNull(3)?.toLongOrNull() ?: 7L
             DevtoolReports.endlessWaveScalingReport(root, waveCount, seed).toJson()
         }
+        "playtest", "playtest-bot" -> {
+            val pathArg = args.getOrNull(1)?.takeUnless { it.toLongOrNull() != null }
+            val root = pathArg?.let { DevtoolReports.repoRoot().resolve(it) }
+                ?: dev.myengine.games.sandbox.SandboxGame.contentRoot()
+            val seedStart = args.getOrNull(if (pathArg == null) 1 else 2)?.toLongOrNull() ?: 7L
+            val seedCount = args.getOrNull(if (pathArg == null) 2 else 3)?.toIntOrNull() ?: 3
+            val maxTicks = args.getOrNull(if (pathArg == null) 3 else 4)?.toIntOrNull() ?: 240
+            PlaytestBot.run(root, seedStart, seedCount, maxTicks).toJson()
+        }
         "inspect", "state-inspect", "headless-inspect" -> {
             val shortForm = args.size == 1 || args.getOrNull(1)?.toIntOrNull() != null
             val factoryId = if (shortForm) "sandbox" else args[1]

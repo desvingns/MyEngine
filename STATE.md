@@ -1,8 +1,24 @@
 # MyEngine State
 
-Last updated: 2026-08-09 (PROC-009 close-out)
-Active phase: Phase 00-14 complete; Phase 15 sequencing adopted; Signal Garden SG-001..005 complete; MyTD MTD-001..005 complete; DX-001, DX-002, DX-003, DX-004, DX-005, DX-006, DX-007, DX-008, ENG-001, ENG-002, ENG-003, ENG-004, ENG-005, ENG-006, ENG-007, ENG-008, ENG-009, ENG-010, ENG-011, ENG-012, ENG-013, ENG-014, ENG-015, ENG-016, ENG-017, ENG-018, ENG-019, ENG-020, ENG-021, ENG-022, ENG-023, ENG-025, ENG-026, ENG-027, ENG-028, ENG-029, ENG-030, ENG-031, ENG-032, ENG-033, ENG-034, ENG-035, PROC-001, PROC-002, PROC-003, PROC-004, PROC-005, PROC-006, PROC-007, PROC-009, PROC-011, PROC-012, and PROC-013 complete; pipeline at v0.2.2; next exact action is to review the remaining accepted backlog and select the next feature; ENG-036 and PROC-015 remain human-owned/start-gated
-Owner of last update: Codex / me-docs (2026-08-09: PROC-009 close-out)
+Last updated: 2026-08-09 (PROC-008 close-out)
+Active phase: Phase 00-14 complete; Phase 15 sequencing adopted; Signal Garden SG-001..005 complete; MyTD MTD-001..005 complete; DX-001, DX-002, DX-003, DX-004, DX-005, DX-006, DX-007, DX-008, ENG-001, ENG-002, ENG-003, ENG-004, ENG-005, ENG-006, ENG-007, ENG-008, ENG-009, ENG-010, ENG-011, ENG-012, ENG-013, ENG-014, ENG-015, ENG-016, ENG-017, ENG-018, ENG-019, ENG-020, ENG-021, ENG-022, ENG-023, ENG-025, ENG-026, ENG-027, ENG-028, ENG-029, ENG-030, ENG-031, ENG-032, ENG-033, ENG-034, ENG-035, PROC-001, PROC-002, PROC-003, PROC-004, PROC-005, PROC-006, PROC-007, PROC-008, PROC-009, PROC-011, PROC-012, and PROC-013 complete; pipeline at v0.2.2; next exact action is to review the remaining accepted backlog and select the next feature; ENG-036 and PROC-015 remain human-owned/start-gated
+Owner of last update: Codex / me-docs (2026-08-09: PROC-008 close-out)
+
+## PROC-008 Close-out (2026-08-09)
+
+- DONE: Closed the deterministic headless playtest bot. `engine-devtools` now exposes the
+  `proc-008-playtest-v1` JSON report through `playtest`/`playtest-bot`, with no-build,
+  spawn-tower, and late-tower strategies, contiguous seed ranges, bounded ticks, typed terminal
+  outcomes, win-rate/leak aggregates, and a content-derived per-wave difficulty curve.
+- DECISIONS: Scope is report-only and Android-free. Sandbox runtime, authored content, save/replay
+  contracts, Android, renderer, and proposal state are unchanged; no ADR was needed.
+- NEXT: Review the remaining accepted backlog and select the next feature; ENG-036 and PROC-015
+  remain human-owned/start-gated.
+- BLOCKERS: No implementation blocker. Roster workers timed out after bounded waits; local
+  implementation, tester coverage, and boundary review supplied final evidence.
+- VERIFICATION: Focused/full tests, projects, content validation, replay, save-compatibility,
+  benchmark, selfcheck, required headless inspect, Android `assembleDebug`, CLI smoke, and
+  `git diff --check` passed.
 
 ## PROC-009 Close-out (2026-08-09)
 

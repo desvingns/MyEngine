@@ -3,6 +3,20 @@
 Append-only log for changes to agent prompts, skills, adapters, workflow contracts, and pipeline
 rules. Project docs can change without an entry here unless they alter agent behavior.
 
+## 2026-08-09 - PROC-008 Headless Playtest Bot
+
+- Owner: Codex
+- Change type: feature pipeline close-out
+- Changed: `engine-devtools` playtest report/CLI/tests plus the PROC-008 card, roadmap, state,
+  handoff, Plane, and digest close-out artifacts.
+- Summary: Used the `me-dev:me --feature --next` pipeline. Added deterministic seeded strategies,
+  bounded run outcomes, win-rate/leak aggregates, and a content-derived per-wave difficulty JSON
+  report. No agent, skill, plugin, or pipeline contract changed.
+- Verification: Focused/full tests plus test/projects, content validation, replay, save-compat,
+  benchmark, selfcheck, headless inspect, Android assemble, CLI smoke, and diff-check passed.
+- Roster note: scout/architect/developer/verifier workers timed out after bounded waits; local
+  role fallbacks completed the implementation and review.
+
 ## 2026-08-03 - ENG-025 Flying Enemies
 
 - Owner: Codex

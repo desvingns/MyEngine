@@ -1,11 +1,23 @@
 # MyEngine Intake Digest
 
-Regenerated at close-out. Last updated: 2026-08-09 (PROC-009 close-out).
+Regenerated at close-out. Last updated: 2026-08-09 (PROC-008 close-out).
 
 ## Current next action
 
-ENG-022, PROC-009, PROC-011, and PROC-012 are complete. Review the remaining accepted backlog
-and select the next feature; ENG-036 and PROC-015 remain human-owned start-gated work.
+ENG-022, PROC-008, PROC-009, PROC-011, and PROC-012 are complete. Review the remaining accepted
+backlog and select the next feature; ENG-036 and PROC-015 remain human-owned start-gated work.
+
+## PROC-008 close-out (2026-08-09)
+
+- Added Android-free `engine-devtools` `PlaytestBot` and `playtest`/`playtest-bot` CLI commands.
+- Built-in `no-build`, `spawn-tower`, and `late-tower` strategies run contiguous seeded trials
+  under a bounded tick budget and emit typed outcomes, win-rate/leak aggregates, per-run metrics,
+  and a stable content-derived wave curve under `proc-008-playtest-v1`.
+- Runtime, content, save, replay, Android, renderer, and proposal state remain unchanged; no ADR
+  was needed.
+- Focused/full tests, projects, content/replay/save/benchmark gates, selfcheck, headless inspect,
+  Android assemble, CLI smoke, and diff-check passed. Roster workers timed out; local fallback
+  supplied implementation and boundary evidence.
 
 ## PROC-009 close-out (2026-08-09)
 

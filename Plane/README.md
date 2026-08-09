@@ -56,7 +56,7 @@
    divergence bisector, DX-004 Desktop content hot-reload, and PROC-004 Performance budgets are
    closed 2026-08-04. ENG-022 Meta-progression store closed 2026-08-05. PROC-011 Codex adapter
    parity and selfcheck coverage closed 2026-08-08; PROC-012 emulator provisioning closed
-   2026-08-08; PROC-009 Android visual smoke closed 2026-08-09; review the remaining accepted
+   2026-08-08; PROC-009 Android visual smoke and PROC-008 playtest bot closed 2026-08-09; review the remaining accepted
    backlog before selecting the next feature. ENG-036 and PROC-015 remain human-owned and
    start-gated.
 
@@ -104,6 +104,7 @@
 | [x] | ENG-022 Meta-progression store | [ENG-022](../.claude/specs/done/ENG-022-meta-progression-store.md) | Independently versioned profile codec/store, idempotent terminal-run currency crediting, optional content-defined unlockables, immutable scenario unlock context, save v22 migration, and replay metadata | 2026-08-05 |
 | [x] | PROC-004 Numeric performance budgets | [PROC-004](../.claude/specs/done/PROC-004-perf-budgets.md) | Versioned simulation/goal-field/spatial/belt budgets, optional frame budget, one-line JSON verdict/deltas, numeric telemetry, pre-push enforcement, and verifier rule | 2026-08-04 |
 | [x] | PROC-009 Android visual smoke | [PROC-009](../.claude/specs/done/PROC-009-android-visual-smoke.md) | Deterministic Pixel_5 portrait screenshot-vs-golden gate for default sandbox seed 7 tick 0, app-window crop, explicit golden-update reason, and typed blocked preflight | 2026-08-09 |
+| [x] | PROC-008 Headless playtest bot | [PROC-008](../.claude/specs/done/PROC-008-playtest-bot.md) | Deterministic seeded no-build/spawn-tower/late-tower strategies, typed run outcomes, win-rate/leak aggregates, and content-derived per-wave difficulty JSON | 2026-08-09 |
 
 ## Глобальные инварианты
 
@@ -1882,3 +1883,21 @@
   remains typed blocked for missing-SDK preflight. Android performance review passed with a low
   profiling/lifecycle follow-up; `me-verifier` passed with all five boundary checks true. A future
   large-pack materialization limit remains non-blocking.
+
+### 2026-08-09 - PROC-008 (headless playtest bot)
+
+- Status: Done / accepted; no new phase was created.
+- Owner: Codex / `me-dev:me` (local role fallback after bounded roster timeouts).
+- DONE: Added the Android-free `PlaytestBot` and `playtest`/`playtest-bot` CLI commands. Three
+  deterministic built-in strategies run a contiguous seed range under a bounded tick budget and
+  emit typed outcomes, win-rate/leak aggregates, per-run metrics, and a stable content-derived
+  wave difficulty curve under schema `proc-008-playtest-v1`.
+- DECISIONS: The bot remains report-only in `engine-devtools`; it does not mutate authored content,
+  sandbox runtime contracts, save format, replay goldens, Android, or renderer state. No ADR was
+  needed and no conditional domain reviewer matched the changed paths.
+- NEXT: Review the remaining accepted backlog and select the next feature; ENG-036 and PROC-015
+  remain human-owned/start-gated.
+- VERIFICATION: Focused/full tests, projects, content validation, replay, save-compatibility,
+  benchmark, selfcheck, required headless inspect, Android `assembleDebug`, CLI smoke, and
+  `git diff --check` passed. Scout/architect/developer/verifier workers timed out after bounded
+  waits; local contract and boundary review supplied final evidence.
