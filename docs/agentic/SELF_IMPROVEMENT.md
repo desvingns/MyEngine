@@ -51,6 +51,9 @@ Required JSONL fields:
 - `metrics.benchmark`
 - `metrics.frame_ms`
 - `metrics.sim_ms`
+- `token_usage.source` (`explicit`, `orchestrator`, or `chars_per_4`)
+- `token_usage.estimated_total`
+- `token_usage.by_agent` — estimated tokens keyed by roster role
 - `duration_min` — approximate wall-clock minutes for the run
 - `malformed_json_count` — how many malformed agent envelopes were retried
 - `gate_failures` — list of gates that failed at least once during the run
@@ -113,9 +116,14 @@ they are applied ONLY through this pipeline's normal `--improve` gates.
 ## Scripts
 
 - `scripts/me-record-run.ps1` appends one event and emits one JSON object
-  (including `retro_due`).
+  (including `retro_due`). Pass `-TokenUsage "me-architect=1200,me-tester=800"`
+  for explicit role estimates, or `-EstimatedTokens N`; when neither is supplied,
+  the recorder stores a deterministic rough `chars_per_4` estimate.
 - `scripts/me-retro.ps1` aggregates telemetry without network or LLM, including
-  per-agent attribution counts and gate-failure counts.
+  per-agent attribution counts, gate-failure counts, and estimated tokens by
+  workflow and roster role. When token data exists it emits a cost-driven model
+  review proposal; applying any model change remains human-gated through
+  `/me --improve`.
 - `scripts/me-content-validate.ps1`, `scripts/me-sim-replay.ps1`,
   `scripts/me-benchmark.ps1`, and `scripts/me-save-compat.ps1` are deterministic runner entry
   points.

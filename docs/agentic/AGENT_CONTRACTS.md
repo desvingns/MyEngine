@@ -22,7 +22,12 @@ structured output receives one retry. Writer and final reviewer are always separ
     "tests": "pass",
     "replay": "pass",
     "save_compat": "not_run",
-    "benchmark": "not_run"
+    "benchmark": "not_run",
+    "token_usage": {
+      "source": "explicit|orchestrator|chars_per_4",
+      "estimated_total": 0,
+      "by_agent": {"me-engine-developer": 0}
+    }
   }
 }
 ```

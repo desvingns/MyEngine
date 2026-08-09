@@ -59,6 +59,9 @@ try {
     Add-ScriptCheck 'schema_docs_fixtures' 'powershell.exe -File scripts/me-schema-docs-drift-test.ps1' {
         & powershell.exe -NoProfile -File (Join-Path $root 'scripts/me-schema-docs-drift-test.ps1')
     }
+    Add-ScriptCheck 'telemetry_contract' 'powershell.exe -File scripts/tests/me-cost-telemetry.tests.ps1' {
+        & powershell.exe -NoProfile -File (Join-Path $root 'scripts/tests/me-cost-telemetry.tests.ps1')
+    }
     Add-CommandCheck 'tests' '.\gradlew.bat --quiet test' {
         & .\gradlew.bat --quiet test
     }

@@ -120,6 +120,21 @@ try {
     $parityExit = 1
 }
 if ($parityExit -ne 0 -or $null -eq $parity -or $parity.verdict -ne "pass") { $failures++ }
+
+$costTelemetryRaw = & powershell.exe -NoProfile -File (Join-Path $root "scripts/tests/me-cost-telemetry.tests.ps1") 2>$null | Out-String
+$costTelemetryExit = $LASTEXITCODE
+$costTelemetry = $null
+try {
+    $costTelemetry = $costTelemetryRaw.Trim() | ConvertFrom-Json -ErrorAction Stop
+} catch {
+    $costTelemetry = [ordered]@{
+        agent = "me-cost-telemetry-test"
+        verdict = "fail"
+        summary = "cost telemetry contract test did not return one JSON result"
+    }
+    $costTelemetryExit = 1
+}
+if ($costTelemetryExit -ne 0 -or $null -eq $costTelemetry -or $costTelemetry.verdict -ne "pass") { $failures++ }
 $verdict = if ($failures -eq 0) { "pass" } else { "fail" }
 
 $result = [ordered]@{
@@ -133,6 +148,7 @@ $result = [ordered]@{
     spec_board_check               = $boardCheck
     schema_docs_drift              = $schemaDrift
     adapter_parity                 = $parity
+    cost_telemetry                 = $costTelemetry
 }
 $result | ConvertTo-Json -Compress -Depth 6
 if ($verdict -eq "pass") { exit 0 } else { exit 1 }

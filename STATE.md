@@ -1,8 +1,28 @@
 # MyEngine State
 
-Last updated: 2026-08-09 (PROC-008 close-out)
-Active phase: Phase 00-14 complete; Phase 15 sequencing adopted; Signal Garden SG-001..005 complete; MyTD MTD-001..005 complete; DX-001, DX-002, DX-003, DX-004, DX-005, DX-006, DX-007, DX-008, ENG-001, ENG-002, ENG-003, ENG-004, ENG-005, ENG-006, ENG-007, ENG-008, ENG-009, ENG-010, ENG-011, ENG-012, ENG-013, ENG-014, ENG-015, ENG-016, ENG-017, ENG-018, ENG-019, ENG-020, ENG-021, ENG-022, ENG-023, ENG-025, ENG-026, ENG-027, ENG-028, ENG-029, ENG-030, ENG-031, ENG-032, ENG-033, ENG-034, ENG-035, PROC-001, PROC-002, PROC-003, PROC-004, PROC-005, PROC-006, PROC-007, PROC-008, PROC-009, PROC-011, PROC-012, and PROC-013 complete; pipeline at v0.2.2; next exact action is to review the remaining accepted backlog and select the next feature; ENG-036 and PROC-015 remain human-owned/start-gated
-Owner of last update: Codex / me-docs (2026-08-09: PROC-008 close-out)
+Last updated: 2026-08-09 (PROC-010 close-out)
+Active phase: Phase 00-14 complete; Phase 15 sequencing adopted; Signal Garden SG-001..005 complete; MyTD MTD-001..005 complete; DX-001, DX-002, DX-003, DX-004, DX-005, DX-006, DX-007, DX-008, ENG-001, ENG-002, ENG-003, ENG-004, ENG-005, ENG-006, ENG-007, ENG-008, ENG-009, ENG-010, ENG-011, ENG-012, ENG-013, ENG-014, ENG-015, ENG-016, ENG-017, ENG-018, ENG-019, ENG-020, ENG-021, ENG-022, ENG-023, ENG-025, ENG-026, ENG-027, ENG-028, ENG-029, ENG-030, ENG-031, ENG-032, ENG-033, ENG-034, ENG-035, PROC-001, PROC-002, PROC-003, PROC-004, PROC-005, PROC-006, PROC-007, PROC-008, PROC-009, PROC-010, PROC-011, PROC-012, and PROC-013 complete; pipeline at v0.2.2; next exact action is to review the remaining accepted backlog and select the next feature; ENG-036 and PROC-015 remain human-owned/start-gated
+Owner of last update: Codex / me-docs (2026-08-09: PROC-010 close-out)
+
+## PROC-010 Close-out (2026-08-09)
+
+- DONE: Added optional token-usage telemetry to `scripts/me-record-run.ps1`. Events accept
+  explicit `agent=tokens` pairs, an orchestrator-supplied estimate, or a deterministic `chars_per_4`
+  fallback and preserve the source plus per-agent totals.
+- DONE: Extended `scripts/me-retro.ps1` with deterministic estimated-token aggregation by workflow
+  and agent, JSON result fields, and a cost-driven model-review proposal that remains human-gated
+  through `/me --improve`.
+- DONE: Added the fixed JSONL fixture and contract test; selfcheck and pre-push now execute it.
+- DECISIONS: Legacy events remain readable because token aggregation is optional. No engine,
+  Android, content, save, replay, or plugin-version scope changed; no ADR was needed.
+- NEXT: Review the remaining accepted backlog and select the next feature; ENG-036 and PROC-015
+  remain human-owned/start-gated.
+- BLOCKERS: No implementation blocker. Scout and architect roster workers timed out after bounded
+  waits; local role fallback supplied the implementation plan and boundary evidence.
+- VERIFICATION: Focused telemetry contract, selfcheck, Gradle test/projects, content validation,
+  replay, save-compatibility, benchmark (`sim_ms=313`), pre-push, required headless inspect,
+  Android `assembleDebug`, and `git diff --check` passed. Final telemetry/retro evidence is
+  recorded at close-out.
 
 ## PROC-008 Close-out (2026-08-09)
 

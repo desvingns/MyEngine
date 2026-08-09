@@ -74,7 +74,7 @@ Last updated: 2026-08-09 (PROC-009 close-out)
 | Save migration matrix | PROC-007 | process | - | **done** (2026-08-02; checked-in v1-v10 fixtures, independent stable-hash migration matrix, and save-compat JSON result) |
 | Playtest bot | PROC-008 | process | - | **done** (2026-08-09; deterministic seeded no-build/spawn-tower/late-tower strategies, typed run outcomes, win-rate/leak aggregates, and content-derived per-wave difficulty JSON) |
 | Android visual smoke | PROC-009 | process | - | **done** (2026-08-09; deterministic Pixel_5 portrait screenshot-vs-golden gate for default sandbox seed 7 tick 0, typed blocked preflight, and explicit golden-update reason) |
-| Cost telemetry | PROC-010 | process | - | backlog |
+| Cost telemetry | PROC-010 | process | - | **done** (2026-08-09; explicit/orchestrator/chars-per-4 token estimates, per-workflow/per-agent retro aggregation, and human-gated cost proposal) |
 | Codex adapter parity audit + selfcheck coverage | PROC-011 | process | - | **done** (2026-08-08; Claude/Codex mode parity, Codex manifest/.codex registration checks, and selfcheck contract coverage) |
 | Emulator provisioning lane (managed devices) | PROC-012 | process | - | **done** (2026-08-08; Windows PowerShell scripted Pixel_5 lane, deterministic blocked-preflight JSON fallback, bounded boot polling, instrumentation smoke, and owned-emulator cleanup) |
 | Spec board hygiene | PROC-013 | process | - | **done** (2026-07-29; Variant B migrated 23 cards and wired board checker into selfcheck) |

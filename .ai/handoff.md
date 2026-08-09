@@ -1,7 +1,42 @@
 # MyEngine Handoff
 
-Last updated: 2026-08-09 (PROC-008 close-out)
+Last updated: 2026-08-09 (PROC-010 close-out)
 Owner: Codex / me-docs
+
+## PROC-010 close-out (2026-08-09)
+
+### DONE
+
+- Moved `PROC-010` to `.claude/specs/done/` and synchronized the roadmap, state, Plane, and
+  digest.
+- Added optional explicit/orchestrator/`chars_per_4` token estimates to `me-record-run.ps1`.
+- Added per-workflow and per-agent token aggregation plus a human-gated cost-driven model review
+  proposal to `me-retro.ps1`.
+- Added `scripts/tests/me-cost-telemetry.tests.ps1` and its deterministic JSONL fixture; wired the
+  contract into selfcheck and pre-push.
+
+### DECISIONS
+
+- Token usage is an optional additive event field, so legacy telemetry remains readable.
+- The estimate is a signal for retro prioritization, not a billing claim; no model change is
+  applied automatically. No engine/runtime, Android, content, save, replay, or plugin-version
+  behavior changed.
+
+### NEXT
+
+- Review the remaining accepted backlog and select the next feature. `ENG-036` and `PROC-015`
+  remain human-owned/start-gated; `PROC-014` is the remaining process candidate.
+
+### BLOCKERS
+
+- No implementation blocker. Scout and architect workers timed out after bounded waits; local
+  fallback completed the implementation and verifier boundary review.
+
+### VERIFICATION
+
+- Telemetry contract, selfcheck, Gradle test/projects, content validation, replay goldens,
+  save-compatibility, benchmark (`sim_ms=313`), pre-push, headless inspect, Android
+  `assembleDebug`, and `git diff --check` passed.
 
 ## PROC-008 close-out (2026-08-09)
 

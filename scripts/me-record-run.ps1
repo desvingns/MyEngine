@@ -15,6 +15,8 @@ param(
     [double]$SimMs = -1,
     [double]$FrameMs = -1,
     [double]$DurationMin = 0,
+    [string]$TokenUsage = "",
+    [long]$EstimatedTokens = -1,
     [int]$MalformedJsonCount = 0,
     [string]$GateFailures = "",
     [string]$AttributedAgent = "",
@@ -29,6 +31,43 @@ $path = Join-Path $runs "telemetry.jsonl"
 
 $simMetric = if ($SimMs -ge 0) { $SimMs } else { $null }
 $frameMetric = if ($FrameMs -ge 0) { $FrameMs } else { $null }
+
+$tokenUsageByAgent = [ordered]@{}
+if (-not [string]::IsNullOrWhiteSpace($TokenUsage)) {
+    foreach ($entry in ($TokenUsage -split "," | Where-Object { -not [string]::IsNullOrWhiteSpace($_) })) {
+        $parts = $entry -split "=", 2
+        if ($parts.Count -ne 2 -or [string]::IsNullOrWhiteSpace($parts[0])) {
+            throw "TokenUsage entries must use agent=non-negative-integer format: '$entry'"
+        }
+        $tokenValue = 0L
+        if (-not [long]::TryParse($parts[1].Trim(), [ref]$tokenValue) -or $tokenValue -lt 0) {
+            throw "TokenUsage value must be a non-negative integer: '$entry'"
+        }
+        $tokenUsageByAgent[$parts[0].Trim()] = $tokenValue
+    }
+}
+
+$tokenSource = "explicit"
+if ($tokenUsageByAgent.Count -eq 0) {
+    $estimatePayload = [ordered]@{
+        workflow = $Workflow
+        phase = $Phase
+        agent = $Agent
+        model = $Model
+        verdict = $Verdict
+        changed_files = $ChangedFiles
+        note = $Note
+    } | ConvertTo-Json -Compress -Depth 6
+    $estimated = if ($EstimatedTokens -ge 0) {
+        $tokenSource = "orchestrator"
+        $EstimatedTokens
+    } else {
+        $tokenSource = "chars_per_4"
+        [long][math]::Ceiling($estimatePayload.Length / 4.0)
+    }
+    $tokenUsageByAgent[$Agent] = $estimated
+}
+$estimatedTokenTotal = [long](($tokenUsageByAgent.Values | Measure-Object -Sum).Sum)
 
 $event = [ordered]@{
     run_id = [guid]::NewGuid().ToString()
@@ -48,6 +87,11 @@ $event = [ordered]@{
         benchmark = $Benchmark
         frame_ms = $frameMetric
         sim_ms = $simMetric
+    }
+    token_usage = [ordered]@{
+        source = $tokenSource
+        estimated_total = $estimatedTokenTotal
+        by_agent = $tokenUsageByAgent
     }
     duration_min = $DurationMin
     malformed_json_count = $MalformedJsonCount

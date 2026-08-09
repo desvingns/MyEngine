@@ -1,11 +1,22 @@
 # MyEngine Intake Digest
 
-Regenerated at close-out. Last updated: 2026-08-09 (PROC-008 close-out).
+Regenerated at close-out. Last updated: 2026-08-09 (PROC-010 close-out).
 
 ## Current next action
 
-ENG-022, PROC-008, PROC-009, PROC-011, and PROC-012 are complete. Review the remaining accepted
-backlog and select the next feature; ENG-036 and PROC-015 remain human-owned start-gated work.
+ENG-022, PROC-008, PROC-009, PROC-010, PROC-011, and PROC-012 are complete. Review the remaining
+accepted backlog and select the next feature; PROC-014 is the remaining process candidate, while
+ENG-036 and PROC-015 remain human-owned/start-gated.
+
+## PROC-010 close-out (2026-08-09)
+
+- Added optional explicit/orchestrator/`chars_per_4` token estimates to run telemetry.
+- Retro now aggregates estimated tokens by workflow and agent and emits a human-gated
+  cost-driven model-review proposal.
+- Added deterministic contract fixture/test and wired it into selfcheck and pre-push.
+- No engine/runtime, Android, content, save, replay, or plugin behavior changed; no ADR was needed.
+- All focused/full/repository gates passed; roster scout/architect timeouts used documented local
+  fallback.
 
 ## PROC-008 close-out (2026-08-09)
 
@@ -64,7 +75,7 @@ backlog and select the next feature; ENG-036 and PROC-015 remain human-owned sta
 ## Active specs / roadmap
 
 - DX-001, DX-002, DX-003, DX-004, DX-005, DX-006, DX-007, ENG-001, ENG-003, ENG-031, ENG-004, ENG-032, ENG-033, ENG-006,
-  ENG-017, ENG-023, ENG-025, ENG-034, ENG-035, PROC-001, PROC-004, PROC-005, PROC-006, and PROC-011 are done.
+  ENG-017, ENG-023, ENG-025, ENG-034, ENG-035, PROC-001, PROC-004, PROC-005, PROC-006, PROC-010, and PROC-011 are done.
 - ENG-003 is a post-Phase-14/Phase-15 feature close-out; no new phase was created.
 - ENG-002 remains the wave-enemy GoalField path; ENG-003 is the deterministic JobBoard/job-actor tick capability.
 - ENG-033's authored scope is implemented with no game-bundle traceability update. MySD TD Gate 1 is

@@ -3,6 +3,19 @@
 Append-only log for changes to agent prompts, skills, adapters, workflow contracts, and pipeline
 rules. Project docs can change without an entry here unless they alter agent behavior.
 
+## 2026-08-09 - PROC-010 Pipeline Cost Telemetry
+
+- Owner: Codex / `me-docs`
+- Change type: feature pipeline close-out
+- Changed: `me-record-run.ps1`, `me-retro.ps1`, telemetry contract fixture/test, selfcheck/pre-push
+  wiring, canonical self-improvement/agent-contract docs, and PROC-010 board/close-out docs.
+- Summary: Added optional explicit/orchestrator/`chars_per_4` token estimates and deterministic
+  per-workflow/per-agent retro aggregation. The retro emits a cost-driven model-review proposal;
+  no model or agent instruction is changed automatically.
+- Verification: Contract test, selfcheck, full Gradle test/projects, content/replay/save/benchmark
+  gates, pre-push, headless inspect, Android assembleDebug, and diff-check passed. No plugin
+  version bump was needed because adapter/skill content did not change.
+
 ## 2026-08-09 - PROC-008 Headless Playtest Bot
 
 - Owner: Codex
