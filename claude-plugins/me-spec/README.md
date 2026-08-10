@@ -15,7 +15,8 @@ workflow lives in `docs/agentic/SPEC_BOARD.md` and `docs/GAME_SPEC_PIPELINE.md`.
     /plugin marketplace add .
     /plugin install me-spec@myengine
 
-Then run `/me-spec --greenfield-game` or `/me-spec --engine-feature`.
+Then run `/me-spec --greenfield-game`, `/me-spec --engine-feature`, or
+`/me-spec --reference-game` for a sanitized reference-evidence bundle.
 
 ## Keeping the adapter honest
 

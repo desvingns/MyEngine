@@ -1,0 +1,6 @@
+{
+  "schema_version": "state-graph.v0",
+  "reference": { "package": "fixture.invalid", "capture_meta_evidence_id": "EV-0001" },
+  "nodes": [], "edges": [], "observations": [],
+  "coverage": { "gate1_status": "not_started" }
+}

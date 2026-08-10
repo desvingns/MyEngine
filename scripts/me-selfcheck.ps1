@@ -135,6 +135,21 @@ try {
     $costTelemetryExit = 1
 }
 if ($costTelemetryExit -ne 0 -or $null -eq $costTelemetry -or $costTelemetry.verdict -ne "pass") { $failures++ }
+
+$referenceEvidenceRaw = & powershell.exe -NoProfile -File (Join-Path $root "scripts/tests/me-reference-evidence.tests.ps1") 2>$null | Out-String
+$referenceEvidenceExit = $LASTEXITCODE
+$referenceEvidence = $null
+try {
+    $referenceEvidence = $referenceEvidenceRaw.Trim() | ConvertFrom-Json -ErrorAction Stop
+} catch {
+    $referenceEvidence = [ordered]@{
+        agent = "me-reference-evidence-test"
+        verdict = "fail"
+        summary = "reference evidence contract test did not return one JSON result"
+    }
+    $referenceEvidenceExit = 1
+}
+if ($referenceEvidenceExit -ne 0 -or $null -eq $referenceEvidence -or $referenceEvidence.verdict -ne "pass") { $failures++ }
 $verdict = if ($failures -eq 0) { "pass" } else { "fail" }
 
 $result = [ordered]@{
@@ -149,6 +164,7 @@ $result = [ordered]@{
     schema_docs_drift              = $schemaDrift
     adapter_parity                 = $parity
     cost_telemetry                 = $costTelemetry
+    reference_evidence             = $referenceEvidence
 }
 $result | ConvertTo-Json -Compress -Depth 6
 if ($verdict -eq "pass") { exit 0 } else { exit 1 }

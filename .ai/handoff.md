@@ -1,7 +1,45 @@
 # MyEngine Handoff
 
-Last updated: 2026-08-09 (ENG-036 close-out)
+Last updated: 2026-08-10 (PROC-015 close-out)
 Owner: Codex / me-dev:me
+
+## PROC-015 close-out (2026-08-10)
+
+### DONE
+
+- Moved `PROC-015` to `.claude/specs/done/` and synchronized the Engine Roadmap, MySD
+  `engine-gap-analysis.md`, and MySD `traceability.csv` rows for PROC-015.
+- Added `scripts/me-reference-evidence.ps1` with `validate`, `gate1`, and report-only `bridge`
+  modes. The gate validates state-graph.v1, mechanic claims, evidence-index references,
+  clone-strict coverage, signature-based dedup, low-confidence quarantine, and public safety.
+- Added deterministic fixtures/tests and wired them into selfcheck/pre-push. `/me-spec` now exposes
+  `--reference-game`; canonical docs and both adapters were updated, with plugin versions 0.3.0
+  (Claude) and 0.2.0 (Codex).
+
+### DECISIONS
+
+- User accepted Gate 1 inventory, scope, deviations, and blockers on 2026-08-10. The approved
+  semantic/behavioral bundle is sufficient; Visual Fit remains per-surface and deferred.
+- Existing backlog/API capabilities are referenced instead of duplicated. New gaps remain
+  human-gated and the bridge never imports raw APKs, media, UI dumps, extracted assets, credentials,
+  or verbatim reference copy.
+- No simulation, Android, save, replay, content runtime, or ADR change was needed.
+
+### NEXT
+
+- Review the remaining accepted backlog; no pending feature card remains after PROC-015.
+
+### BLOCKERS
+
+- None. Scout/architect workers timed out after bounded waits; local fallback supplied the plan and
+  implementation. The prior retro baseline modification remains un-staged and is excluded from the
+  feature commit.
+
+### VERIFICATION
+
+- MySD `validate-evidence.ps1`, `validate-spec.ps1`, and `public-safety.ps1`: pass.
+- PROC-015 contract, full Gradle test/projects, content/replay/save/benchmark, selfcheck,
+  pre-push, headless inspect (`d599fc31843b5aa8`), Android `assembleDebug`, and diff-check: pass.
 
 ## ENG-036 close-out (2026-08-09)
 

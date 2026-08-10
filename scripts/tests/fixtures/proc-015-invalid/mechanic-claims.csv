@@ -1,0 +1,2 @@
+claim_id,claim,hypothesis,controlled_variables,sample_count,supporting_evidence_ids,contradicting_evidence_ids,confidence,status,future_fr_links,future_eng_links,notes
+CL-0001,"Fixture claim","Fixture","fixed",1,"EV-0001","",0.70,open_question,"","","Invalid graph must fail."

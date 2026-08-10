@@ -41,7 +41,7 @@ try {
         "--content-validate", "--save-compat", "--reflect", "--improve",
         "--improve --drain", "--upgrade"
     )
-    $meSpecModes = @("--greenfield-game", "--engine-feature")
+    $meSpecModes = @("--greenfield-game", "--engine-feature", "--reference-game")
 
     $meResult = Test-ModeParity `
         "claude-plugins/me-dev/skills/me/SKILL.md" `

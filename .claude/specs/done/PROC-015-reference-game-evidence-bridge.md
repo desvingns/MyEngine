@@ -1,7 +1,7 @@
 id: PROC-015
 title: Reference-game evidence bridge for me-spec
-status: backlog
-owner: human
+status: done
+owner: codex
 blocked_by: none
 start_gates:
   - human_start_approval
@@ -129,3 +129,16 @@ Scenario: Deduplicate an accepted engine gap
 No simulation, save, replay, or content runtime behavior changes. If canonical contracts or plugin
 adapters change, update canonical docs first, run selfcheck, log the agent/skill change, and bump the
 affected plugin version according to the existing process.
+
+# Close-out
+
+- Gate 1 inventory, scope, deviations, and blockers were accepted by the user on 2026-08-10.
+- `scripts/me-reference-evidence.ps1 -Mode gate1` validates sanitized `state-graph.v1` bundles,
+  mechanic claims, evidence references, clone-strict coverage, low-confidence quarantine, and
+  signature-based deduplication.
+- `-Mode bridge` scans backlog/active/done, the Engine Roadmap, and API stability; existing cards
+  are referenced and new cards remain human-gated. Public-safety rejects raw evidence artifacts and
+  absolute paths.
+- Verification: contract fixture, MySD evidence/spec/public-safety validators, selfcheck, full
+  Gradle tests/projects, content/replay/save/benchmark, pre-push, headless inspect, Android
+  `assembleDebug`, and `git diff --check` passed.

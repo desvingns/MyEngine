@@ -853,3 +853,17 @@ by: claude
   benchmark (`sim_ms=413`), selfcheck, headless inspect, Android `assembleDebug`, and diff-check
   passed. `SandboxSaveCodec.SAVE_VERSION` remains 22 and replay goldens are unchanged.
 - Baseline: clean `main` at `0a309b1`; no unrelated files were staged. No ADR was needed.
+
+## 2026-08-10 - MyEngine PROC-015 feature run
+
+- Owner: Codex / `me-dev:me`; Gate 1 inventory, scope, deviations, and blockers were explicitly
+  accepted by the user before implementation.
+- Change type: reference-evidence process bridge; added sanitized `state-graph.v1` / mechanic
+  claims validation, clone-strict Gate 1 checks, signature-based dedup reporting, public-safety
+  guards, and report-only backlog dedup. No simulation, Android, save, replay, or raw evidence
+  behavior changed.
+- Adapter impact: canonical spec docs and both `/me-spec` adapters now expose `--reference-game`;
+  Claude/Codex me-spec versions were bumped to 0.3.0 / 0.2.0 and selfcheck/pre-push invoke the
+  deterministic evidence contract test.
+- Roster: scout/architect workers timed out after bounded waits; local implementation fallback was
+  used. No malformed JSON envelope was observed.

@@ -13,3 +13,7 @@ The supported `/me-spec` modes are the same as the Claude adapter and are define
 
 - `--greenfield-game`
 - `--engine-feature`
+- `--reference-game`
+
+For `--reference-game`, use the deterministic sanitized-evidence gate at
+`scripts/me-reference-evidence.ps1` before authoring or bridging requirements.

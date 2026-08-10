@@ -5,7 +5,7 @@ description: >-
   bridges accepted specs to the backlog. Use when the user types /me-spec or asks to
   create or update a game design spec, a greenfield game concept, an engine feature
   spec plus gap analysis, or a spec bundle for handoff to /me. Two human gates
-  (inventory, final acceptance). Modes: --greenfield-game, --engine-feature.
+  (inventory, final acceptance). Modes: --greenfield-game, --engine-feature, --reference-game.
 allowed-tools: Read, Grep, Glob, Write, Task
 ---
 
@@ -24,6 +24,7 @@ Read `AGENTS.md`, `STATE.md`, `.ai/handoff.md`, then the two spec docs above.
 |---|---|---|
 | `--greenfield-game` | Original idea -> traceable game spec bundle under `games/<slug>/spec` | inventory + final acceptance |
 | `--engine-feature` | Engine feature spec + gap analysis -> backlog bridge | human before backlog bridge |
+| `--reference-game` | Sanitized state graph + mechanic claims -> clone-strict inventory and deduplicated gap bridge | Gate 1 inventory acceptance + Gate 2 |
 
 ## Rules
 
@@ -39,6 +40,8 @@ Read `AGENTS.md`, `STATE.md`, `.ai/handoff.md`, then the two spec docs above.
   instead of duplicating. The backlog bridge updates the roadmap's demand counts.
 - Minimum spec fields are defined in `SPEC_BOARD.md`
   (`id, title, status, owner, phase, requirements, acceptance, gates`).
+- Reference evidence is validated by `scripts/me-reference-evidence.ps1` before authoring. Raw APKs,
+  media, UI dumps, extracted assets, credentials, and verbatim reference copy are never imported.
 
 ## Delegate
 

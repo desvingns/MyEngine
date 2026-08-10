@@ -62,3 +62,25 @@ single-game gaps of the same severity. The roadmap is updated at two moments:
 - by the `/me-spec` backlog bridge, when new gaps are minted or an existing gap gains a
   new demanding game;
 - by `/me` close-out, when a gap's card status changes (backlog -> active -> done).
+
+## Reference Evidence Bridge
+
+`/me-spec --reference-game` accepts only a sanitized evidence root containing:
+
+- `state-graph.v1.json` with nodes, edges, observations, coverage, and three-part signatures;
+- `mechanic-claims.csv` with controlled variables, samples, evidence links, confidence, and
+  promotion status;
+- `evidence-index.csv` with hashes, sanitized summaries, local-only pointers, and IP/privacy
+  review state.
+
+The deterministic entry point is `powershell.exe -File scripts/me-reference-evidence.ps1`.
+`-Mode validate` checks versioned import and references; `-Mode gate1` additionally checks
+clone-strict coverage, human-locked scope, low-confidence claim quarantine, and signature-based
+deduplication; `-Mode bridge` reports existing backlog/roadmap matches and never creates a
+duplicate card. The bridge is report-only: new reusable gaps still require a human decision before
+they can be written to the board.
+
+Raw APKs, media, UI dumps, extracted assets, credentials, and verbatim reference copy are not
+valid evidence inputs. Volatile observations remain top-level observations and do not define node
+identity. Gate 1 accepts semantic/behavioral scope; visual completeness belongs to later Visual
+Fit Gates.

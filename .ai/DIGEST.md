@@ -1,12 +1,20 @@
 # MyEngine Intake Digest
 
-Regenerated at close-out. Last updated: 2026-08-09 (ENG-036 close-out).
+Regenerated at close-out. Last updated: 2026-08-10 (PROC-015 close-out).
 
 ## Current next action
 
-ENG-022, ENG-036, PROC-008, PROC-009, PROC-010, PROC-011, PROC-012, and PROC-014 are complete.
-Review the remaining accepted backlog and select the next feature; PROC-015 remains human-owned/
-start-gated.
+ENG-022, ENG-036, PROC-008, PROC-009, PROC-010, PROC-011, PROC-012, PROC-014, and PROC-015 are
+complete. Review the remaining accepted backlog; no pending implementation card remains.
+
+## PROC-015 close-out (2026-08-10)
+
+- Added the sanitized reference-evidence bridge: state-graph.v1/mechanic-claims/evidence-index
+  validation, clone-strict Gate 1, signature dedup, public-safety, and report-only gap dedup.
+- Added deterministic fixtures/tests and `/me-spec --reference-game` adapter/canonical coverage;
+  Claude/Codex me-spec manifests are 0.3.0/0.2.0.
+- MySD Gate 1 inventory was accepted by the user; source gap analysis and PROC-015 traceability
+  rows are synchronized. No runtime/Android/save/replay/content change was made.
 
 ## ENG-036 close-out (2026-08-09)
 

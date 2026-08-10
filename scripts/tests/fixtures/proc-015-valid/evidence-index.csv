@@ -1,0 +1,4 @@
+evidence_id,source_type,local_relative_path,sha256,captured_at_utc,sanitized_summary,ip_privacy_review,status
+EV-0001,metadata,.reference-local/EV-0001.json,0000000000000000000000000000000000000000000000000000000000000000,2026-08-10T00:00:00Z,fixture launch,pass,accepted
+EV-0002,trace,.reference-local/EV-0002.json,1111111111111111111111111111111111111111111111111111111111111111,2026-08-10T00:01:00Z,fixture battle,pass,accepted
+EV-0003,trace,.reference-local/EV-0003.json,2222222222222222222222222222222222222222222222222222222222222222,2026-08-10T00:02:00Z,fixture victory,pass,accepted

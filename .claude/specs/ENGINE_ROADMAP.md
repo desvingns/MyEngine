@@ -7,7 +7,7 @@ two or more games outranks single-game gaps of the same severity.
 Updated by: the `/me-spec` backlog bridge (new gaps / new demand) and `/me`
 close-out (status changes).
 
-Last updated: 2026-08-09 (PROC-014 close-out)
+Last updated: 2026-08-10 (PROC-015 close-out)
 
 ## Capabilities
 
@@ -79,7 +79,7 @@ Last updated: 2026-08-09 (PROC-014 close-out)
 | Emulator provisioning lane (managed devices) | PROC-012 | process | - | **done** (2026-08-08; Windows PowerShell scripted Pixel_5 lane, deterministic blocked-preflight JSON fallback, bounded boot polling, instrumentation smoke, and owned-emulator cleanup) |
 | Spec board hygiene | PROC-013 | process | - | **done** (2026-07-29; Variant B migrated 23 cards and wired board checker into selfcheck) |
 | Android release build lane | PROC-014 | process | - | **done** (2026-08-09; signed release AAB/APK lane with ignored keystore properties, R8/content smoke, version/application-id policy, and AAB/cold-start metrics) |
-| Reference-game evidence bridge for me-spec | PROC-015 | process, mysd | - | backlog (state-graph.v1 + mechanic claims, clone-strict coverage, traceability, and gap dedup) |
+| Reference-game evidence bridge for me-spec | PROC-015 | process, mysd | 1 | **done** (2026-08-10; sanitized state-graph.v1/mechanic-claims import, clone-strict Gate 1, signature dedup, public-safety, traceability, and report-only gap bridge) |
 
 ## Known duplicates
 
@@ -123,11 +123,13 @@ Last updated: 2026-08-09 (PROC-014 close-out)
 4. DX-008 is done: use its hybrid-format ADR for ENG-017/ENG-028 schema work. DX-001, DX-002,
    DX-003, DX-005, DX-006, DX-007, and PROC-006 are complete (2026-08-04). DX-004 remains the
    next roadmap candidate, but its running/hot-reload scope needs clarification; no sequence
-   metadata is assigned here. ENG-036 and PROC-015 remain explicitly human-owned/start-gated.
+   metadata is assigned here. ENG-036 and PROC-015 are now closed; future MySD demand bridges
+   through the accepted reference-evidence workflow.
    ENG-025 is now closed.
 5. MySD foundation: PROC-002 / ADR-0004 is done. MySD Gate 1/relaxed Gate 2 are accepted for the
    TD reference bundle, but no colony demand is inferred from that bundle. ENG-033 is unlocked by
-   its separate authored scope; future MySD demand still bridges only through PROC-015 semantics.
+   its separate authored scope; future MySD demand bridges only through the accepted PROC-015
+   semantics.
 
 ## Deliberately not carded (2026-07-06, bounded scope)
 

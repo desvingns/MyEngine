@@ -1,6 +1,6 @@
 {
   "name": "me-spec",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "description": "Repo-local thin Codex adapter for the MyEngine /me-spec workflow.",
   "author": {
     "name": "MyEngine",
@@ -20,6 +20,7 @@
     "defaultPrompt": [
       "/me-spec --greenfield-game",
       "/me-spec --engine-feature",
+      "/me-spec --reference-game",
       "Review the current game spec bundle"
     ]
   }

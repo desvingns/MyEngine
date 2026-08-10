@@ -1,8 +1,27 @@
 # MyEngine State
 
-Last updated: 2026-08-09 (ENG-036 close-out)
-Active phase: Phase 00-14 complete; Phase 15 sequencing adopted; Signal Garden SG-001..005 complete; MyTD MTD-001..005 complete; DX-001, DX-002, DX-003, DX-004, DX-005, DX-006, DX-007, DX-008, ENG-001, ENG-002, ENG-003, ENG-004, ENG-005, ENG-006, ENG-007, ENG-008, ENG-009, ENG-010, ENG-011, ENG-012, ENG-013, ENG-014, ENG-015, ENG-016, ENG-017, ENG-018, ENG-019, ENG-020, ENG-021, ENG-022, ENG-023, ENG-025, ENG-026, ENG-027, ENG-028, ENG-029, ENG-030, ENG-031, ENG-032, ENG-033, ENG-034, ENG-035, ENG-036, PROC-001, PROC-002, PROC-003, PROC-004, PROC-005, PROC-006, PROC-007, PROC-008, PROC-009, PROC-010, PROC-011, PROC-012, PROC-013, and PROC-014 complete; pipeline at v0.2.2; next exact action is to review the remaining accepted backlog and select the next feature; PROC-015 remains human-owned/start-gated
-Owner of last update: Codex / me-dev:me (2026-08-09: ENG-036 close-out)
+Last updated: 2026-08-10 (PROC-015 close-out)
+Active phase: Phase 00-14 complete; Phase 15 sequencing adopted; Signal Garden SG-001..005 complete; MyTD MTD-001..005 complete; DX-001, DX-002, DX-003, DX-004, DX-005, DX-006, DX-007, DX-008, ENG-001, ENG-002, ENG-003, ENG-004, ENG-005, ENG-006, ENG-007, ENG-008, ENG-009, ENG-010, ENG-011, ENG-012, ENG-013, ENG-014, ENG-015, ENG-016, ENG-017, ENG-018, ENG-019, ENG-020, ENG-021, ENG-022, ENG-023, ENG-025, ENG-026, ENG-027, ENG-028, ENG-029, ENG-030, ENG-031, ENG-032, ENG-033, ENG-034, ENG-035, ENG-036, PROC-001, PROC-002, PROC-003, PROC-004, PROC-005, PROC-006, PROC-007, PROC-008, PROC-009, PROC-010, PROC-011, PROC-012, PROC-013, PROC-014, and PROC-015 complete; pipeline at v0.2.2; next exact action is to review the remaining accepted backlog and select the next feature
+Owner of last update: Codex / me-dev:me (2026-08-10: PROC-015 close-out)
+
+## PROC-015 Close-out (2026-08-10)
+
+- DONE: Added `scripts/me-reference-evidence.ps1` with versioned sanitized evidence import,
+  broken-reference checks, clone-strict Gate 1 evaluation, low-confidence claim quarantine,
+  structural/visual/semantic dedup reporting, public-safety guards, and report-only backlog gap
+  deduplication.
+- DONE: Added deterministic fixtures and contract tests; wired the contract into selfcheck and
+  pre-push. Added `/me-spec --reference-game` to canonical docs, Claude/Codex adapters, agent
+  guidance, and plugin manifests (Claude 0.3.0 / Codex 0.2.0).
+- DECISIONS: State identity never includes volatile observations. Deferred/open questions cannot
+  create requirements. Existing cards are referenced; new reusable gaps remain human-gated. No
+  simulation, Android, save, replay, or raw reference artifacts changed.
+- NEXT: Review the remaining accepted backlog; no implementation candidate remains after PROC-015.
+- BLOCKERS: None. Roster scout/architect timed out after bounded waits, so local role fallback was
+  used and recorded; no malformed envelope was observed.
+- VERIFICATION: MySD evidence/spec/public-safety validators, focused contract test, full Gradle
+  test/projects, content/replay/save/benchmark, selfcheck, pre-push, headless inspect
+  (`d599fc31843b5aa8`), Android `assembleDebug`, and `git diff --check` passed.
 
 ## ENG-036 Close-out (2026-08-09)
 

@@ -72,3 +72,35 @@ and record which games demand each gap in `.claude/specs/ENGINE_ROADMAP.md`.
 
 Gate 1: user accepts feature inventory and scope.  
 Gate 2: user accepts final bundle and known risks before implementation starts.
+
+## Reference-game evidence mode
+
+`/me-spec --reference-game` is the evidence-backed intake path for a reference crawl. It is
+separate from the greenfield interview and consumes a sanitized bundle only:
+
+```text
+state-graph.v1.json
+mechanic-claims.csv
+evidence-index.csv
+open-questions.md (optional but recommended)
+```
+
+The graph is validated before authoring. Node identity uses structural, masked-visual, and
+semantic signatures; exact currency, timer, HP, wave, and energy values stay observations. Edges
+must preserve before/after evidence, action, preconditions, costs, effects, timing, source, and
+confidence. Claims below `0.8` remain open questions and cannot generate FR/US/AC or ENG links.
+
+Gate 1 is clone-strict and requires reached root routes, a terminal core loop or structured safety
+blockers, mapped affordances, positive/negative access coverage, six plateau iterations, and
+human-locked inventory scope. The deterministic check is:
+
+```powershell
+powershell.exe -NoProfile -File scripts/me-reference-evidence.ps1 `
+  -Mode gate1 -EvidenceRoot <sanitized-evidence-root>
+```
+
+The bridge scans backlog, active, done, the Engine Roadmap, and API stability before proposing a
+gap. Existing capabilities are referenced instead of duplicated; a new ENG card requires a
+human gate and its own EARS/Gherkin, deterministic-ordering, save/replay, content, performance,
+and dependency evidence. Public safety rejects raw reference artifacts and absolute evidence
+paths.

@@ -1,0 +1,49 @@
+{
+  "schema_version": "state-graph.v1",
+  "reference": { "package": "fixture.reference", "capture_meta_evidence_id": "EV-0001" },
+  "nodes": [
+    {
+      "id": "ST-0001", "kind": "screen", "parent": null, "route": "battle", "phase": "setup", "semantic_flags": {},
+      "visible_affordances": [{ "id": "AF-0001", "role": "primary_action", "action": "start_battle", "bounds_dp": null, "bounds_unavailable_reason": "fixture", "coverage_status": "edge", "coverage_ref": "ED-0001" }],
+      "signatures": { "structural": { "activity": "fixture", "normalized_affordances": ["start_battle"], "digest": "structural-setup" }, "visual": { "algorithm": "fixture", "perceptual_hash": null, "distance_threshold": 8, "masked_regions": [] }, "semantic": { "route": "battle", "overlay": null, "battle_phase": "setup", "flags": {}, "digest": "semantic-setup" } },
+      "evidence_tier": "behavioral", "visual_status": "preserved_unusable", "visual_evidence_ids": [], "evidence_ids": ["EV-0001"], "source": "observed", "confidence": 0.95
+    },
+    {
+      "id": "ST-0002", "kind": "battle_phase", "parent": "ST-0001", "route": "battle", "phase": "active", "semantic_flags": {},
+      "visible_affordances": [{ "id": "AF-0002", "role": "terminal_action", "action": "finish_battle", "bounds_dp": null, "bounds_unavailable_reason": "fixture", "coverage_status": "edge", "coverage_ref": "ED-0002" }],
+      "signatures": { "structural": { "activity": "fixture", "normalized_affordances": ["finish_battle"], "digest": "structural-active" }, "visual": { "algorithm": "fixture", "perceptual_hash": null, "distance_threshold": 8, "masked_regions": [] }, "semantic": { "route": "battle", "overlay": null, "battle_phase": "active", "flags": {}, "digest": "semantic-active" } },
+      "evidence_tier": "behavioral", "visual_status": "preserved_unusable", "visual_evidence_ids": [], "evidence_ids": ["EV-0002"], "source": "observed", "confidence": 0.95
+    },
+    {
+      "id": "ST-0003", "kind": "screen", "parent": null, "route": "battle", "phase": "victory", "semantic_flags": {},
+      "visible_affordances": [],
+      "signatures": { "structural": { "activity": "fixture", "normalized_affordances": [], "digest": "structural-victory" }, "visual": { "algorithm": "fixture", "perceptual_hash": null, "distance_threshold": 8, "masked_regions": [] }, "semantic": { "route": "battle", "overlay": null, "battle_phase": "victory", "flags": {}, "digest": "semantic-victory" } },
+      "evidence_tier": "behavioral", "visual_status": "preserved_unusable", "visual_evidence_ids": [], "evidence_ids": ["EV-0003"], "source": "observed", "confidence": 0.95
+    }
+  ],
+  "edges": [
+    { "id": "ED-0001", "from": "ST-0001", "to": "ST-0002", "action": "start_battle", "preconditions": [], "cost_observation_ids": [], "observed_effect": "battle starts", "wait_ms": { "min": 0, "max": 0, "samples": 1 }, "before_evidence_ids": ["EV-0001"], "after_evidence_ids": ["EV-0002"], "classification": "phase", "source": "observed", "confidence": 0.95 },
+    { "id": "ED-0002", "from": "ST-0002", "to": "ST-0003", "action": "resolve_victory", "preconditions": ["active battle"], "cost_observation_ids": ["OB-0001"], "observed_effect": "victory is shown", "wait_ms": { "min": 0, "max": 1000, "samples": 1 }, "before_evidence_ids": ["EV-0002"], "after_evidence_ids": ["EV-0003"], "classification": "phase", "source": "observed", "confidence": 0.95 },
+    { "id": "ED-0003", "from": "ST-0002", "to": null, "action": "reach_defeat_terminal", "preconditions": ["safe fixture boundary"], "cost_observation_ids": [], "observed_effect": "defeat is not forced", "wait_ms": { "min": 0, "max": 0, "samples": 1 }, "before_evidence_ids": ["EV-0002"], "after_evidence_ids": ["EV-0003"], "classification": "blocked", "source": "observed", "confidence": 0.90 }
+  ],
+  "observations": [
+    { "id": "OB-0001", "node_id": "ST-0002", "metric": "currency", "value": 0, "unit": "fixture", "evidence_id": "EV-0002", "captured_at_utc": "2026-08-10T00:01:00Z" }
+  ],
+  "coverage": {
+    "gate1_status": "accepted", "root_routes_expected": ["battle"], "root_routes_seen": ["battle"], "terminal_states_seen": ["victory"],
+    "terminal_state_blockers": [{ "terminal": "defeat", "edge_id": "ED-0003", "reason_code": "safe_boundary_unreachable", "reason": "Fixture does not force defeat." }],
+    "negative_access_coverage": { "status": "observed", "observation_ids": ["OB-0001"], "blockers": [] },
+    "scope_decisions": [
+      { "inventory_id": "INV-001", "area": "fixture", "decision": "accept", "human_lock": "accepted" },
+      { "inventory_id": "INV-002", "area": "fixture", "decision": "accept", "human_lock": "accepted" },
+      { "inventory_id": "INV-003", "area": "fixture", "decision": "accept", "human_lock": "accepted" },
+      { "inventory_id": "INV-004", "area": "fixture", "decision": "defer", "human_lock": "accepted" },
+      { "inventory_id": "INV-005", "area": "fixture", "decision": "defer", "human_lock": "accepted" },
+      { "inventory_id": "INV-006", "area": "fixture", "decision": "accept", "human_lock": "accepted" },
+      { "inventory_id": "INV-007", "area": "fixture", "decision": "accept", "human_lock": "accepted" },
+      { "inventory_id": "INV-008", "area": "fixture", "decision": "exclude", "human_lock": "accepted" }
+    ],
+    "visual_fit_status": { "gate1_required": false, "status": "deferred_per_surface", "bounds_unavailable_reason": "fixture", "legacy_visual_status": "preserved_unusable" },
+    "unmatched_affordance_ids": [], "plateau_iterations": 6, "low_confidence_open_questions": 1
+  }
+}

@@ -62,6 +62,9 @@ try {
     Add-ScriptCheck 'telemetry_contract' 'powershell.exe -File scripts/tests/me-cost-telemetry.tests.ps1' {
         & powershell.exe -NoProfile -File (Join-Path $root 'scripts/tests/me-cost-telemetry.tests.ps1')
     }
+    Add-ScriptCheck 'reference_evidence_contract' 'powershell.exe -File scripts/tests/me-reference-evidence.tests.ps1' {
+        & powershell.exe -NoProfile -File (Join-Path $root 'scripts/tests/me-reference-evidence.tests.ps1')
+    }
     Add-CommandCheck 'tests' '.\gradlew.bat --quiet test' {
         & .\gradlew.bat --quiet test
     }
@@ -82,7 +85,7 @@ try {
     $result = [ordered]@{
         agent = 'me-pre-push'
         verdict = if ($exitCode -eq 0) { 'pass' } else { 'fail' }
-        summary = if ($exitCode -eq 0) { 'DX-005, PROC-004, and PROC-006 pre-push gates passed.' } else { "Pre-push gates failed: $($failed -join ', ')." }
+        summary = if ($exitCode -eq 0) { 'DX-005, PROC-004, PROC-006, and PROC-015 pre-push gates passed.' } else { "Pre-push gates failed: $($failed -join ', ')." }
         checks = $checks
     }
     $result | ConvertTo-Json -Compress -Depth 10

@@ -58,9 +58,9 @@
    PROC-011 Codex adapter
    parity and selfcheck coverage closed 2026-08-08; PROC-012 emulator provisioning closed
    2026-08-08; PROC-009 Android visual smoke, PROC-008 playtest bot, PROC-010 cost telemetry, and
-   PROC-014 Android release lane and ENG-036 runtime/session boundary closed 2026-08-09; review
-   the remaining accepted backlog before selecting the next feature. PROC-015 remains
-   human-owned and start-gated.
+   PROC-014 Android release lane and ENG-036 runtime/session boundary closed 2026-08-09; PROC-015
+   closed 2026-08-10 through the accepted reference-evidence bridge; review the remaining accepted
+   backlog before selecting the next feature.
 
 Новые крупные фазы добавлять только после того, как backlog specs перестанут быть достаточно
 точным механизмом управления работой.
@@ -69,6 +69,7 @@
 
 | Status | Feature | Spec | Result | Date |
 |---|---|---|---|---|
+| [x] | PROC-015 Reference-game evidence bridge | [PROC-015](../.claude/specs/done/PROC-015-reference-game-evidence-bridge.md) | Sanitized state-graph.v1/mechanic-claims import, clone-strict Gate 1, signature dedup, public-safety, traceability, and report-only backlog bridge; MySD source sync completed | 2026-08-10 |
 | [x] | ENG-036 Reusable Android-free runtime/session API | [ENG-036](../.claude/specs/done/ENG-036-reusable-runtime-session.md) | Added the Android-free `engine-runtime` descriptor/session/factory contracts and deterministic queue dispatch; sandbox preserves save v22 and replay compatibility | 2026-08-09 |
 | [x] | PROC-010 Pipeline cost telemetry | [PROC-010](../.claude/specs/done/PROC-010-cost-telemetry.md) | Optional explicit/orchestrator/chars-per-4 token estimates, deterministic retro aggregation by workflow/agent, and human-gated cost proposal | 2026-08-09 |
 | [x] | PROC-014 Android release build lane | [PROC-014](../.claude/specs/done/PROC-014-android-release-lane.md) | Signed release AAB/APK lane with ignored keystore properties, R8/content smoke, version/application-id policy, and AAB/cold-start metrics | 2026-08-09 |

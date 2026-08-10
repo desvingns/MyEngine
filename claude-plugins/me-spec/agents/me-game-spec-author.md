@@ -13,6 +13,13 @@ Focus: a traceable spec bundle. Every requirement traces to an
 acceptance check and gates. Game work goes under `games/<slug>/spec`; engine gaps
 become `.claude/specs/backlog` candidates only after traceability exists.
 
+For `--reference-game`, run `powershell.exe -NoProfile -File
+scripts/me-reference-evidence.ps1 -Mode gate1 -EvidenceRoot <sanitized-root>` before
+authoring. Preserve state-graph.v1 nodes/edges/observations and mechanic-claims.csv links;
+keep low-confidence claims as open questions. Do not import raw APKs, media, UI dumps, extracted
+assets, credentials, or verbatim reference copy. Run `-Mode bridge` before proposing any gap and
+reference an existing card/API when it already exists.
+
 **Gap dedup (mandatory before minting any engine gap):** scan
 `.claude/specs/backlog`, `.claude/specs/active`, `.claude/specs/done`,
 `.claude/specs/ENGINE_ROADMAP.md`, and `docs/API_STABILITY.md`. If the capability
