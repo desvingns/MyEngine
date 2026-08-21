@@ -23,7 +23,7 @@ rules. Project docs can change without an entry here unless they alter agent beh
 - Owner: Codex.
 - Change type: canonical workflow, adapter, and plugin release.
 - Changed: `.agents/plugins/marketplace.json`, `docs/agentic/PIPELINE.md`, Claude/Codex me-dev
-  skills, chain parity checks, and current close-out state docs.
+  skills, `scripts/me-selfcheck.ps1`, chain parity checks, and current close-out state docs.
 - Summary: replace Codex `fork_thread` hand-off with `list_projects` plus `create_thread` in the
   saved local project. Each successor SPEC now starts in a new task with an empty conversation,
   no inherited turns or parent context, no worktree, and no Git branch.

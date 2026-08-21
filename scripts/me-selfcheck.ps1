@@ -14,7 +14,8 @@ $canon = @(
     "docs/GAME_SPEC_PIPELINE.md",
     "AGENTS.md",
     "STATE.md",
-    ".ai/handoff.md"
+    ".ai/handoff.md",
+    ".agents/plugins/marketplace.json"
 )
 
 $artifacts = @(
@@ -57,7 +58,7 @@ foreach ($c in $refChecks) {
 
 # JSON manifests must parse.
 $jsonBad = @()
-foreach ($rel in @(".claude-plugin/marketplace.json", "claude-plugins/me-dev/.claude-plugin/plugin.json", "claude-plugins/me-spec/.claude-plugin/plugin.json", "codex-plugins/me-dev/.codex-plugin/plugin.json", "codex-plugins/me-spec/.codex-plugin/plugin.json")) {
+foreach ($rel in @(".claude-plugin/marketplace.json", ".agents/plugins/marketplace.json", "claude-plugins/me-dev/.claude-plugin/plugin.json", "claude-plugins/me-spec/.claude-plugin/plugin.json", "codex-plugins/me-dev/.codex-plugin/plugin.json", "codex-plugins/me-spec/.codex-plugin/plugin.json")) {
     $p = Join-Path $root $rel
     if (Test-Path $p) {
         try { Get-Content -Raw -Path $p | ConvertFrom-Json -ErrorAction Stop | Out-Null }
@@ -77,7 +78,18 @@ if (Test-Path $mk) {
     $mkMissing += ".claude-plugin/marketplace.json"
 }
 
-$failures = $missing.Count + $refMissing.Count + $jsonBad.Count + $mkMissing.Count
+$codexMkMissing = @()
+$codexMk = Join-Path $root ".agents/plugins/marketplace.json"
+if (Test-Path $codexMk) {
+    $codexMkTxt = Get-Content -Raw -Path $codexMk
+    foreach ($src in @("codex-plugins/me-dev", "codex-plugins/me-spec")) {
+        if ($codexMkTxt -notmatch [regex]::Escape($src)) { $codexMkMissing += $src }
+    }
+} else {
+    $codexMkMissing += ".agents/plugins/marketplace.json"
+}
+
+$failures = $missing.Count + $refMissing.Count + $jsonBad.Count + $mkMissing.Count + $codexMkMissing.Count
 $boardCheckRaw = & powershell.exe -NoProfile -File (Join-Path $root "scripts/me-spec-board-check.ps1") 2>$null | Out-String
 $boardCheckExit = $LASTEXITCODE
 $boardCheck = $null
@@ -159,6 +171,7 @@ $result = [ordered]@{
     adapters_not_referencing_canon = @($refMissing)
     unparseable_json               = @($jsonBad)
     marketplace_missing_sources    = @($mkMissing)
+    codex_marketplace_missing_sources = @($codexMkMissing)
     codex_registration_missing     = @($refMissing | Where-Object { $_ -like ".codex/*" })
     spec_board_check               = $boardCheck
     schema_docs_drift              = $schemaDrift
