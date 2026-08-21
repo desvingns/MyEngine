@@ -54,17 +54,20 @@ feature commit has been pushed to `main`. Re-run the board check and queue resol
 handoff: an empty or ambiguous queue never creates an empty task.
 
 In Codex, additionally confirm `git branch --show-current` returns `main`. Do not switch branches.
-Fork the current task with `fork_thread` and `environment: { type: "same-directory" }`, then send
-the fork exactly this prompt:
+Resolve the current saved project with `list_projects`, verify that it is this repository, and
+create a new Codex task with `create_thread` using
+`target: { type: "project", projectId, environment: { type: "local" } }`. Omit
+`startingState`, `model`, and `thinking`, then send the new task exactly this prompt:
 
 ```text
 Run $me --feature --next --chain now. Work directly in the current main checkout; do not create a worktree or Git branch. If no active or runnable backlog card remains, report the drained board and stop.
 ```
 
-The fork retains the current task's model and reasoning effort and uses the same local checkout; it
-must not create a Git worktree or branch. If forking or sending the prompt fails, report that once
-and do not retry by opening another task. Claude has no equivalent task-fork operation: after a
-successful close it reports the same command for the user to run manually and stops.
+The new task starts from the project's default `main` checkout with an empty conversation. It must
+not inherit any turns or parent context and must not create a Git worktree or branch. If project
+resolution, task creation, or sending the prompt fails, report that once and do not retry by opening
+another task. Claude has no equivalent task-creation operation: after a successful close it reports
+the same command for the user to run manually and stops.
 
 ## Canonical Flow
 

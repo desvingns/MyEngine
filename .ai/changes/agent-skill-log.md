@@ -18,6 +18,19 @@ rules. Project docs can change without an entry here unless they alter agent beh
 - Verification: adapter parity, board check, full selfcheck, Codex manifest validation, and
   `git diff --check` passed.
 
+## 2026-08-21 - me-dev fresh-task chain
+
+- Owner: Codex.
+- Change type: canonical workflow, adapter, and plugin release.
+- Changed: `.agents/plugins/marketplace.json`, `docs/agentic/PIPELINE.md`, Claude/Codex me-dev
+  skills, chain parity checks, and current close-out state docs.
+- Summary: replace Codex `fork_thread` hand-off with `list_projects` plus `create_thread` in the
+  saved local project. Each successor SPEC now starts in a new task with an empty conversation,
+  no inherited turns or parent context, no worktree, and no Git branch.
+- Versions: Claude `me-dev` `0.2.3 -> 0.2.4`; Codex `me-dev` `0.1.3 -> 0.1.4`; marketplace metadata
+  `0.1.1 -> 0.1.2`.
+- Verification: adapter parity and the canonical pipeline checks pass after regeneration.
+
 ## 2026-08-09 - PROC-010 Pipeline Cost Telemetry
 
 - Owner: Codex / `me-docs`

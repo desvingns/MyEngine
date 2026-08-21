@@ -35,13 +35,16 @@ drains normally; multiple active cards, a blocked card, or an ambiguous order is
 
 After a chained feature has moved to `done`, passed all applicable gates, recorded telemetry, and
 pushed its scoped commit, re-run the board check. If a runnable successor remains, confirm
-`git branch --show-current` is `main`, then call `fork_thread` with
-`environment: { type: "same-directory" }`. Send the fork exactly:
+`git branch --show-current` is `main`, resolve the current saved project with `list_projects`, and
+call `create_thread` with the current project id and
+`target: { type: "project", projectId, environment: { type: "local" } }`. Omit
+`startingState`, `model`, and `thinking`. Send the new task exactly:
 
 ```text
 Run $me --feature --next --chain now. Work directly in the current main checkout; do not create a worktree or Git branch. If no active or runnable backlog card remains, report the drained board and stop.
 ```
 
-The fork keeps the selected model and reasoning effort while staying in the same local checkout;
-never create or switch to a Git worktree/branch. If forking or sending the prompt fails, report it
-once and do not create another task.
+The new task starts from the project's default `main` checkout with an empty conversation; it does
+not inherit the current task's turns or parent context. Never create or switch to a Git
+worktree/branch. If project resolution, task creation, or sending the prompt fails, report it once
+and do not create another task.

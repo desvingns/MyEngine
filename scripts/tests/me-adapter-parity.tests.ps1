@@ -57,10 +57,10 @@ try {
     if ($specResult.verdict -ne "pass") { $failed += "me-spec-mode-parity" }
 
     $chainChecks = @(
-        @{ name = "pipeline-chain-canon"; path = "docs/agentic/PIPELINE.md"; needles = @("--feature --next --chain", "active/", "ENGINE_ROADMAP.md", "fork_thread", "same-directory") },
+        @{ name = "pipeline-chain-canon"; path = "docs/agentic/PIPELINE.md"; needles = @("--feature --next --chain", "active/", "ENGINE_ROADMAP.md", "create_thread", 'environment: { type: "local" }', "empty conversation") },
         @{ name = "spec-board-chain-order"; path = "docs/agentic/SPEC_BOARD.md"; needles = @("Queue Resolution", "ENGINE_ROADMAP.md", "needs_human") },
-        @{ name = "claude-chain-handoff"; path = "claude-plugins/me-dev/skills/me/SKILL.md"; needles = @("--feature --next --chain", "fork_thread", "same-directory", "manual next command") },
-        @{ name = "codex-chain-handoff"; path = "codex-plugins/me-dev/skills/me-dev/SKILL.md"; needles = @("--feature --next --chain", "fork_thread", "same-directory", "git branch --show-current") }
+        @{ name = "claude-chain-handoff"; path = "claude-plugins/me-dev/skills/me/SKILL.md"; needles = @("--feature --next --chain", "create_thread", 'environment: { type: "local" }', "manual next command") },
+        @{ name = "codex-chain-handoff"; path = "codex-plugins/me-dev/skills/me-dev/SKILL.md"; needles = @("--feature --next --chain", "create_thread", 'environment: { type: "local" }', "empty conversation", "git branch --show-current") }
     )
     foreach ($check in $chainChecks) {
         $text = Read-RepoText $check.path

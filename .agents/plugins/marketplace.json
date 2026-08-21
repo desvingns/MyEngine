@@ -1,0 +1,32 @@
+{
+  "name": "myengine",
+  "interface": {
+    "displayName": "MyEngine"
+  },
+  "plugins": [
+    {
+      "name": "me-dev",
+      "source": {
+        "source": "local",
+        "path": "./codex-plugins/me-dev"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Productivity"
+    },
+    {
+      "name": "me-spec",
+      "source": {
+        "source": "local",
+        "path": "./codex-plugins/me-spec"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Productivity"
+    }
+  ]
+}

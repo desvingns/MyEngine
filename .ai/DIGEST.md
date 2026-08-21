@@ -1,6 +1,6 @@
 # MyEngine Intake Digest
 
-Regenerated at close-out. Last updated: 2026-08-21 (me-dev chain continuation).
+Regenerated at close-out. Last updated: 2026-08-21 (me-dev fresh-task chain).
 
 ## Current next action
 
@@ -12,10 +12,10 @@ complete. Review the remaining accepted backlog; no pending implementation card 
 - Added the exact `/me --feature --next --chain` selector to canonical process/board documents and
   both adapters. It resumes one active card first, otherwise selects the first runnable backlog
   card in Engine Roadmap table order; ambiguity remains `needs_human`.
-- After the card is fully closed and pushed on `main`, Codex forks one same-directory local task
-  with the same model/reasoning effort and sends it the identical selector. No runnable card means
-  no fork. Claude prints the manual continuation command.
-- Claude/Codex me-dev versions are 0.2.3/0.1.3; marketplace metadata is 0.1.1. Adapter parity,
+- After the card is fully closed and pushed on `main`, Codex creates one local task with an empty
+  conversation and no inherited context, then sends it the identical selector. No runnable card
+  means no new task. Claude prints the manual continuation command.
+- Claude/Codex me-dev versions are 0.2.4/0.1.4; marketplace metadata is 0.1.2. Adapter parity,
   board check, selfcheck, and Codex manifest validation passed.
 
 ## PROC-015 close-out (2026-08-10)

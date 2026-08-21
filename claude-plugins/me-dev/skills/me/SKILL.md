@@ -105,13 +105,16 @@ emits one compact JSON object — capture it, do not re-run noisily.
   5th event), run `--reflect` now or state explicitly why it is deferred.
 - For the exact `--feature --next --chain` selector, only after the card is `done`, all applicable
   gates and telemetry are complete, and the scoped feature commit is pushed to `main`, re-check the
-  board. In Codex, when `fork_thread` is available, confirm `git branch --show-current` is `main`,
-  fork with `environment: { type: "same-directory" }`, and send the fork exactly:
+  board. In Codex, when task creation is available, confirm `git branch --show-current` is `main`,
+  resolve the current saved project with `list_projects`, and create a new task with
+  `create_thread` using `target: { type: "project", projectId, environment: { type: "local" } }`.
+  Omit `startingState`, `model`, and `thinking`; send the new task exactly:
 
   ```text
   Run $me --feature --next --chain now. Work directly in the current main checkout; do not create a worktree or Git branch. If no active or runnable backlog card remains, report the drained board and stop.
   ```
 
-  The fork inherits the selected model and reasoning effort. If task forking is unavailable (the
-  normal Claude case), report `$me --feature --next --chain` as the manual next command and stop.
+  The new task starts from the project's default `main` checkout with an empty conversation and
+  inherits no turns or parent context. If task creation is unavailable (the normal Claude case),
+  report `$me --feature --next --chain` as the manual next command and stop.
   Never emulate continuation by spawning another implementation agent in the current session.

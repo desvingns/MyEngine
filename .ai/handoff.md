@@ -1,6 +1,6 @@
 # MyEngine Handoff
 
-Last updated: 2026-08-21 (me-dev chain continuation)
+Last updated: 2026-08-21 (me-dev fresh-task chain)
 Owner: Codex / me-dev:me
 
 ## me-dev chain continuation (2026-08-21)
@@ -11,16 +11,17 @@ Owner: Codex / me-dev:me
   adapters; added deterministic static chain checks to adapter parity coverage.
 - The queue is active-first; otherwise it uses the first runnable backlog card in Engine Roadmap
   table order. A drained/ambiguous/blocked board never starts a successor.
-- Codex now forks a same-directory local task after a completed, verified, committed, and pushed
-  feature on `main`, preserving model/reasoning effort and passing the identical chain command.
-- Bumped me-dev plugin versions to Claude `0.2.3`, Codex `0.1.3`, and marketplace metadata to
-  `0.1.1`.
+- Codex now creates a fresh local task through `create_thread` after a completed, verified,
+  committed, and pushed feature on `main`; every successor starts with an empty conversation and
+  no inherited parent context, then receives the identical chain command.
+- Bumped me-dev plugin versions to Claude `0.2.4`, Codex `0.1.4`, and marketplace metadata to
+  `0.1.2`.
 
 ### DECISIONS
 
 - `--chain` is legal only as the exact three-flag selector. It is a continuation mechanism, not a
   gate bypass or permission to create/reorder cards.
-- The child is never created when the board is drained; task-fork failure is reported once without
+- The child is never created when the board is drained; task-creation failure is reported once without
   retry. Claude uses the manual command fallback.
 
 ### NEXT
