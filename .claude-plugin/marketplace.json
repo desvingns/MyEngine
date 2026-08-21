@@ -6,7 +6,7 @@
   },
   "metadata": {
     "description": "Ship MyEngine with ready-made Claude Code workflows: the /me dev pipeline and /me-spec game/engine spec bundles, backed by the canonical docs/agentic contracts. Thin adapters over the single source of truth in docs/agentic.",
-    "version": "0.1.0"
+    "version": "0.1.1"
   },
   "plugins": [
     {

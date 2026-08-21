@@ -63,6 +63,18 @@ single-game gaps of the same severity. The roadmap is updated at two moments:
   new demanding game;
 - by `/me` close-out, when a gap's card status changes (backlog -> active -> done).
 
+## Queue Resolution
+
+`/me --feature --next` uses this board deterministically. Exactly one valid card in `active/` is
+resumed before any backlog work. More than one active card is a `needs_human` board conflict.
+When `active/` is empty, the first row in `ENGINE_ROADMAP.md` whose matching card remains in
+`backlog/` with `status: backlog` is next, provided `blocked_by` and every explicit `start_gates`
+condition are satisfied. If the table does not identify an eligible card, the pipeline stops for a
+human decision; it never guesses from filenames or creates a new card.
+
+`/me --feature --next --chain` re-evaluates these same rules only after its completed card is
+`done`. No remaining eligible card is a normal drained board, not a reason to open an empty task.
+
 ## Reference Evidence Bridge
 
 `/me-spec --reference-game` accepts only a sanitized evidence root containing:

@@ -3,6 +3,21 @@
 Append-only log for changes to agent prompts, skills, adapters, workflow contracts, and pipeline
 rules. Project docs can change without an entry here unless they alter agent behavior.
 
+## 2026-08-21 - me-dev chained backlog continuation
+
+- Owner: Codex / `me-dev:me`
+- Change type: canonical workflow, adapter, and marketplace release.
+- Changed: `docs/agentic/PIPELINE.md`, `SPEC_BOARD.md`, Claude/Codex me-dev skills and manifests,
+  Claude marketplace metadata, adapter parity contract, and close-out documentation.
+- Summary: Added the exact `/me --feature --next --chain` mode. It resumes a sole active card;
+  otherwise takes the first runnable backlog card in `ENGINE_ROADMAP.md` order. After a verified
+  `done` transition plus scoped push on `main`, Codex forks one same-directory task with the same
+  model/reasoning effort and sends the chain command. Empty/ambiguous/blocked boards do not fork.
+- Versions: Claude `me-dev` `0.2.2 -> 0.2.3`; Codex `me-dev` `0.1.2 -> 0.1.3`; marketplace metadata
+  `0.1.0 -> 0.1.1`.
+- Verification: adapter parity, board check, full selfcheck, Codex manifest validation, and
+  `git diff --check` passed.
+
 ## 2026-08-09 - PROC-010 Pipeline Cost Telemetry
 
 - Owner: Codex / `me-docs`

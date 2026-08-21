@@ -69,6 +69,7 @@
 
 | Status | Feature | Spec | Result | Date |
 |---|---|---|---|---|
+| [x] | me-dev chained backlog continuation | — | Exact `--feature --next --chain`: active-first queue, Engine Roadmap ordering, and one same-directory Codex successor task after a verified/pushed close | 2026-08-21 |
 | [x] | PROC-015 Reference-game evidence bridge | [PROC-015](../.claude/specs/done/PROC-015-reference-game-evidence-bridge.md) | Sanitized state-graph.v1/mechanic-claims import, clone-strict Gate 1, signature dedup, public-safety, traceability, and report-only backlog bridge; MySD source sync completed | 2026-08-10 |
 | [x] | ENG-036 Reusable Android-free runtime/session API | [ENG-036](../.claude/specs/done/ENG-036-reusable-runtime-session.md) | Added the Android-free `engine-runtime` descriptor/session/factory contracts and deterministic queue dispatch; sandbox preserves save v22 and replay compatibility | 2026-08-09 |
 | [x] | PROC-010 Pipeline cost telemetry | [PROC-010](../.claude/specs/done/PROC-010-cost-telemetry.md) | Optional explicit/orchestrator/chars-per-4 token estimates, deterministic retro aggregation by workflow/agent, and human-gated cost proposal | 2026-08-09 |

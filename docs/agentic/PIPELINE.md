@@ -1,7 +1,7 @@
 # MyEngine Agentic Pipeline
 
 Status: Phase 04 accepted; PROC-2026-07-04 improvements accepted  
-Last updated: 2026-07-04
+Last updated: 2026-08-21
 
 ## Purpose
 
@@ -16,6 +16,7 @@ folders are thin adapters that point back to the canonical docs.
 | `/me --discuss` | Explore options and risks without editing files. | None |
 | `/me --spec` | Turn an approved idea into a small implementation spec. | Human approval before code |
 | `/me --feature --next` | Pick the next planned feature and run developer -> tester -> runner -> verifier -> docs. | Human approval if scope changes |
+| `/me --feature --next --chain` | Run the same backlog feature flow, then (Codex only) continue with one fresh local task when another runnable card remains. | Human approval if scope changes |
 | `/me --bugfix` | Reproduce, fix, test, and document a bug. | Human approval if behavior is ambiguous |
 | `/me --balance` | Run scenario/balance reports and propose content-only changes. | Human approval before content changes |
 | `/me --perf` | Run benchmark/smoke checks and propose scoped optimizations. | Human approval before API changes |
@@ -27,6 +28,43 @@ folders are thin adapters that point back to the canonical docs.
 | `/me --upgrade` | Review agent model assignments against newest Claude models; propose roster updates. | Human approval before edits |
 | `/me-spec --greenfield-game` | Create a traceable game spec bundle from an original idea. | Two gates: inventory, final acceptance |
 | `/me-spec --engine-feature` | Create a traceable engine feature spec and gap analysis. | Human approval before backlog bridge |
+
+## Feature queue and `--chain`
+
+`--chain` is valid only in the exact selector `/me --feature --next --chain`. Reject a
+standalone `--chain`, `--feature --chain`, and every combination with another mode before touching
+the board. It is a conveyor for already-approved cards, never authorization to create a card,
+skip a gate, or guess an order.
+
+First run `powershell.exe -NoProfile -File scripts\me-spec-board-check.ps1`. Resolve the feature
+queue as follows:
+
+1. A single valid card in `.claude/specs/active/` always wins: resume it. Two or more active cards
+   are `needs_human`; do not choose between them.
+2. With no active card, read the `ENGINE_ROADMAP.md` capability table from top to bottom and choose
+   the first matching card still in `.claude/specs/backlog/` with `status: backlog`. The card must
+   have no unsatisfied `blocked_by` or `start_gates` condition. This table order is the authoritative
+   `--next` order; never substitute filename order or an inferred priority.
+3. If no runnable card remains, report a normally drained board and stop. If an eligible card cannot
+   be determined from the board or its gates, report `needs_human` and stop.
+
+For the exact `--chain` selector, continue only after the current card has passed every applicable
+gate, moved to `done`, synchronized its roadmap/source status, recorded telemetry, and the scoped
+feature commit has been pushed to `main`. Re-run the board check and queue resolution before a
+handoff: an empty or ambiguous queue never creates an empty task.
+
+In Codex, additionally confirm `git branch --show-current` returns `main`. Do not switch branches.
+Fork the current task with `fork_thread` and `environment: { type: "same-directory" }`, then send
+the fork exactly this prompt:
+
+```text
+Run $me --feature --next --chain now. Work directly in the current main checkout; do not create a worktree or Git branch. If no active or runnable backlog card remains, report the drained board and stop.
+```
+
+The fork retains the current task's model and reasoning effort and uses the same local checkout; it
+must not create a Git worktree or branch. If forking or sending the prompt fails, report that once
+and do not retry by opening another task. Claude has no equivalent task-fork operation: after a
+successful close it reports the same command for the user to run manually and stops.
 
 ## Canonical Flow
 

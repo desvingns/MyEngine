@@ -1,7 +1,46 @@
 # MyEngine Handoff
 
-Last updated: 2026-08-10 (PROC-015 close-out)
+Last updated: 2026-08-21 (me-dev chain continuation)
 Owner: Codex / me-dev:me
+
+## me-dev chain continuation (2026-08-21)
+
+### DONE
+
+- Added `/me --feature --next --chain` to the canonical pipeline/spec-board contracts and both
+  adapters; added deterministic static chain checks to adapter parity coverage.
+- The queue is active-first; otherwise it uses the first runnable backlog card in Engine Roadmap
+  table order. A drained/ambiguous/blocked board never starts a successor.
+- Codex now forks a same-directory local task after a completed, verified, committed, and pushed
+  feature on `main`, preserving model/reasoning effort and passing the identical chain command.
+- Bumped me-dev plugin versions to Claude `0.2.3`, Codex `0.1.3`, and marketplace metadata to
+  `0.1.1`.
+
+### DECISIONS
+
+- `--chain` is legal only as the exact three-flag selector. It is a continuation mechanism, not a
+  gate bypass or permission to create/reorder cards.
+- The child is never created when the board is drained; task-fork failure is reported once without
+  retry. Claude uses the manual command fallback.
+
+### NEXT
+
+- Current board is drained (`active=0`, `backlog=0`, `done=69`). Add/approve a card before using
+  the chain for real work.
+
+### BLOCKERS
+
+- None. Preserved the unrelated user modification `.ai/retro/retro-2026-08-09.md`; it is not
+  staged for this pipeline-only change.
+- `graphify update .` refreshed generated graph files from that dirty baseline, including the
+  user retro file. The 334 graph-only generated diffs are intentionally unstaged and excluded from
+  this release; refresh/commit them later as a dedicated graph snapshot after the baseline is clean.
+
+### VERIFICATION
+
+- `scripts/tests/me-adapter-parity.tests.ps1`, `me-spec-board-check.ps1`, and
+  `me-selfcheck.ps1`: pass.
+- Codex manifest validation and `git diff --check`: pass.
 
 ## PROC-015 close-out (2026-08-10)
 

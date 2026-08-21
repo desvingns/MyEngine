@@ -7,6 +7,7 @@ description: >-
   the next feature, fix a bug, run balance/perf/content/save-compat gates, reflect
   on telemetry, or propose a process improvement. Enforces the JSON agent contracts
   and human gates defined in docs/agentic. Modes: --discuss, --spec, --feature --next,
+  --feature --next --chain,
   --bugfix, --balance, --perf, --content-validate, --save-compat, --reflect, --improve
   [--drain], --upgrade.
 allowed-tools: Read, Grep, Glob, Edit, Write, Bash, Task
@@ -37,6 +38,7 @@ reuse), delegate to `me-scout` (one focus per call) instead of exploring inline.
 | `--discuss` | Explore options/risks, no file edits | none |
 | `--spec` | Approved idea -> small implementation spec | human before code |
 | `--feature --next` | Next planned feature: developer -> tester -> runner -> verifier -> docs | human if scope changes |
+| `--feature --next --chain` | Same flow; after a successful close, continue only as the canonical queue permits | human if scope changes |
 | `--bugfix` | Reproduce -> fix -> test -> document | human if behavior ambiguous |
 | `--balance` | Scenario/balance reports, content-only proposals | human before content |
 | `--perf` | Benchmark/smoke -> scoped optimization | human before API changes |
@@ -48,6 +50,10 @@ reuse), delegate to `me-scout` (one focus per call) instead of exploring inline.
 | `--upgrade` | Review agent model assignments vs newest Claude models | human before edits |
 
 With no args: summarize the `STATE.md` "Next Exact Action" and offer `--feature --next`.
+
+`--chain` is legal only as the exact `--feature --next --chain` selector. Use the canonical
+active-first queue resolution in `docs/agentic/PIPELINE.md` and `SPEC_BOARD.md`; do not infer an
+order from filenames, create a card, or continue on a blocked/ambiguous board.
 
 ## 3. Delegate to roster subagents (writer never reviews its own work)
 
@@ -97,3 +103,15 @@ emits one compact JSON object — capture it, do not re-run noisily.
   `MalformedJsonCount`, `GateFailures`, `AttributedAgent`, `FailureCluster`.
 - If the record-run output reports `reflect_required: true` (failed run or every
   5th event), run `--reflect` now or state explicitly why it is deferred.
+- For the exact `--feature --next --chain` selector, only after the card is `done`, all applicable
+  gates and telemetry are complete, and the scoped feature commit is pushed to `main`, re-check the
+  board. In Codex, when `fork_thread` is available, confirm `git branch --show-current` is `main`,
+  fork with `environment: { type: "same-directory" }`, and send the fork exactly:
+
+  ```text
+  Run $me --feature --next --chain now. Work directly in the current main checkout; do not create a worktree or Git branch. If no active or runnable backlog card remains, report the drained board and stop.
+  ```
+
+  The fork inherits the selected model and reasoning effort. If task forking is unavailable (the
+  normal Claude case), report `$me --feature --next --chain` as the manual next command and stop.
+  Never emulate continuation by spawning another implementation agent in the current session.

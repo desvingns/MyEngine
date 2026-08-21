@@ -37,7 +37,7 @@ $failed = @()
 $checks = @()
 try {
     $meModes = @(
-        "--discuss", "--spec", "--feature --next", "--bugfix", "--balance", "--perf",
+        "--discuss", "--spec", "--feature --next", "--feature --next --chain", "--bugfix", "--balance", "--perf",
         "--content-validate", "--save-compat", "--reflect", "--improve",
         "--improve --drain", "--upgrade"
     )
@@ -55,6 +55,20 @@ try {
     $checks += [ordered]@{ name = "me-spec-mode-parity"; verdict = $specResult.verdict; details = $specResult }
     if ($meResult.verdict -ne "pass") { $failed += "me-mode-parity" }
     if ($specResult.verdict -ne "pass") { $failed += "me-spec-mode-parity" }
+
+    $chainChecks = @(
+        @{ name = "pipeline-chain-canon"; path = "docs/agentic/PIPELINE.md"; needles = @("--feature --next --chain", "active/", "ENGINE_ROADMAP.md", "fork_thread", "same-directory") },
+        @{ name = "spec-board-chain-order"; path = "docs/agentic/SPEC_BOARD.md"; needles = @("Queue Resolution", "ENGINE_ROADMAP.md", "needs_human") },
+        @{ name = "claude-chain-handoff"; path = "claude-plugins/me-dev/skills/me/SKILL.md"; needles = @("--feature --next --chain", "fork_thread", "same-directory", "manual next command") },
+        @{ name = "codex-chain-handoff"; path = "codex-plugins/me-dev/skills/me-dev/SKILL.md"; needles = @("--feature --next --chain", "fork_thread", "same-directory", "git branch --show-current") }
+    )
+    foreach ($check in $chainChecks) {
+        $text = Read-RepoText $check.path
+        $missing = @($check.needles | Where-Object { $text -notmatch [regex]::Escape($_) })
+        $ok = $missing.Count -eq 0
+        $checks += [ordered]@{ name = $check.name; verdict = if ($ok) { "pass" } else { "fail" }; missing = @($missing) }
+        if (-not $ok) { $failed += $check.name }
+    }
 
     $canonicalChecks = @(
         @{ name = "claude-me-canon"; path = "claude-plugins/me-dev/skills/me/SKILL.md"; needle = "docs/agentic/PIPELINE.md" },

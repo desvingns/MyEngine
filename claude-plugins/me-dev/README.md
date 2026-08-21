@@ -18,7 +18,8 @@ in `docs/agentic/PIPELINE.md` and `docs/agentic/AGENT_CONTRACTS.md`.
     /plugin marketplace add .
     /plugin install me-dev@myengine
 
-Then run `/me --feature --next` (see `skills/me/SKILL.md` for all modes).
+Then run `/me --feature --next` (or `/me --feature --next --chain` in Codex to continue a
+runnable backlog locally after each successful feature; see `skills/me/SKILL.md` for all modes).
 
 ## Keeping the adapter honest
 

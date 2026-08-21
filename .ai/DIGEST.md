@@ -1,11 +1,22 @@
 # MyEngine Intake Digest
 
-Regenerated at close-out. Last updated: 2026-08-10 (PROC-015 close-out).
+Regenerated at close-out. Last updated: 2026-08-21 (me-dev chain continuation).
 
 ## Current next action
 
 ENG-022, ENG-036, PROC-008, PROC-009, PROC-010, PROC-011, PROC-012, PROC-014, and PROC-015 are
 complete. Review the remaining accepted backlog; no pending implementation card remains.
+
+## me-dev chain continuation (2026-08-21)
+
+- Added the exact `/me --feature --next --chain` selector to canonical process/board documents and
+  both adapters. It resumes one active card first, otherwise selects the first runnable backlog
+  card in Engine Roadmap table order; ambiguity remains `needs_human`.
+- After the card is fully closed and pushed on `main`, Codex forks one same-directory local task
+  with the same model/reasoning effort and sends it the identical selector. No runnable card means
+  no fork. Claude prints the manual continuation command.
+- Claude/Codex me-dev versions are 0.2.3/0.1.3; marketplace metadata is 0.1.1. Adapter parity,
+  board check, selfcheck, and Codex manifest validation passed.
 
 ## PROC-015 close-out (2026-08-10)
 
