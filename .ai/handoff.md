@@ -40,7 +40,8 @@ Owner: Codex / me-dev:me
 
 - `scripts/tests/me-adapter-parity.tests.ps1`, `me-spec-board-check.ps1`, and
   `me-selfcheck.ps1`: pass.
-- Codex manifest validation and `git diff --check`: pass.
+- Codex manifest validation, full `me-pre-push.ps1` with Android Studio JBR, and `git diff --check`:
+  pass.
 
 ## PROC-015 close-out (2026-08-10)
 
