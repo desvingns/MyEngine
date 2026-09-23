@@ -112,7 +112,7 @@ class SandboxStockpileDesignationTest {
         runtime.submit(DesignateHarvestNodeCommand(CommandId(3), Tick(1), "node-1", "bolt", TileCoordinate(5, 5)))
         runtime.step()
 
-        val snapshot = runtime.snapshot()
+        val snapshot = runtime.snapshot().value
         val hashBefore = runtime.state.stableHash()
         assertEquals(listOf("z-1", "z-2", "node-1"), snapshot.zones.map { it.id })
         assertEquals(listOf(TilePosition(5, 5)), snapshot.zones.single { it.id == "node-1" }.tiles)
@@ -134,7 +134,7 @@ class SandboxStockpileDesignationTest {
         runtime.submit(DefineStockpileZoneCommand(CommandId(4), Tick(2), "z-3", listOf(TileCoordinate(9, 5))))
         runtime.step()
         assertEquals(listOf("z-1", "z-2", "node-1"), snapshot.zones.map { it.id })
-        assertNotEquals(snapshot, runtime.snapshot())
+        assertNotEquals(snapshot, runtime.snapshot().value)
     }
 
     @Test

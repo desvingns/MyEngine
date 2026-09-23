@@ -10,6 +10,7 @@ import android.view.SurfaceHolder
 import android.view.SurfaceView
 import dev.myengine.core.CommandId
 import dev.myengine.core.EngineCommand
+import dev.myengine.core.RunStatus
 import dev.myengine.render.Camera
 import dev.myengine.render.EngineSnapshot
 import dev.myengine.render.InputAdapter
@@ -273,6 +274,12 @@ class SandboxRenderView(
     private fun dispatchInput(event: PlatformInputEvent) {
         val current = inputState ?: return
         val snapshot = latestSnapshot() ?: return
+        // Terminal runs and a restored maximum tick accept no simulation input. Stop before
+        // allocating a command ID or calling Tick.next(), which would otherwise overflow at MAX.
+        val scheduledTick = nextInputTickOrNull(
+            currentTick = snapshot.debug.tick,
+            terminal = snapshot.runStatus != RunStatus.ACTIVE,
+        ) ?: return
         val commandId = if (
             event is PlatformInputEvent.Upgrade ||
             (event is PlatformInputEvent.Tap && uiState.selectedTowerId != null)
@@ -280,7 +287,7 @@ class SandboxRenderView(
         val result = inputAdapter.handle(
             event = event,
             state = current,
-            scheduledTick = snapshot.debug.tick.next(),
+            scheduledTick = scheduledTick,
             uiState = uiState,
             commandId = commandId,
         )

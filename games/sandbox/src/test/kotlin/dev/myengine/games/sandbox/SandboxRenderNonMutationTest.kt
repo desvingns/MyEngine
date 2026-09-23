@@ -28,7 +28,7 @@ class SandboxRenderNonMutationTest {
         val runtime = SandboxGame.createRuntime(registry)
         runtime.step(10)
 
-        val snapshot = runtime.snapshot()
+        val snapshot = runtime.snapshot().value
         val hashBefore = runtime.state.stableHash()
 
         val camera = Camera(
@@ -54,7 +54,7 @@ class SandboxRenderNonMutationTest {
         runtime.submit(BuildTowerCommand(CommandId(1), Tick(1), "pulse", TileCoordinate(30, 32)))
         runtime.step(10)
 
-        val snapshot = runtime.snapshot()
+        val snapshot = runtime.snapshot().value
         val frame = PlaceholderRenderSurface().project(
             snapshot,
             Camera(
@@ -90,7 +90,7 @@ class SandboxRenderNonMutationTest {
         runtime.submit(BuildTowerCommand(CommandId(1), Tick(1), "pulse", TileCoordinate(2, 2)))
         runtime.step(10)
 
-        val snapshotAtShot = runtime.snapshot()
+        val snapshotAtShot = runtime.snapshot().value
         val towerId = snapshotAtShot.entities.single { it.type == "tower:pulse" }.id
         val shot = snapshotAtShot.combatEvents.shots.single()
         val hit = snapshotAtShot.combatEvents.hits.single()
@@ -106,7 +106,7 @@ class SandboxRenderNonMutationTest {
         }
 
         runtime.step(1)
-        assertTrue(runtime.snapshot().combatEvents.shots.isEmpty(), "events must be replaced for the next tick")
+        assertTrue(runtime.snapshot().value.combatEvents.shots.isEmpty(), "events must be replaced for the next tick")
         assertEquals(listOf(shot), snapshotAtShot.combatEvents.shots, "an earlier snapshot must stay unchanged")
     }
 }

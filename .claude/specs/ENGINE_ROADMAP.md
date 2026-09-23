@@ -7,14 +7,14 @@ two or more games outranks single-game gaps of the same severity.
 Updated by: the `/me-spec` backlog bridge (new gaps / new demand) and `/me`
 close-out (status changes).
 
-Last updated: 2026-08-10 (PROC-015 close-out)
+Last updated: 2026-09-24 (ENG-036 MySD-accepted runtime merged into main)
 
 ## Capabilities
 
 | Capability | Cards | Demanded by | Demand | Status |
 |---|---|---|---:|---|
 | Cross-repo composite build + pinned engine revision | PROC-002 / ADR-0004 | process, mysd | - | **done** (2026-07-18; consumer lock pins a full accepted SHA, CI checks out the same commit, Stable/Experimental/Internal usage is explicit) |
-| Reusable Android-free runtime/session API | ENG-036 | mysd | 1 | **done** (2026-08-09; `engine-runtime` owns generic descriptor/session queue dispatch, sandbox preserves replay hashes and v1-v7+ save compatibility) |
+| Reusable Android-free runtime/session API | ENG-036 | mysd | 1 | **done** (initial main variant 2026-08-09; superseded 2026-09-24 by the MySD-accepted `DeterministicGameSession` API merged into main with all Phase 14+ sandbox systems; merged suite, replay goldens, save-compat and content gates pass) |
 | Defense kill-reward deposit into player resources | SG-002, MTD-001 | signal-garden, mytd | 2 | **done** (SG-002 implemented 2026-07-04; MTD-001 closed 2026-07-05 as duplicate; MyTD gold maps to content-defined `rewardResource`) |
 | Render surface + palette (snapshot -> RenderFrame) | SG-003 (+follow-up), MTD-005 | signal-garden, mytd | 2 | **done** (MTD-005 accepted 2026-07-16: Android Canvas consumes immutable RenderFrame, MotionEvent uses InputAdapter, scoped JVM/build/replay gates pass; device smoke and performance profiling remain manual-pending) |
 | Content pack authoring/validation (game pack) | SG-001 | signal-garden | 1 | done (2026-07-04) |

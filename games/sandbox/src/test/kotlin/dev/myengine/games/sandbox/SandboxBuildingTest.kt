@@ -93,7 +93,7 @@ class SandboxBuildingTest {
         runtime.step()
         val before = runtime.state.stableHash()
 
-        val snapshot = runtime.snapshot()
+        val snapshot = runtime.snapshot().value
         val wall = snapshot.entities.single { it.type == "building:wall" }
 
         assertEquals(20, wall.health)

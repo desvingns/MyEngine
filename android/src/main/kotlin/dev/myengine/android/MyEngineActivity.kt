@@ -42,7 +42,7 @@ class MyEngineActivity : Activity() {
         }
         started.onSuccess {
             session = it
-            latestSnapshot = it.runtime.snapshot()
+            latestSnapshot = it.snapshot()
             soundConsumer = SoundPoolPresentationConsumer(
                 assets = assets,
                 soundRefs = it.runtime.state.registry.sounds,
@@ -138,14 +138,14 @@ class MyEngineActivity : Activity() {
                 val ticks = fixedTickLoop.advance(frameTimeNanos)
                 repeat(ticks) {
                     activeSession.step()
-                    latestSnapshot = activeSession.runtime.snapshot()
+                    latestSnapshot = activeSession.snapshot()
                     latestSnapshot?.let { snapshot -> soundConsumer?.consume(snapshot) }
                 }
-                if (ticks == 0) latestSnapshot = activeSession.runtime.snapshot()
+                if (ticks == 0) latestSnapshot = activeSession.snapshot()
             } else {
                 // Keep the canonical visual-smoke frame at tick 0 while continuously
                 // republishing it until SurfaceView composition is stable.
-                latestSnapshot = activeSession.runtime.snapshot()
+                latestSnapshot = activeSession.snapshot()
             }
             renderView?.renderLatestFrame()
         }

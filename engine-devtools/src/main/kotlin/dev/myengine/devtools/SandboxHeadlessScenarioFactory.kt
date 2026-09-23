@@ -7,6 +7,7 @@ import dev.myengine.core.command.TileCoordinate
 import dev.myengine.games.sandbox.SandboxGame
 import dev.myengine.games.sandbox.SandboxRuntime
 import dev.myengine.render.AsciiRenderer
+import dev.myengine.runtime.SessionSubmitResult
 import java.nio.file.Path
 
 /** Default adapter for the checked-in sandbox pack; other games register their own factory. */
@@ -64,7 +65,7 @@ private class SandboxHeadlessScenario(
                     towerId = fields[2],
                     position = TileCoordinate(x, y),
                 ),
-            ),
+            ) is SessionSubmitResult.Accepted,
         ) { "Sandbox scenario rejected command '$command'." }
     }
 
@@ -72,7 +73,7 @@ private class SandboxHeadlessScenario(
         runtime.step(ticks)
     }
 
-    override fun asciiFrame(): String = AsciiRenderer().render(runtime.snapshot())
+    override fun asciiFrame(): String = AsciiRenderer().render(runtime.snapshot().value)
 
     override fun stateDump(): HeadlessStateDump {
         val state = runtime.state

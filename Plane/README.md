@@ -61,6 +61,10 @@
    PROC-014 Android release lane and ENG-036 runtime/session boundary closed 2026-08-09; PROC-015
    closed 2026-08-10 through the accepted reference-evidence bridge; review the remaining accepted
    backlog before selecting the next feature.
+3. `ENG-036` technical gates are accepted locally (2026-09-23); delivery remains `[~]` until the
+   scoped commit/push gate is fulfilled. The API remains Experimental and unpublished.
+4. Resume `ENG-015` (presentation-side game speed control) after ENG-036 delivery closes.
+5. Hardening gaps из `docs/HARDENING_AUDIT.md` закрывать по одному, с тестами и обновлением handoff.
 
 Новые крупные фазы добавлять только после того, как backlog specs перестанут быть достаточно
 точным механизмом управления работой.
@@ -196,6 +200,31 @@
 ```
 
 ## Progress Log
+
+### 2026-09-23 - ENG-036 local technical acceptance
+
+- Status: Technical gates accepted locally; delivery In progress, not published.
+- Owner: Codex; independent final root review accepted source, boundaries and evidence.
+- Verification: final post-helper full suite 184/0; Android assemble/installDist; replay/save;
+  content validation (2 packs), selfcheck and direct Android-free source/dependency review pass.
+- Performance history is retained: original failures, >100% same-code separate-process A/A noise,
+  calibrated paired02 kill failure +8.500%, sandbox callback helper extraction (433 -> 239 bytecodes),
+  then one prescribed paired03 pass. Final A/A -3.440% / +0.596%; A/B -4.094% / -3.761%; no threshold
+  relaxation or sample removal. See `docs/contracts/runtime-benchmark.md` for raw-report identities.
+- Closeout: card/STATE/handoff/DIGEST and API status updated; no production/test/script changes,
+  telemetry, commit, push or consumer-pin change made by the documentation closeout.
+- Next: root-owned coordinated telemetry and authorized scoped delivery; keep the board active
+  until publication is actually fulfilled. Historical source-only checkpoint below remains intact.
+
+### 2026-09-23 - ENG-036 final source closure
+
+- Status: In progress; implementation sources ready for the integrated deferred verification pass.
+- Owner: Codex
+- Added typed restore continuity/malformed metadata cases and warmed same-source baseline/candidate
+  benchmark tooling outside Gradle modules. Exact baseline is `30f4eb17aff0ea2fe6cf80aef970a1e7746dbcbb`.
+- Verification: none executed, including no harness self-test; all gates wait for the whole MySD batch.
+- Next: follow `docs/contracts/runtime-benchmark.md`, run all ENG-036 gates, and record acceptance
+  only from actual results. Preserve current pin and active card until then.
 
 ### 2026-07-02 - Phase 00
 
@@ -1942,3 +1971,29 @@
 - VERIFICATION: Focused/full Gradle tests, projects, content validation, replay, save compatibility,
   benchmark (`sim_ms=413`), selfcheck, required headless inspect (`d599fc31843b5aa8`), Android
   `assembleDebug`, and `git diff --check` passed. Runtime and sandbox boundary review passed.
+### 2026-09-16 — MyEngine ENG-036 (runtime/session extraction, staged)
+
+- Status: In progress; implementation and test sources staged, acceptance gates deferred
+- Owner: Codex
+- Created/changed:
+  - `engine-runtime/` with Experimental descriptor/session contracts, typed results, opaque saves,
+    deterministic queue/tick ownership, and pure fake-runtime tests
+  - sandbox descriptor/runtime/session adapter and typed compatibility tests
+  - module graph, runtime contract, API stability/sketch, roadmap/state/handoff docs
+- Decisions:
+  - Concrete games retain state, systems, snapshots, hashes, content loaders, and payload codecs.
+  - The generic base owns pending commands, stable drain order, seed, and bounded positive steps.
+  - The Experimental policy is caller-owned command IDs only. Duplicate IDs are accepted and
+    deterministically ordered; uniqueness remains a game/application-boundary responsibility.
+    Late/current scheduled commands catch up on the next tick, matching the existing sandbox queue
+    semantics, and `Tick(Long.MAX_VALUE)` is treated as the generic terminal clock boundary; Android
+    sandbox input ignores that exhausted-clock state before allocating or scheduling a command.
+  - Sandbox save payload stays byte-for-byte schema-compatible at v7; the legacy String facade stays.
+  - `step()` performs no implicit snapshot/hash work, and `snapshot()` projects without implicitly
+    hashing, to protect both simulation and render hot paths.
+- Verification:
+  - Not run by explicit integrated-batch instruction. No tests, builds, linters, selfchecks, replay,
+    save-compat, content validation, Android-free scan, benchmark, or Android build result is claimed.
+- Next:
+  - Complete the MySD consumer/game batch, then run the entire ENG-036 acceptance set once.
+  - Keep the card active and MySD's engine pin unchanged until every gate passes.

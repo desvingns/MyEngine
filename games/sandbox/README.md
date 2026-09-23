@@ -10,7 +10,9 @@ This is the first tiny end-to-end proof game for `MyEngine`.
 - Waves spawn enemies that path toward the core.
 - Towers damage enemies by deterministic targeting order.
 - A generator recipe produces the starter resource over time.
-- Save/load v1 and replay hash are covered by JVM tests.
+- Versioned save/load migration through v7 and replay hashes are covered by passing JVM tests.
+- `SandboxRuntime` adapts the reusable Android-free `engine-runtime` session contract while this
+  module retains sandbox state, rules, content selection, snapshot projection, and codec payload.
 
 ## Controls Target
 
@@ -24,4 +26,7 @@ authoritative state.
 - Placeholder ASCII/Android text presentation only.
 - No asset atlas or real gesture handling yet.
 - Enemy speed is one tile per tick.
-- Rewards are tracked in metrics but not yet deposited into a player wallet.
+- ENG-036 technical gates are accepted locally (2026-09-23), including final 184/0 engine tests,
+  replay/save/content/static/build checks and calibrated paired03 headless timing. The API remains
+  Experimental; scoped delivery/publication is pending. See `docs/contracts/runtime-benchmark.md`
+  for retained failed measurements and the final pass; no Android frame-budget claim follows.

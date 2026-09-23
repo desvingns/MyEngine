@@ -1,116 +1,76 @@
 package dev.myengine.games.sandbox
 
 import dev.myengine.content.ContentRegistry
-import dev.myengine.core.CommandQueue
 import dev.myengine.core.EngineCommand
-import dev.myengine.core.TickRate
 import dev.myengine.render.EngineSnapshot
-import dev.myengine.runtime.CommandOrdering
-import dev.myengine.runtime.CommandSubmission
-import dev.myengine.runtime.GameRuntimeDescriptor
-import dev.myengine.runtime.GameSession
-import dev.myengine.runtime.GameSessionBackend
-import dev.myengine.runtime.QueuedGameSession
-import dev.myengine.runtime.GameRuntimeFactory
-import dev.myengine.runtime.RestoreResult
+import dev.myengine.runtime.ExperimentalGameRuntimeApi
+import dev.myengine.runtime.SessionStepResult
 import java.io.StringReader
 import java.util.Properties
 
 /**
- * Android-free sandbox adapter over the reusable runtime/session contract.
+ * Pure, Android-free lifecycle-persistence holder that wraps a live [SandboxRuntime] plus the
+ * [seed] used to encode its saves, so an Android (or any) lifecycle can save/restore a sandbox run.
  *
- * The generic session owns the pending command queue and tick dispatch. Sandbox keeps its
- * existing text save API for compatibility while supplying the queue to [SandboxSaveCodec].
+ * This type is intentionally JVM-only with no Android imports: it is the "thin adapter" boundary
+ * that keeps simulation Android-free. The owning lifecycle (e.g. an Activity) calls [save] on
+ * pause and [restore] on recreate; it must not reach into the runtime directly.
+ *
+ * SAVE SOUNDNESS: [SandboxSaveCodec] v7 persists `state`, terminal run status/summary, selected
+ * map id, content version, tower upgrade branch/tier/targeting-mode markers, and the runtime's pending
+ * [dev.myengine.core.CommandQueue], so [save] is sound at ANY tick — a future-tick command still
+ * queued at save time round-trips through [restore] and is re-queued on the reconstructed runtime.
+ * The per-tick `SeededRandom(17)` incident cursor is NOT persisted, but is confirmed to be a fresh
+ * instance constructed every tick rather than a persistent cursor, so there is nothing to persist
+ * for it.
  */
+@OptIn(ExperimentalGameRuntimeApi::class)
 class SandboxSession(
     val runtime: SandboxRuntime,
     val seed: Long,
-    initialPendingCommands: List<EngineCommand>? = null,
-) : GameSession<EngineCommand, EngineSnapshot, String> {
-    private val restoredPendingCommands: List<EngineCommand> =
-        initialPendingCommands ?: runtime.pendingCommands()
+) {
+    /**
+     * Encodes the current runtime state, including pending commands, to a save string.
+     *
+     * Sound at any tick — see the [SandboxSession] KDoc.
+     */
+    fun save(): String = SandboxSaveCodec.encode(runtime.state, seed, runtime.pendingCommands())
 
-    override val descriptor: GameRuntimeDescriptor = GameRuntimeDescriptor(
-        id = SandboxGame.descriptor.id,
-        tickRate = TickRate(SANDBOX_TICKS_PER_SECOND),
-        contentPackId = runtime.state.registry.manifest.id,
-        contentPackVersion = runtime.state.registry.manifest.version,
-        saveSchemaId = SANDBOX_SAVE_SCHEMA_ID,
-        saveSchemaVersion = SandboxSaveCodec.SAVE_VERSION,
-    )
+    fun stableHash(): String = runtime.stableHash()
 
-    private val session: QueuedGameSession<EngineCommand, EngineSnapshot, String> =
-        QueuedGameSession(
-            descriptor = descriptor,
-            ordering = SANDBOX_COMMAND_ORDERING,
-            backend = object : GameSessionBackend<EngineCommand, EngineSnapshot> {
-                override val currentTick: Long get() = runtime.state.tick.value
+    /** Immutable game-specific value for legacy Android/render callers. */
+    fun snapshot(): EngineSnapshot = runtime.snapshot().value
 
-                override fun submit(command: EngineCommand): CommandSubmission =
-                    if (runtime.state.run.isTerminal) {
-                        CommandSubmission.rejected("run_terminal")
-                    } else {
-                        CommandSubmission.accepted()
+    /** Thin delegate so a lifecycle/test can advance the simulation. */
+    fun step(ticks: Int = 1) {
+        require(ticks >= 0) { "Count 'times' must be non-negative, but was $ticks." }
+        var remaining = ticks
+        val maxTicksPerStep = runtime.descriptor.identity.maxTicksPerStep
+        while (remaining > 0) {
+            val requested = minOf(remaining, maxTicksPerStep)
+            when (val result = runtime.step(requested)) {
+                is SessionStepResult.Advanced -> {
+                    remaining -= result.advancedTicks
+                    if (result.terminal) return
+                    check(result.advancedTicks == requested) {
+                        "Sandbox runtime advanced ${result.advancedTicks} of $requested requested ticks without terminating."
                     }
-
-                override fun canStep(): Boolean = !runtime.state.run.isTerminal
-
-                override fun step(commands: List<EngineCommand>) {
-                    runtime.step(commands)
                 }
-
-                override fun snapshot(): EngineSnapshot = runtime.snapshot()
-            },
-            saveFactory = { pendingCommands ->
-                SandboxSaveCodec.encode(runtime.state, seed, pendingCommands)
-            },
-            initialPendingCommands = restoredPendingCommands,
-        )
-
-    init {
-        syncRuntimePendingCommands()
+                is SessionStepResult.Rejected -> throw IllegalArgumentException(
+                    "ticks must be in ${result.allowedTicks}; was ${result.requestedTicks}",
+                )
+            }
+        }
     }
 
-    override fun submit(command: EngineCommand): CommandSubmission =
-        session.submit(command).also { syncRuntimePendingCommands() }
-
-    override fun step(ticks: Int) {
-        // Preserve the historical sandbox no-op used by fixed-seed fuzz fixtures; the generic
-        // session returned by [asGameSession] keeps the stricter positive-tick contract.
-        if (ticks == 0) return
-        session.step(ticks)
-        syncRuntimePendingCommands()
-    }
-
-    override fun snapshot(): EngineSnapshot = session.snapshot()
-
-    override fun save(): String = session.save()
-
-    fun stableHash(): String = runtime.state.stableHash()
-
-    /** Exposes the generic session for future game/platform consumers without sandbox state types. */
-    fun asGameSession(): GameSession<EngineCommand, EngineSnapshot, String> = session
-
-    /** Compatibility inspection surface retained for existing sandbox tests and tools. */
-    fun pendingCommands(): List<EngineCommand> = session.pendingCommands()
-
-    private fun syncRuntimePendingCommands() {
-        runtime.attachSessionPendingCommands(session.pendingCommands())
+    /** Thin delegate so a lifecycle/test can enqueue a command. */
+    fun submit(command: EngineCommand) {
+        runtime.submit(command)
     }
 
     companion object {
         /** Default sandbox seed, matching [SandboxGame.runScriptedScenario]'s default. */
         const val DEFAULT_SEED: Long = 7L
-
-        private const val SANDBOX_TICKS_PER_SECOND: Int = 20
-        private const val SANDBOX_SAVE_SCHEMA_ID: String = "sandbox-properties-save"
-
-        private val SANDBOX_COMMAND_ORDERING = object : CommandOrdering<EngineCommand> {
-            override fun scheduledTick(command: EngineCommand): Long = command.scheduledTick.value
-
-            override fun compare(left: EngineCommand, right: EngineCommand): Int =
-                CommandQueue.commandComparator.compare(left, right)
-        }
 
         /** Starts a fresh session after optionally materializing a data-defined difficulty. */
         fun start(
@@ -118,7 +78,10 @@ class SandboxSession(
             seed: Long = DEFAULT_SEED,
             difficultyId: String? = null,
             mapId: String? = null,
-        ): SandboxSession = SandboxSession(SandboxGame.createRuntime(registry, difficultyId, mapId, seed), seed)
+        ): SandboxSession = SandboxSession(
+            runtime = SandboxGame.createRuntime(registry, difficultyId, mapId, seed),
+            seed = seed,
+        )
 
         /** Starts a session with a deterministic generated map and the same seed in its save. */
         fun startProcedural(
@@ -127,11 +90,19 @@ class SandboxSession(
             wallDensityPercent: Int = 18,
             maxAttempts: Int = 16,
         ): SandboxSession = SandboxSession(
-            SandboxGame.createProceduralRuntime(registry, seed, wallDensityPercent, maxAttempts),
-            seed,
+            runtime = SandboxGame.createProceduralRuntime(registry, seed, wallDensityPercent, maxAttempts),
+            seed = seed,
         )
 
-        /** Restores a versioned sandbox save after the concrete content/save checks complete. */
+        /**
+         * Restores a session from a save [text] produced by [save].
+         *
+         * The [seed] is read back out of the save's `seed` property so a subsequent [save]
+         * reproduces the same seed; it defaults to [DEFAULT_SEED] when the property is absent or
+         * unparseable. `state` is reconstructed via [SandboxSaveCodec.decode], and any pending
+         * commands are reconstructed via [SandboxSaveCodec.decodePendingCommands] and loaded into
+         * the fresh runtime's queue — see the [SandboxSession] KDoc.
+         */
         fun restore(
             text: String,
             registry: ContentRegistry = SandboxGame.loadRegistry(),
@@ -139,7 +110,12 @@ class SandboxSession(
             val state = SandboxSaveCodec.decode(text, registry)
             val pendingCommands = SandboxSaveCodec.decodePendingCommands(text)
             val seed = parseSeed(text)
-            return SandboxSession(SandboxRuntime(state, seed = seed), seed, pendingCommands)
+            val runtime = SandboxRuntime(
+                state = state,
+                seed = seed,
+                restoredPendingCommands = pendingCommands,
+            )
+            return SandboxSession(runtime, seed)
         }
 
         private fun parseSeed(text: String): Long {
@@ -147,27 +123,4 @@ class SandboxSession(
             return props.getProperty("seed")?.toLongOrNull() ?: DEFAULT_SEED
         }
     }
-}
-
-/** Typed sandbox factory used by headless or future game-host integrations. */
-class SandboxSessionFactory(
-    private val registry: ContentRegistry = SandboxGame.loadRegistry(),
-    private val difficultyId: String? = null,
-    private val mapId: String? = null,
-) : GameRuntimeFactory<EngineCommand, EngineSnapshot, String> {
-    override val descriptor: GameRuntimeDescriptor = SandboxSession.start(
-        registry = registry,
-        difficultyId = difficultyId,
-        mapId = mapId,
-    ).descriptor
-
-    override fun start(seed: Long): GameSession<EngineCommand, EngineSnapshot, String> =
-        SandboxSession.start(registry, seed, difficultyId, mapId)
-
-    override fun restore(save: String): RestoreResult<GameSession<EngineCommand, EngineSnapshot, String>> =
-        runCatching { SandboxSession.restore(save, registry) }
-            .fold(
-                onSuccess = { RestoreResult.Restored(it) },
-                onFailure = { RestoreResult.Rejected(it.message ?: "sandbox_restore_rejected") },
-            )
 }

@@ -1,7 +1,7 @@
 # MyEngine API Stability v0.1 Draft
 
-Status: Phase 14 accepted; ENG-036 runtime/session surface added
-Last updated: 2026-08-09
+Status: Phase 14 accepted  
+Last updated: 2026-09-24 (ENG-036 accepted and merged into main with the Phase 14+ sandbox work)
 
 ## Stable For First Game
 
@@ -16,8 +16,12 @@ Last updated: 2026-08-09
 
 ## Experimental
 
-- `GameRuntimeDescriptor`, `GameSession`, `GameRuntimeFactory` (`engine-runtime`)
-- `QueuedGameSession` and `SandboxSessionFactory`
+ENG-036 runtime/session contracts passed their independent technical acceptance on 2026-09-23;
+this does not promote them to Stable. They were merged into main on 2026-09-24. Cross-repository
+consumers still require a game-owned adapter and an exact accepted engine commit under ADR-0004.
+
+- `GameRuntimeDescriptor`, `GameSession`, `DeterministicGameSession`
+- `GameRuntimeIdentity`, `VersionedGameSave`, and typed session operation results
 - `SandboxRuntime`
 - `DefenseRuntime`
 - `ProducerSystem`
@@ -27,8 +31,7 @@ Last updated: 2026-08-09
 
 ## Internal
 
-- Concrete game save payloads remain owned by each game adapter; the generic session only dispatches
-  pending commands to the save callback.
+- Concrete save payload encodings carried opaquely by `VersionedGameSave`.
 - Sandbox save text encoding details.
 - ASCII renderer output format.
 - Script output wrapper fields beyond final JSON status.

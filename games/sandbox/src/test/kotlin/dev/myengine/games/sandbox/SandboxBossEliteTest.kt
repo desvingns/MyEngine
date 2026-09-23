@@ -19,7 +19,7 @@ class SandboxBossEliteTest {
 
         runtime.step(10)
 
-        val snapshotBoss = runtime.snapshot().entities.first { it.type == "enemy:drift" }
+        val snapshotBoss = runtime.snapshot().value.entities.first { it.type == "enemy:drift" }
         assertTrue(snapshotBoss.isBoss)
         val entity = runtime.state.entities.require(EntityId(snapshotBoss.id))
         assertTrue(entity.enemy!!.isBoss)

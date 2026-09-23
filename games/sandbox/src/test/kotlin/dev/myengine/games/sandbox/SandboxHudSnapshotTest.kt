@@ -13,7 +13,7 @@ class SandboxHudSnapshotTest {
     @Test
     fun fixedTickHeadlessHudIsContentDerivedOrderedAndDeterministic() {
         fun run() = SandboxGame.createRuntime().also { runtime ->
-            val initial = runtime.snapshot().hud
+            val initial = runtime.snapshot().value.hud
             assertEquals(listOf("bolt"), initial.resources.map { it.resourceId })
             assertEquals(6, initial.resources.single().amount)
             assertEquals("Bolt", initial.resources.single().label)
@@ -32,7 +32,7 @@ class SandboxHudSnapshotTest {
 
             runtime.submit(BuildTowerCommand(CommandId(1), Tick(1), "pulse", TileCoordinate(2, 2)))
             runtime.step(13)
-        }.snapshot().hud
+        }.snapshot().value.hud
 
         val first = run()
         val second = run()

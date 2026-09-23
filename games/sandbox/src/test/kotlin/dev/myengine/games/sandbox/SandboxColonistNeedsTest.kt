@@ -41,7 +41,7 @@ class SandboxColonistNeedsTest {
         assertEquals(state.entities.require(EntityId(1)), restored.entities.require(EntityId(1)))
         assertEquals(state.stableHash(), restored.stableHash())
 
-        val bars = runtime.snapshot().hud.needBars
+        val bars = runtime.snapshot().value.hud.needBars
         assertEquals(
             listOf(HudNeedBar(1, "hunger", "Hunger", 75, 25), HudNeedBar(1, "rest", "Rest", 99, 25)),
             bars,

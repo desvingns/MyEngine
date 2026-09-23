@@ -108,6 +108,9 @@ import dev.myengine.render.RenderTile
 import dev.myengine.render.TechNodeSnapshot
 import dev.myengine.render.TechTreeSnapshot
 import dev.myengine.render.TechUnlockSnapshot
+import dev.myengine.runtime.DeterministicGameSession
+import dev.myengine.runtime.ExperimentalGameRuntimeApi
+import dev.myengine.runtime.SessionSaveResult
 import dev.myengine.storyteller.IncidentDirector
 import dev.myengine.storyteller.IncidentDirectorState
 import dev.myengine.storyteller.IncidentExecution
@@ -126,11 +129,6 @@ import java.nio.file.Path
 import java.nio.file.Paths
 import java.util.Properties
 import java.util.Collections
-
-data class SandboxDescriptor(
-    val id: String = "sandbox",
-    val engineName: String = EngineInfo.NAME,
-)
 
 data class SandboxIncidentModifier(
     val amount: Int,
@@ -250,14 +248,14 @@ internal fun depositRewards(inventory: Inventory, rewards: Map<String, Int>): Re
     return RewardDeposit(next, dropped)
 }
 
+@OptIn(ExperimentalGameRuntimeApi::class)
 class SandboxRuntime(
     val state: SandboxState,
     private val defenseRuntime: DefenseRuntime = DefenseRuntime(),
-    private val commandQueue: CommandQueue = CommandQueue(),
-    seed: Long = 7L,
-) {
-    /** Compatibility queue for direct JVM callers; lifecycle sessions own their queue. */
-    private var sessionPendingCommands: List<EngineCommand>? = null
+    seed: Long = SandboxSession.DEFAULT_SEED,
+    descriptor: SandboxDescriptor = SandboxDescriptor(state.registry, mapId = state.mapId),
+    restoredPendingCommands: List<EngineCommand> = emptyList(),
+) : DeterministicGameSession<EngineSnapshot>(descriptor, seed, restoredPendingCommands) {
     private val producerSystem = ProducerSystem(state.registry.recipes) { recipeId ->
         isUnlockAvailable(dev.myengine.content.TechUnlockType.RECIPE, recipeId)
     }
@@ -297,44 +295,15 @@ class SandboxRuntime(
     private val incidentInterpreter = SandboxIncidentEffectInterpreter(defenseRuntime)
     private val renderPath: List<TilePosition> get() = goalField.pathFrom(spawn)
 
-    /** Returns false without mutating state when the run has already reached its terminal boundary. */
-    fun submit(command: EngineCommand): Boolean {
-        if (state.run.isTerminal) return false
-        commandQueue.submit(command)
-        return true
-    }
+    /** Non-destructive snapshot of the runtime's not-yet-drained pending commands. */
+    fun pendingCommands(): List<EngineCommand> = pendingCommandSnapshot()
 
-    /** Non-destructive snapshot of pending commands owned by this runtime or its session adapter. */
-    fun pendingCommands(): List<EngineCommand> = sessionPendingCommands ?: commandQueue.pending()
+    override val authoritativeTick: Tick get() = state.tick
+    override val terminal: Boolean get() = state.run.isTerminal
 
-    /** Mirrors the generic session queue for legacy sandbox inspection APIs. */
-    internal fun attachSessionPendingCommands(commands: List<EngineCommand>) {
-        sessionPendingCommands = commands.toList()
-    }
-
-    /** Submits a command batch subject to the same terminal rejection as [submit]. */
-    fun submitAll(commands: List<EngineCommand>) {
-        commands.forEach(::submit)
-    }
-
-    /**
-     * Restore-only path that preserves a serialized pre-terminal queue without reopening command
-     * submission. Terminal [step] calls still return before draining these commands.
-     */
-    internal fun restorePendingCommands(commands: List<EngineCommand>) {
-        commands.forEach(commandQueue::submit)
-    }
-
-    fun step(ticks: Int = 1) {
-        repeat(ticks) {
-            if (state.run.isTerminal) return@repeat
-            stepOne(commandQueue.drainFor(state.tick.next()))
-        }
-    }
-
-    /** Session-owned queue path: the runtime receives only the commands for this tick. */
-    internal fun step(commands: List<EngineCommand>) {
-        if (!state.run.isTerminal) stepOne(commands)
+    override fun advanceOneTick(tick: Tick, commands: List<EngineCommand>) {
+        check(tick == state.tick.next()) { "Sandbox runtime must advance exactly one tick." }
+        stepOne(commands)
     }
 
     private fun stepOne(commands: List<EngineCommand>) {
@@ -532,7 +501,7 @@ class SandboxRuntime(
         )
     }
 
-    fun snapshot(): EngineSnapshot {
+    override fun projectSnapshot(): EngineSnapshot {
         val renderTiles = state.world.positions().map {
             val view = state.world.tileAt(it)
             RenderTile(
@@ -627,6 +596,11 @@ class SandboxRuntime(
             techTree = techTree,
         )
     }
+
+    override fun stableHashValue(): String = state.stableHash()
+
+    override fun encodeSavePayload(pendingCommands: List<EngineCommand>): String =
+        SandboxSaveCodec.encode(state, seed, pendingCommands)
 
     private fun hudSnapshot(): HudSnapshot {
         val registry = state.registry
@@ -1721,6 +1695,18 @@ class SandboxRuntime(
 
 private fun VisualAssetRef.toRenderAssetRef(): RenderAssetRef = RenderAssetRef(path = path, atlasKey = atlasKey)
 
+internal data class SandboxSaveMetadata(
+    val saveVersion: Int,
+    val packId: String?,
+    val contentVersion: String?,
+    val seed: Long?,
+)
+
+internal sealed interface SandboxSaveMetadataResult {
+    data class Valid(val metadata: SandboxSaveMetadata) : SandboxSaveMetadataResult
+    data class Invalid(val reason: String) : SandboxSaveMetadataResult
+}
+
 object SandboxSaveCodec {
     const val SAVE_VERSION: Int = 22
 
@@ -2000,6 +1986,29 @@ object SandboxSaveCodec {
         val version = requireSupportedSaveVersion(props)
         if (version >= 5) parseRunState(props)
         return parsePendingCommands(props.getProperty("pendingCommands", ""))
+    }
+
+    /** Reads only compatibility metadata; payload interpretation remains in this game-owned codec. */
+    internal fun inspectMetadata(text: String): SandboxSaveMetadataResult {
+        return try {
+            val props = Properties().also { it.load(StringReader(text)) }
+            val rawVersion = props.getProperty("saveVersion")
+            val version = rawVersion?.toIntOrNull()
+            when {
+                version == null -> SandboxSaveMetadataResult.Invalid("Save has an invalid version '$rawVersion'.")
+                version <= 0 -> SandboxSaveMetadataResult.Invalid("Save version must be positive; was '$version'.")
+                else -> SandboxSaveMetadataResult.Valid(
+                    SandboxSaveMetadata(
+                        saveVersion = version,
+                        packId = props.getProperty("packId")?.takeIf { it.isNotBlank() },
+                        contentVersion = props.getProperty("contentVersion")?.takeIf { it.isNotBlank() },
+                        seed = props.getProperty("seed")?.toLongOrNull(),
+                    ),
+                )
+            }
+        } catch (failure: RuntimeException) {
+            SandboxSaveMetadataResult.Invalid(failure.message ?: "Sandbox save metadata is invalid.")
+        }
     }
 
     private fun requireSupportedSaveVersion(props: Properties): Int {
@@ -2712,9 +2721,10 @@ data class SandboxScenarioResult(
 )
 
 object SandboxGame {
-    val descriptor: SandboxDescriptor = SandboxDescriptor()
+    /** Compatibility descriptor for callers that previously read `SandboxGame.descriptor`. */
+    val descriptor: SandboxDescriptor by lazy { descriptor() }
 
-    fun banner(): String = "${EngineInfo.banner()} / ${descriptor.id}"
+    fun banner(): String = "${EngineInfo.banner()} / ${SandboxDescriptor.RUNTIME_ID}"
 
     fun loadRegistry(root: Path = contentRoot(), difficultyId: String? = null): ContentRegistry {
         val result = ContentPackLoader.load(root)
@@ -2784,8 +2794,25 @@ object SandboxGame {
         mapId: String? = null,
         seed: Long = 7L,
         metaUnlockIds: Set<String> = emptySet(),
-    ): SandboxRuntime =
-        SandboxRuntime(createInitialState(registry, difficultyId, mapId, seed, metaUnlockIds), seed = seed)
+    ): SandboxRuntime {
+        val descriptor = SandboxDescriptor(registry, difficultyId, mapId)
+        return SandboxRuntime(
+            state = createInitialState(
+                registry = descriptor.registry,
+                mapId = descriptor.mapId,
+                seed = seed,
+                metaUnlockIds = metaUnlockIds,
+            ),
+            seed = seed,
+            descriptor = descriptor,
+        )
+    }
+
+    fun descriptor(
+        registry: ContentRegistry = loadRegistry(),
+        difficultyId: String? = null,
+        mapId: String? = null,
+    ): SandboxDescriptor = SandboxDescriptor(registry, difficultyId, mapId)
 
     /**
      * Narrow devtools seam for deterministic replay inspection. It selects the same typed
@@ -2885,8 +2912,16 @@ object SandboxGame {
         val runtime = createRuntime(registry, mapId = mapId, seed = seed)
         runtime.submit(BuildTowerCommand(dev.myengine.core.CommandId(1), Tick(1), "pulse", TileCoordinate(towerPosition.x, towerPosition.y)))
         runtime.step(35)
-        val save = SandboxSaveCodec.encode(runtime.state, seed)
-        return SandboxScenarioResult(runtime.state.stableHash(), runtime.snapshot(), save, runtime.state.defense.metrics)
+        val save = when (val result = runtime.save()) {
+            is SessionSaveResult.Saved -> result.save.payload
+            is SessionSaveResult.Failed -> error(result.reason)
+        }
+        return SandboxScenarioResult(
+            runtime.state.stableHash(),
+            runtime.snapshot().value,
+            save,
+            runtime.state.defense.metrics,
+        )
     }
 
     private fun typedReplayRegistry(

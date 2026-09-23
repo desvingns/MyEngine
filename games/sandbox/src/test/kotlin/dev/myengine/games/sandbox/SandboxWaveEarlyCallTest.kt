@@ -119,7 +119,7 @@ class SandboxWaveEarlyCallTest {
         paused.submit(earlyCall)
         paused.step(3)
         val expectedHash = paused.stableHash()
-        val expectedHud = paused.runtime.snapshot().hud
+        val expectedHud = paused.runtime.snapshot().value.hud
         assertEquals(7L, expectedHud.nextWaveInTicks)
 
         val save = paused.save()
@@ -127,7 +127,7 @@ class SandboxWaveEarlyCallTest {
         val pending = SandboxSaveCodec.decodePendingCommands(save)
 
         assertEquals(expectedHash, restored.stableHash())
-        assertEquals(expectedHud, restored.runtime.snapshot().hud)
+        assertEquals(expectedHud, restored.runtime.snapshot().value.hud)
         assertEquals(listOf(earlyCall), pending)
         val restoredCommand = assertIs<CallWaveEarlyCommand>(restored.runtime.pendingCommands().single())
         assertEquals(earlyCall.id, restoredCommand.id)

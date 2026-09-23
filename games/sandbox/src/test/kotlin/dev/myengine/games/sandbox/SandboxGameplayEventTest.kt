@@ -62,14 +62,14 @@ class SandboxGameplayEventTest {
         runtime.submit(BuildTowerCommand(CommandId(1), Tick(1), "pulse", TileCoordinate(2, 2)))
 
         runtime.step()
-        val buildSnapshot = runtime.snapshot()
+        val buildSnapshot = runtime.snapshot().value
         assertEquals(Tick(1), buildSnapshot.combatEvents.gameplayEvents.single().tick)
         assertEquals(GameplayEventType.BUILD, buildSnapshot.combatEvents.gameplayEvents.single().type)
 
         runtime.step()
 
-        assertEquals(Tick(2), runtime.snapshot().debug.tick)
-        assertTrue(runtime.snapshot().combatEvents.gameplayEvents.isEmpty())
+        assertEquals(Tick(2), runtime.snapshot().value.debug.tick)
+        assertTrue(runtime.snapshot().value.combatEvents.gameplayEvents.isEmpty())
     }
 
     @Test
@@ -81,7 +81,7 @@ class SandboxGameplayEventTest {
         val snapshots = buildList {
             repeat(2) {
                 runtime.step()
-                add(runtime.snapshot())
+                add(runtime.snapshot().value)
             }
         }
 
@@ -97,7 +97,7 @@ class SandboxGameplayEventTest {
             runtime.submit(BuildTowerCommand(CommandId(1), Tick(1), "pulse", TileCoordinate(2, 2)))
             runtime.step()
             if (readSnapshot) {
-                assertTrue(runtime.snapshot().combatEvents.gameplayEvents.isNotEmpty())
+                assertTrue(runtime.snapshot().value.combatEvents.gameplayEvents.isNotEmpty())
             }
             val save = SandboxSaveCodec.encode(runtime.state, seed = 77L)
             return runtime.state.stableHash() to save
@@ -115,7 +115,7 @@ class SandboxGameplayEventTest {
     private fun collectEvents(runtime: SandboxRuntime, ticks: Int): List<GameplayEvent> = buildList {
         repeat(ticks) {
             runtime.step()
-            addAll(runtime.snapshot().combatEvents.gameplayEvents)
+            addAll(runtime.snapshot().value.combatEvents.gameplayEvents)
         }
     }
 }

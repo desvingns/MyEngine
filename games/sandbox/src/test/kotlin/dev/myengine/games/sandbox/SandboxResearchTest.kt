@@ -86,7 +86,7 @@ class SandboxResearchTest {
         )
         val runtime = SandboxGame.createRuntime(registry)
 
-        val before = runtime.snapshot().techTree.nodes.single()
+        val before = runtime.snapshot().value.techTree.nodes.single()
         assertEquals(false, before.researched)
         assertEquals(true, before.available)
 
@@ -94,7 +94,7 @@ class SandboxResearchTest {
         runtime.submit(PlaceBuildingCommand(CommandId(21), Tick(2), "wall", TileCoordinate(4, 1)))
         runtime.step(2)
 
-        val after = runtime.snapshot().techTree.nodes.single()
+        val after = runtime.snapshot().value.techTree.nodes.single()
         assertEquals(true, after.researched)
         assertEquals(false, after.available)
         assertEquals(1, runtime.state.entities.byTag("building").size)
@@ -116,9 +116,12 @@ class SandboxResearchTest {
         paused.step(4)
         val save = SandboxSaveCodec.encode(paused.state, seed = 7, pendingCommands = paused.pendingCommands())
         val restored = SandboxSaveCodec.decode(save, registry)
-        val resumed = SandboxRuntime(restored, seed = 7)
         assertEquals(listOf(command), SandboxSaveCodec.decodePendingCommands(save))
-        resumed.restorePendingCommands(SandboxSaveCodec.decodePendingCommands(save))
+        val resumed = SandboxRuntime(
+            restored,
+            seed = 7,
+            restoredPendingCommands = SandboxSaveCodec.decodePendingCommands(save),
+        )
         resumed.step(8)
 
         assertEquals(uninterrupted.state.stableHash(), resumed.state.stableHash())

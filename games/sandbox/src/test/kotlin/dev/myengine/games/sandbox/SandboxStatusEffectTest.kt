@@ -52,7 +52,7 @@ class SandboxStatusEffectTest {
         )
         runtime.state.entities.upsert(enemy)
 
-        val snapshot = runtime.snapshot()
+        val snapshot = runtime.snapshot().value
         val snapshotEnemy = snapshot.entities.single { it.id == enemy.id.value }
         assertEquals(listOf("burn", "slow"), snapshotEnemy.activeEffectTags)
 

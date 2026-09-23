@@ -100,14 +100,14 @@ class SandboxTargetingModeTest {
         val runtime = SandboxGame.createRuntime()
         val tower = placePulseTower(runtime)
 
-        assertEquals(TargetingMode.NEAREST, runtime.snapshot().hud.towers.single().targetingMode)
+        assertEquals(TargetingMode.NEAREST, runtime.snapshot().value.hud.towers.single().targetingMode)
 
         runtime.submit(
             SetTowerTargetingModeCommand(CommandId(2), Tick(2), tower.id.value, TargetingMode.LAST),
         )
         runtime.step()
 
-        val hudTower = runtime.snapshot().hud.towers.single { it.entityId == tower.id.value }
+        val hudTower = runtime.snapshot().value.hud.towers.single { it.entityId == tower.id.value }
         assertEquals(TargetingMode.LAST, hudTower.targetingMode)
     }
 

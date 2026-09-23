@@ -58,7 +58,7 @@ class SandboxTowerUpgradeTest {
         runtime.step(9)
 
         val upgraded = runtime.state.entities.require(towerEntity.id)
-        val events = runtime.snapshot().combatEvents
+        val events = runtime.snapshot().value.combatEvents
         assertEquals(tier.damage, upgraded.attack?.damage)
         assertEquals(3, events.hits.size, "the tick-10 wave has three co-located enemies, all inside retained splash")
         assertTrue(events.hits.all { it.sourceEntityId == towerEntity.id.value && it.tick == Tick(10) })
