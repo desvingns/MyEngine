@@ -1,7 +1,7 @@
 # MyEngine API Sketch
 
 Status: Draft accepted for Phase 03  
-Last updated: 2026-07-02
+Last updated: 2026-09-23 (ENG-036 technically accepted locally; Experimental API; not published)
 
 These APIs are sketches, not production source. They define ownership and dependency direction for
 later phases. All contracts are experimental until the phase that implements them marks a subset as
@@ -18,6 +18,7 @@ stable.
 | API | Owner | Dependencies | Stability | Required gates |
 |---|---|---|---|---|
 | `Engine` | `engine-core` | content registry, simulation | Experimental | tick/replay tests |
+| `GameRuntimeDescriptor` / `GameSession` | `engine-runtime` | `engine-core` | Experimental | contract, replay, save-compat, benchmark tests |
 | `Simulation` | `engine-core` | commands, systems | Experimental | deterministic scenario tests |
 | `TickScheduler` | `engine-core` | none | Experimental | fixed-step tests |
 | `Command` | `engine-core` | stable IDs | Experimental | serialization/order tests |
@@ -33,6 +34,24 @@ stable.
 ## Draft Kotlin Shape
 
 ```kotlin
+interface GameRuntimeDescriptor<out S : Any> {
+    val identity: GameRuntimeIdentity
+    fun start(seed: Long): SessionStartResult<S>
+    fun restore(save: VersionedGameSave): SessionRestoreResult<S>
+}
+
+interface GameSession<out S : Any> {
+    val descriptor: GameRuntimeDescriptor<S>
+    val seed: Long
+    val currentTick: Tick
+    val isTerminal: Boolean
+    fun stableHash(): String
+    fun submit(command: EngineCommand): SessionSubmitResult
+    fun step(ticks: Int = 1): SessionStepResult
+    fun snapshot(): SessionSnapshot<S>
+    fun save(): SessionSaveResult
+}
+
 interface Engine {
     val currentTick: Tick
     fun submit(command: Command)
@@ -98,8 +117,16 @@ interface ScenarioRunner {
 }
 ```
 
+`GameRuntimeIdentity.commandIdPolicy` currently has one supported value:
+`CommandIdPolicy.CALLER_OWNED`. Callers allocate unique IDs. The generic session accepts duplicate
+IDs rather than pretending to own a persisted allocation/deduplication cursor; duplicate commands
+are nevertheless ordered deterministically by the full `CommandQueue` comparator.
+
 ## Extension Points
 
+- `DeterministicGameSession` owns the pending command queue, stable drain order, seed, and bounded
+  positive step contract; concrete games supply authoritative state/system updates, projection, and
+  an opaque versioned save payload.
 - `EngineSystem` should allow future modules to register systems while preserving stable ordering.
 - `ContentRegistry` should support multiple packs and migrations without exposing parser internals.
 - `Renderer` should support debug overlays through snapshots, not direct world mutation.

@@ -12,10 +12,11 @@ import dev.myengine.core.Tick
 import dev.myengine.core.command.BuildTowerCommand
 import dev.myengine.core.command.TileCoordinate
 import dev.myengine.defense.DefenseState
+import dev.myengine.runtime.SessionSubmitResult
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertFalse
 import kotlin.test.assertFailsWith
+import kotlin.test.assertIs
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
@@ -101,7 +102,9 @@ class SandboxTerminalRunTest {
         val queued = buildPulseAt(tick = 3, id = 2, x = 3, y = 3)
 
         assertEquals(listOf(queued), runtime.pendingCommands())
-        assertFalse(runtime.submit(buildPulseAt(tick = 3, id = 3, x = 4, y = 4)))
+        assertIs<SessionSubmitResult.Rejected>(
+            runtime.submit(buildPulseAt(tick = 3, id = 3, x = 4, y = 4)),
+        )
 
         runtime.step(10)
 
@@ -122,7 +125,13 @@ class SandboxTerminalRunTest {
         val restored = SandboxSession.restore(SandboxSession(runtime, seed = 41).save(), registry)
 
         assertEquals(pendingBeforeSave, restored.runtime.pendingCommands())
-        assertFalse(restored.runtime.submit(buildPulseAt(tick = 4, id = 3, x = 4, y = 4)))
+        assertIs<SessionSubmitResult.Rejected>(
+            restored.runtime.submit(buildPulseAt(tick = 4, id = 3, x = 4, y = 4)),
+        )
+        // The legacy Unit-returning facade historically ignored SandboxRuntime's `false` result;
+        // it must remain a silent no-op and must not append to the persisted terminal queue.
+        restored.submit(buildPulseAt(tick = 4, id = 4, x = 5, y = 5))
+        assertEquals(pendingBeforeSave, restored.runtime.pendingCommands())
 
         restored.step(10)
 
@@ -135,7 +144,7 @@ class SandboxTerminalRunTest {
     fun snapshotProjectsIndependentActiveAndFrozenTerminalSummaries() {
         val runtime = SandboxGame.createRuntime(singleWaveRegistry())
 
-        val active = runtime.snapshot()
+        val active = runtime.snapshot().value
         runtime.state.inventory = runtime.state.inventory.add("bolt", 99)
 
         assertEquals(RunStatus.ACTIVE, active.runStatus)
@@ -144,7 +153,7 @@ class SandboxTerminalRunTest {
         assertEquals(6, active.runSummary.resources.getValue("bolt"))
 
         val terminalRuntime = terminalWinningRuntime()
-        val terminal = terminalRuntime.snapshot()
+        val terminal = terminalRuntime.snapshot().value
         val frozenSummary = assertNotNull(terminalRuntime.state.run.summary)
         terminalRuntime.step(10)
 
@@ -152,13 +161,13 @@ class SandboxTerminalRunTest {
         assertEquals(TerminalReason.ALL_WAVES_CLEARED, terminal.terminalReason)
         assertEquals(frozenSummary, terminal.runSummary)
         assertEquals(Tick(2), terminal.terminalTick)
-        assertEquals(terminal, terminalRuntime.snapshot())
+        assertEquals(terminal, terminalRuntime.snapshot().value)
     }
 
     @Test
     fun terminalSnapshotSummaryResourcesRejectMutationWithoutChangingRun() {
         val runtime = terminalWinningRuntime()
-        val snapshot = runtime.snapshot()
+        val snapshot = runtime.snapshot().value
         val beforeHash = runtime.state.stableHash()
         val beforeRun = runtime.state.run
 
@@ -183,9 +192,9 @@ class SandboxTerminalRunTest {
         assertEquals("7", saveProperty(save, "saveVersion"))
         assertEquals(session.runtime.state.run, restored.runtime.state.run)
         assertEquals(session.stableHash(), restored.stableHash())
-        assertEquals(session.runtime.snapshot().runSummary, restored.runtime.snapshot().runSummary)
-        assertEquals(session.runtime.snapshot().terminalTick, restored.runtime.snapshot().terminalTick)
-        assertEquals(session.runtime.snapshot().terminalReason, restored.runtime.snapshot().terminalReason)
+        assertEquals(session.snapshot().runSummary, restored.snapshot().runSummary)
+        assertEquals(session.snapshot().terminalTick, restored.snapshot().terminalTick)
+        assertEquals(session.snapshot().terminalReason, restored.snapshot().terminalReason)
     }
 
     private fun terminalWinningRuntime(registry: ContentRegistry = singleWaveRegistry()): SandboxRuntime {

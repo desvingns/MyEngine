@@ -17,6 +17,7 @@ dependencyResolutionManagement {
 rootProject.name = "MyEngine"
 
 include(":engine-core")
+include(":engine-runtime")
 include(":engine-world")
 include(":engine-content")
 include(":engine-entities")

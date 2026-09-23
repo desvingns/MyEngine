@@ -1,7 +1,55 @@
 # MyEngine Handoff
 
-Last updated: 2026-07-18 (PROC-002 / ADR-0004 accepted; MySD ENG-036 + PROC-015 filed; next P1 item remains ENG-015)
+Last updated: 2026-09-23 (ENG-036 technical gates independently accepted locally; local checkpoint prepared, remote publication pending)
 Owner: Codex
+
+## CURRENT ENG-036 integration note — 2026-09-23
+
+- Latest: ENG-036 technical gates are independently accepted locally. The post-helper full suite
+  passed 184 tests/0 failures, Android assemble and fresh installDist passed, and replay/save passed.
+  Logs: `build/reports/eng036-after-helper-20260923-01.log`,
+  `eng036-after-helper-{replay,save}-20260923.log`, and `eng036-after-helper-sandbox-full-20260923.log`.
+- The single prescribed post-helper paired03 passed: absolute A/A deltas -3.440% canonical /
+  +0.596% kill; A/B regressions -4.094% / -3.761%, both within the unchanged 5% budget. Every golden
+  and classloader-isolation check passed. Complete evidence lives at
+  `build/reports/eng036-paired-20260923-03/report.json`; SHA-256
+  `fcba53a30178293fde7b7b726e6c6cffe89406a23e3f8a3191408d8efc71a1f8`.
+- The sandbox callback helper extraction reduced `advanceOneTick` from 433 to 239 bytecodes versus
+  the local JBR hot inline budget of 325. Independent review confirmed unchanged behavior, system
+  order, arithmetic, terminal guard and seed. Inlining remains a causal hypothesis, not a proven
+  explanation. The measured post-change gate passes; no generic-loop bypass or runtime/core change
+  was made by the optimization, so it does not alter MySD's engine dependencies.
+- The MySD integration reviewer found input-triggered extra simulation ticks in the game adapter.
+  Added protected opt-in `drainCommandsAtCurrentTick()` with canonical due-command ordering,
+  future-queue preservation, and terminal non-drain. Games apply command-only effects without
+  advancing time; sandbox does not opt in and keeps its existing behavior.
+- Three engine regression tests and MySD repeated-input regressions accompany the seam.
+  Independent source review passed. After the encompassing implementation finished, the final
+  engine run passed 184 tests with zero failures plus Android debug assemble; log:
+  `build/reports/eng036-final-20260923-01.log`.
+- Replay passed with canonical `12a65fd2b87593cf` and kill `bb37eefc1903cc77`; save-compat,
+  selfcheck, and content validation (2 packs) passed. Their retained logs are
+  `build/reports/eng036-final-20260923-me-{sim-replay,save-compat,selfcheck,content-validate}.ps1.log`.
+  The old one-shot benchmark report also completed, but does not satisfy the median overhead gate.
+- Baseline archive used by the warmed comparison is retained at
+  `build/eng036-baseline-20260923`, from exact commit
+  `30f4eb17aff0ea2fe6cf80aef970a1e7746dbcbb`. Do not compare against the unrelated sibling checkout.
+- First warmed comparison failed: canonical +36.74%, kill +26.68%, both hashes correct. Preserve
+  `build/reports/eng036-runtime-benchmark-20260923-01.json`. Large timing spread is evidence for
+  investigation, not grounds to call the gate passed.
+- The second separate-process report failed canonical +17.33% (kill -0.58%). CPU/allocation/GC
+  diagnostics and matched JFR identified no proven hot-path cause. Identical-code separate-process
+  A/A varied by >100%, motivating the independently reviewed controlled paired method. Paired02
+  passed calibration but still failed kill +8.500% (canonical +4.580% passed). All failures and the
+  pre-timing startup repair in paired01 remain retained; none was relabeled as a pass. See
+  `docs/contracts/runtime-benchmark.md` for the full chronological ledger.
+- Direct Android-free static review passed: Kotlin/JVM module, only `:engine-core` production
+  dependency, core/JDK imports only, and no Android/desktop/game/render references in production
+  runtime source. Generic runtime and benchmark/optimization reviews were independent of writers.
+- ENG-036 stays active only for delivery: locally accepted, remote publication not authorized.
+  Resolve its scoped local checkpoint from Git history; consumer pin/build state belongs to MySD.
+  Public lifecycle contracts remain Experimental. One coordinated-run telemetry event and its
+  required retro are recorded; do not append a duplicate or apply pipeline changes automatically.
 
 ## DONE
 
@@ -361,6 +409,26 @@ Owner: Codex
 
 ## DECISIONS
 
+- ENG-036 uses a new Android-free `:engine-runtime` module with no game/render/platform dependency.
+  `DeterministicGameSession` owns pending-command ordering, seed, and bounded fixed-tick orchestration;
+  concrete games own state/system execution, immutable projection, hashing, and opaque payload
+  encoding. `step()` deliberately does not project or hash state, and `snapshot()` projects without
+  implicitly hashing, avoiding hidden O(state) work in both simulation and render hot paths.
+- `CommandIdPolicy` advertises only `CALLER_OWNED`: the game/application boundary allocates unique
+  IDs. The generic queue does not claim an unpersisted allocation/deduplication cursor; duplicate
+  IDs remain accepted and are ordered deterministically by the complete command comparator.
+  Commands scheduled at or before the current tick preserve the legacy catch-up rule and drain on
+  the next tick; `Tick(Long.MAX_VALUE)` is the generic terminal clock boundary rather than an
+  overflowing call to `Tick.next()`. Android sandbox input returns before command-ID allocation at
+  that boundary.
+- `GameRuntimeIdentity` retains value semantics through structural equality/hash/string output and
+  an unmodifiable defensive copy of `stableSystemOrder`.
+- `VersionedGameSave` carries runtime/content/schema identity around an opaque payload. Sandbox keeps
+  its exact v1-v7 text payload and `SAVE_VERSION=7`; the existing `SandboxSession.save(): String`
+  remains as the Android lifecycle compatibility facade while `SandboxRuntime` implements the new
+  typed `GameSession` contract. No ADR is required: this realizes the already approved architecture
+  direction without a third-party dependency or reversed module edge.
+
 - ADR-0004 chooses composite build plus an exact commit lock instead of early Maven publication.
   A game updates its pin only after an engine commit is accepted and pushed; a game release tag
   contains that exact SHA. Revisit artifact publication only through a later ADR with demonstrated
@@ -506,17 +574,20 @@ Owner: Codex
 
 ## NEXT
 
-Implement MyEngine `ENG-015` (presentation-side game speed control):
-
-```powershell
-Get-Content -Raw .claude\specs\ENGINE_ROADMAP.md
-Get-Content -Raw .claude\specs\backlog\ENG-015-game-speed-control.md
-```
+- Root reviews the scoped ENG-036 files, records one coordinated-run telemetry event, and performs
+  the authorized local commit. Only then may MySD pin that exact technically accepted SHA. No
+  telemetry, commit, push or pin was performed by this documentation closeout.
+- Keep the delivery card active until the canonical scoped commit/push gate is fulfilled;
+  publication remains pending and must not be inferred from local technical acceptance.
+- Preserve every performance report and identity manifest, including original failures. The final
+  paired03 pass closes only headless runtime overhead, not Android rendering/device budgets.
+- Resume ENG-015 only after the current delivery is actually closed; PROC-015 remains backlog.
 
 ## BLOCKERS
 
-- MySD ENG-036 is specified but intentionally not started until the MySD evidence/spec gates choose
-  the implementation order. PROC-015 is a backlog process change, not an implemented adapter.
+- ENG-036 technical blockers are resolved. Local acceptance is not publication: scoped delivery
+  and the exact consumer pin remain pending. Experimental API policy and the pre-existing Android
+  manual limitations below still apply; headless paired timing does not remove them.
 
 - ENG-027 is accepted with non-blocking manual limitations: run build-tower, tower-selection,
   upgrade, and pause/recreate lifecycle smoke on a device/emulator; check non-default fontScale and
@@ -563,9 +634,9 @@ Get-Content -Raw .claude\specs\backlog\ENG-015-game-speed-control.md
      acceptance #3's device path). Still OPEN/device-pending — unaffected by the SG-004 follow-up.
 - SG-004 follow-up new low-severity items (2026-07-05, non-blocking, from
   me-simulation-reviewer/me-save-compat-reviewer/me-android-performance/me-verifier):
-  1. No persisted CommandId-issuing counter for the new `pendingCommands` encoding — forward-looking,
-     no production caller mints sequential command ids today, no current collision risk. Revisit if a
-     real command-submitting UI is added.
+  1. RESOLVED (ENG-026/ENG-036): command IDs are explicitly caller-owned. The Android caller now
+     persists its allocator in lifecycle state, while each concrete game that owns an allocator
+     persists it in its opaque payload; the generic session does not advertise an unpersisted cursor.
   2. No engine-core-unit-level determinism test for `CommandQueue.pending()`/
      `SandboxRuntime.submitAll()` in isolation — covered end-to-end at the sandbox level
      (`SandboxSessionLifecycleTest`) instead.
@@ -604,6 +675,13 @@ Get-Content -Raw .claude\specs\backlog\ENG-015-game-speed-control.md
   (unit add/drop + capacity-bound `step` telemetry) without shipping capacities in default content.
 
 ## VERIFICATION
+
+- ENG-036 (2026-09-23): post-helper 184 tests/0 failures plus Android assemble/installDist,
+  unchanged replay goldens `12a65fd2b87593cf` / `bb37eefc1903cc77`, v1-v7 save compatibility,
+  content validation (2 packs), selfcheck and direct Android-free review pass. Controlled paired03
+  passes calibrated <=5% overhead; all earlier failures are retained. Root independently reviewed
+  final report/hashes, generic API and helper behavior and accepted technical gates locally.
+  See CURRENT above for artifact paths; no publication or duplicate telemetry is claimed.
 
 - ENG-008 (2026-07-18): full `./gradlew.bat test`, content validation (2 packs), replay,
   save-compat, and benchmark -> pass. Replay hashes: canonical `12a65fd2b87593cf`, kill

@@ -1,7 +1,7 @@
 # MyEngine Roadmap
 
 Status: Phase 00 through Phase 14 complete  
-Last updated: 2026-07-02
+Last updated: 2026-09-23
 
 This roadmap mirrors `Plane/` and keeps the project staged. Do not skip ahead into a playable
 game before the engine contracts and stack scaffold exist.
@@ -38,10 +38,12 @@ game before the engine contracts and stack scaffold exist.
 
 ## Near-Term Milestones
 
-1. Signal Garden `SG-001`: create the first game content pack.
-2. `SG-002`: add reward deposit hook.
-3. `SG-003`: replace ASCII/text presentation with a placeholder render surface.
-4. Keep sandbox tests green while first-game work proceeds.
+1. ENG-036 implementation and technical gates are accepted locally (2026-09-23).
+2. Resolve the reviewed local checkpoint from Git history (create it only if absent); MySD can
+   pin that exact accepted SHA under ADR-0004. One coordinated telemetry event and retro are recorded.
+3. Publication remains pending; do not mark the delivery board done until the canonical scoped
+   commit/push gate is fulfilled. Preserve all earlier performance failures and final paired03 evidence.
+4. Resume general backlog order at ENG-015.
 
 ## Current Non-Goals
 

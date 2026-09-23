@@ -16,15 +16,6 @@ java {
 
 dependencies {
     api(project(":engine-core"))
-    api(project(":engine-runtime"))
-    api(project(":engine-world"))
-    api(project(":engine-content"))
-    api(project(":engine-entities"))
-    api(project(":engine-logistics"))
-    api(project(":engine-defense"))
-    api(project(":engine-render"))
-    implementation(project(":engine-ai"))
-    implementation(project(":engine-storyteller"))
     testImplementation(libs.kotlin.test.junit5)
     testImplementation(libs.junit.jupiter)
 }

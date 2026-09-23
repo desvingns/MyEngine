@@ -7,7 +7,6 @@ import dev.myengine.content.MapWinCondition
 import dev.myengine.content.TowerUpgradeTier
 import dev.myengine.content.HudStringKeys
 import dev.myengine.ai.GoalField
-import dev.myengine.core.CommandQueue
 import dev.myengine.core.EngineCommand
 import dev.myengine.core.EngineInfo
 import dev.myengine.core.HashableState
@@ -47,6 +46,9 @@ import dev.myengine.render.HudTowerInfo
 import dev.myengine.render.HudTowerTier
 import dev.myengine.render.RenderEntity
 import dev.myengine.render.RenderTile
+import dev.myengine.runtime.DeterministicGameSession
+import dev.myengine.runtime.ExperimentalGameRuntimeApi
+import dev.myengine.runtime.SessionSaveResult
 import dev.myengine.storyteller.IncidentDirector
 import dev.myengine.world.ResourceNode
 import dev.myengine.world.TerrainRule
@@ -62,11 +64,6 @@ import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
 import java.util.Properties
-
-data class SandboxDescriptor(
-    val id: String = "sandbox",
-    val engineName: String = EngineInfo.NAME,
-)
 
 data class SandboxState(
     var tick: Tick,
@@ -124,11 +121,14 @@ internal fun depositRewards(inventory: Inventory, rewards: Map<String, Int>): Re
     return RewardDeposit(next, dropped)
 }
 
+@OptIn(ExperimentalGameRuntimeApi::class)
 class SandboxRuntime(
     val state: SandboxState,
     private val defenseRuntime: DefenseRuntime = DefenseRuntime(),
-    private val commandQueue: CommandQueue = CommandQueue(),
-) {
+    seed: Long = SandboxSession.DEFAULT_SEED,
+    descriptor: SandboxDescriptor = SandboxDescriptor(state.registry, mapId = state.mapId),
+    restoredPendingCommands: List<EngineCommand> = emptyList(),
+) : DeterministicGameSession<EngineSnapshot>(descriptor, seed, restoredPendingCommands) {
     private val producerSystem = ProducerSystem(state.registry.recipes)
     private val map = state.registry.requireMap(state.mapId)
     private val spawn = map.primarySpawn.position.let { TilePosition(it.x, it.y) }
@@ -138,64 +138,58 @@ class SandboxRuntime(
     private var goalField: GoalField = rebuildAfterWalkabilityChange()
     private val renderPath: List<TilePosition> get() = goalField.pathFrom(spawn)
 
-    /** Returns false without mutating state when the run has already reached its terminal boundary. */
-    fun submit(command: EngineCommand): Boolean {
-        if (state.run.isTerminal) return false
-        commandQueue.submit(command)
-        return true
-    }
-
     /** Non-destructive snapshot of the runtime's not-yet-drained pending commands. */
-    fun pendingCommands(): List<EngineCommand> = commandQueue.pending()
+    fun pendingCommands(): List<EngineCommand> = pendingCommandSnapshot()
 
-    /** Submits a command batch subject to the same terminal rejection as [submit]. */
-    fun submitAll(commands: List<EngineCommand>) {
-        commands.forEach(::submit)
-    }
+    override val authoritativeTick: Tick get() = state.tick
+    override val terminal: Boolean get() = state.run.isTerminal
 
-    /**
-     * Restore-only path that preserves a serialized pre-terminal queue without reopening command
-     * submission. Terminal [step] calls still return before draining these commands.
-     */
-    internal fun restorePendingCommands(commands: List<EngineCommand>) {
-        commands.forEach(commandQueue::submit)
-    }
-
-    fun step(ticks: Int = 1) {
-        repeat(ticks) {
-            if (state.run.isTerminal) return
-            state.tick = state.tick.next()
-            val commands = commandQueue.drainFor(state.tick)
-            commands.forEach(::applyCommand)
-            updateProduction()
-            state.defense = defenseRuntime.spawnDueWaves(
-                state.tick,
-                state.defense,
-                state.registry,
-                state.world,
-                state.entities,
-                spawn,
-                core,
-                goalField,
-            )
-            val towerResult = defenseRuntime.updateTowers(state.registry, state.entities, goalField)
-            state.defense = state.defense.record(towerResult.metrics).recordTowerMetrics(towerResult.towerMetrics)
-            val deposit = depositRewards(state.inventory, towerResult.rewards)
-            state.inventory = deposit.inventory
-            if (deposit.dropped.isNotEmpty()) {
-                // Non-fatal telemetry: a full inventory is a legitimate game state, not a crash,
-                // but earned rewards must not vanish without a trace (surfaces in DebugOverlay).
-                state.lastCommandOrError = deposit.dropped.entries
-                    .joinToString(",", prefix = "reward_dropped:") { "${it.key}:${it.value}" }
-            }
-            state.defense = defenseRuntime.updateEnemies(state.registry, state.defense, state.entities, goalField)
-            evaluateTerminalState()
-            if (state.run.isTerminal) return
-            IncidentDirector(state.registry.incidents.values).select(state.defense.metrics.enemiesSpawned, dev.myengine.core.SeededRandom(17))
+    override fun advanceOneTick(tick: Tick, commands: List<EngineCommand>) {
+        check(tick == state.tick.next()) { "Sandbox runtime must advance exactly one tick." }
+        state.tick = tick
+        commands.forEach(::applyCommand)
+        updateProduction()
+        state.defense = defenseRuntime.spawnDueWaves(
+            state.tick,
+            state.defense,
+            state.registry,
+            state.world,
+            state.entities,
+            spawn,
+            core,
+            goalField,
+        )
+        updateTowersAndDepositRewards()
+        state.defense = defenseRuntime.updateEnemies(state.registry, state.defense, state.entities, goalField)
+        evaluateTerminalState()
+        if (!state.run.isTerminal) {
+            selectIncident()
         }
     }
 
-    fun snapshot(): EngineSnapshot {
+    // Keep the per-tick virtual callback small: large concrete callbacks prevent a hot generic
+    // session loop from inlining its dispatch. These helpers preserve the existing system order.
+    private fun updateTowersAndDepositRewards() {
+        val towerResult = defenseRuntime.updateTowers(state.registry, state.entities, goalField)
+        state.defense = state.defense.record(towerResult.metrics).recordTowerMetrics(towerResult.towerMetrics)
+        val deposit = depositRewards(state.inventory, towerResult.rewards)
+        state.inventory = deposit.inventory
+        if (deposit.dropped.isNotEmpty()) {
+            // Non-fatal telemetry: a full inventory is a legitimate game state, not a crash,
+            // but earned rewards must not vanish without a trace (surfaces in DebugOverlay).
+            state.lastCommandOrError = deposit.dropped.entries
+                .joinToString(",", prefix = "reward_dropped:") { "${it.key}:${it.value}" }
+        }
+    }
+
+    private fun selectIncident() {
+        IncidentDirector(state.registry.incidents.values).select(
+            state.defense.metrics.enemiesSpawned,
+            dev.myengine.core.SeededRandom(17),
+        )
+    }
+
+    override fun projectSnapshot(): EngineSnapshot {
         val renderTiles = state.world.positions().map {
             val view = state.world.tileAt(it)
             RenderTile(it, view.tile.terrainId, state.world.canBuild(it))
@@ -230,6 +224,11 @@ class SandboxRuntime(
             hud = hudSnapshot(),
         )
     }
+
+    override fun stableHashValue(): String = state.stableHash()
+
+    override fun encodeSavePayload(pendingCommands: List<EngineCommand>): String =
+        SandboxSaveCodec.encode(state, seed, pendingCommands)
 
     private fun hudSnapshot(): HudSnapshot {
         val registry = state.registry
@@ -544,6 +543,18 @@ class SandboxRuntime(
         GoalField.rebuildAfterWalkabilityChange(state.world, core, spawns).field
 }
 
+internal data class SandboxSaveMetadata(
+    val saveVersion: Int,
+    val packId: String?,
+    val contentVersion: String?,
+    val seed: Long?,
+)
+
+internal sealed interface SandboxSaveMetadataResult {
+    data class Valid(val metadata: SandboxSaveMetadata) : SandboxSaveMetadataResult
+    data class Invalid(val reason: String) : SandboxSaveMetadataResult
+}
+
 object SandboxSaveCodec {
     const val SAVE_VERSION: Int = 7
 
@@ -660,6 +671,29 @@ object SandboxSaveCodec {
         val version = requireSupportedSaveVersion(props)
         if (version >= 5) parseRunState(props)
         return parsePendingCommands(props.getProperty("pendingCommands", ""))
+    }
+
+    /** Reads only compatibility metadata; payload interpretation remains in this game-owned codec. */
+    internal fun inspectMetadata(text: String): SandboxSaveMetadataResult {
+        return try {
+            val props = Properties().also { it.load(StringReader(text)) }
+            val rawVersion = props.getProperty("saveVersion")
+            val version = rawVersion?.toIntOrNull()
+            when {
+                version == null -> SandboxSaveMetadataResult.Invalid("Save has an invalid version '$rawVersion'.")
+                version <= 0 -> SandboxSaveMetadataResult.Invalid("Save version must be positive; was '$version'.")
+                else -> SandboxSaveMetadataResult.Valid(
+                    SandboxSaveMetadata(
+                        saveVersion = version,
+                        packId = props.getProperty("packId")?.takeIf { it.isNotBlank() },
+                        contentVersion = props.getProperty("contentVersion")?.takeIf { it.isNotBlank() },
+                        seed = props.getProperty("seed")?.toLongOrNull(),
+                    ),
+                )
+            }
+        } catch (failure: RuntimeException) {
+            SandboxSaveMetadataResult.Invalid(failure.message ?: "Sandbox save metadata is invalid.")
+        }
     }
 
     private fun requireSupportedSaveVersion(props: Properties): Int {
@@ -807,9 +841,10 @@ data class SandboxScenarioResult(
 )
 
 object SandboxGame {
-    val descriptor: SandboxDescriptor = SandboxDescriptor()
+    /** Compatibility descriptor for callers that previously read `SandboxGame.descriptor`. */
+    val descriptor: SandboxDescriptor by lazy { descriptor() }
 
-    fun banner(): String = "${EngineInfo.banner()} / ${descriptor.id}"
+    fun banner(): String = "${EngineInfo.banner()} / ${SandboxDescriptor.RUNTIME_ID}"
 
     fun loadRegistry(root: Path = contentRoot(), difficultyId: String? = null): ContentRegistry {
         val result = ContentPackLoader.load(root)
@@ -842,8 +877,21 @@ object SandboxGame {
         registry: ContentRegistry = loadRegistry(),
         difficultyId: String? = null,
         mapId: String? = null,
-    ): SandboxRuntime =
-        SandboxRuntime(createInitialState(registry, difficultyId, mapId))
+        seed: Long = SandboxSession.DEFAULT_SEED,
+    ): SandboxRuntime {
+        val descriptor = SandboxDescriptor(registry, difficultyId, mapId)
+        return SandboxRuntime(
+            state = createInitialState(registry = descriptor.registry, mapId = descriptor.mapId),
+            seed = seed,
+            descriptor = descriptor,
+        )
+    }
+
+    fun descriptor(
+        registry: ContentRegistry = loadRegistry(),
+        difficultyId: String? = null,
+        mapId: String? = null,
+    ): SandboxDescriptor = SandboxDescriptor(registry, difficultyId, mapId)
 
     /**
      * Canonical replay/benchmark scenario. The pulse tower at (30,32) is adjacent to the core and
@@ -870,11 +918,19 @@ object SandboxGame {
         mapId: String?,
     ): SandboxScenarioResult {
         val registry = loadRegistry(difficultyId = difficultyId)
-        val runtime = createRuntime(registry, mapId = mapId)
+        val runtime = createRuntime(registry, mapId = mapId, seed = seed)
         runtime.submit(BuildTowerCommand(dev.myengine.core.CommandId(1), Tick(1), "pulse", TileCoordinate(towerPosition.x, towerPosition.y)))
         runtime.step(35)
-        val save = SandboxSaveCodec.encode(runtime.state, seed)
-        return SandboxScenarioResult(runtime.state.stableHash(), runtime.snapshot(), save, runtime.state.defense.metrics)
+        val save = when (val result = runtime.save()) {
+            is SessionSaveResult.Saved -> result.save.payload
+            is SessionSaveResult.Failed -> error(result.reason)
+        }
+        return SandboxScenarioResult(
+            runtime.state.stableHash(),
+            runtime.snapshot().value,
+            save,
+            runtime.state.defense.metrics,
+        )
     }
 
     fun contentRoot(): Path {

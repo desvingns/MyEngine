@@ -1,7 +1,7 @@
 # MyEngine Architecture
 
 Status: Draft accepted for Phase 03  
-Last updated: 2026-07-02
+Last updated: 2026-09-23 (ENG-036 technically accepted locally; Experimental API; not published)
 
 This document defines the intended module boundaries before production engine behavior is
 implemented. The scaffold contains only the first buildable modules; later modules should be added
@@ -12,6 +12,7 @@ when their phase starts and should follow these contracts.
 ```mermaid
 flowchart LR
     core["engine-core"]
+    runtime["engine-runtime"]
     world["engine-world"]
     content["engine-content"]
     testkit["engine-testkit"]
@@ -26,6 +27,7 @@ flowchart LR
     desktop["desktop"]
     android["android"]
 
+    runtime --> core
     world --> core
     content --> core
     testkit --> core
@@ -48,6 +50,7 @@ flowchart LR
     render --> world
     render --> content
     sandbox --> core
+    sandbox --> runtime
     sandbox --> world
     sandbox --> content
     desktop --> sandbox
@@ -66,8 +69,9 @@ authoritative world state directly.
 1. A launcher starts a game descriptor from `games/sandbox` or a future game module.
 2. The game descriptor selects content packs and initial scenario data.
 3. `engine-content` validates and materializes definitions into a `ContentRegistry`.
-4. `engine-core` creates an `Engine` with a fixed tick scheduler, command queue, seed, and system
-   ordering.
+4. `engine-runtime` creates a game-owned `GameSession` through a validated
+   `GameRuntimeDescriptor`; its deterministic base owns the command queue, fixed tick boundaries,
+   seed, and stable command drain ordering.
 5. Simulation modules update authoritative state on fixed ticks only.
 6. Rendering receives immutable snapshots or read-only views.
 7. Persistence stores versioned world state, content references, command/replay metadata, and
@@ -132,6 +136,7 @@ Content validation must run in JVM tests without Android.
 | Module | Required tests before production behavior is done |
 |---|---|
 | `engine-core` | fixed tick, command ordering, RNG repeatability, replay hash |
+| `engine-runtime` | typed lifecycle results, bounded ticks, pending-command continuity, compatibility failures |
 | `engine-world` | coordinate math, occupancy, buildability, serialization boundaries |
 | `engine-content` | schema validation, cross-reference validation, migration samples |
 | `engine-entities` | stable IDs, system ordering, component persistence |

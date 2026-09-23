@@ -1,11 +1,20 @@
 # MyEngine State
 
-Last updated: 2026-07-18
-Active phase: Phase 00-14 complete; Signal Garden SG-001..005 complete; MyTD MTD-001..005 complete; DX-008, ENG-002, ENG-005, ENG-008, ENG-013, ENG-014, ENG-026, ENG-027, and PROC-002 complete; pipeline at v0.2.0; next engine backlog is `ENG-015` game speed control
-Owner of last update: Codex (2026-07-18: PROC-002 / ADR-0004 accepted; ENG-036 and PROC-015 filed for MySD; next P1 item remains ENG-015)
+Last updated: 2026-09-23
+Active phase: ENG-036 technically accepted locally; scoped delivery and publication pending
+Owner of last update: Codex (2026-09-23: independent acceptance of correctness, compatibility, boundary and controlled performance gates; not published)
 
 ## Current Status
 
+- ENG-036 technical gates were independently accepted locally on 2026-09-23. The final sandbox-only
+  helper extraction preserves system order, arithmetic, terminal guard, and seed; the compiled
+  `advanceOneTick` callback is 239 bytecodes instead of 433. Full engine tests pass (184/0), Android
+  assemble and fresh installDist pass, and replay/save compatibility pass after this source delta.
+- The single prescribed post-refactor controlled set passed at
+  `build/reports/eng036-paired-20260923-03/report.json`: A/A deltas -3.440% canonical / +0.596% kill
+  satisfy the absolute 5% calibration bound; A/B deltas -4.094% / -3.761% satisfy the unchanged
+  <=5% regression budget. Every golden and classloader-isolation check passed. All earlier failed
+  results remain retained; this is headless runtime evidence, not an Android frame-budget claim.
 - Phase 00-03 foundation, stack, and architecture contracts are complete.
 - Phase 04 agentic pipeline bootstrap is complete.
 - Phase 05-10 engine runtime and sandbox vertical slice are complete.
@@ -17,9 +26,32 @@ Owner of last update: Codex (2026-07-18: PROC-002 / ADR-0004 accepted; ENG-036 a
   plus a full pinned MyEngine commit SHA; CI checks out and verifies the same revision. Stable APIs
   may be consumed directly, Experimental APIs require a consumer adapter and pin, and Internal APIs
   are not cross-repository dependencies.
-- MySD foundation filed ENG-036 for an Android-free reusable runtime/session extraction and
-  PROC-015 for a reference-game state-graph/mechanic-claim bridge. Probable gameplay gaps and
-  `mysd` demand remain deliberately uncarded until Luna evidence passes Gate 1.
+- ENG-036 is locally accepted, with delivery still active: `:engine-runtime` contains Experimental `GameRuntimeDescriptor`,
+  `GameSession`, typed lifecycle results, opaque versioned-save identity, and
+  `DeterministicGameSession`. The generic base owns the pending command queue, seed, stable drain
+  order, and positive bounded tick requests. Command IDs are explicitly caller-owned; callers must
+  allocate unique IDs, while accidental duplicates remain accepted and deterministically ordered.
+  `SandboxRuntime` adapts the base while retaining concrete state/rules/snapshot/codec ownership;
+  the raw v1-v7 save payload stays unchanged at version 7. After the encompassing implementation
+  finished, the final engine test run passed 184 tests with zero failures and Android debug assemble
+  passed. Replay, save-compat, selfcheck, and content validation (2 packs) passed as well.
+- ENG-036 final source review added typed pending-save per-tick continuity/malformed metadata cases
+  and the protected command-only input boundary. The first warmed comparison against exact baseline
+  `30f4eb17aff0ea2fe6cf80aef970a1e7746dbcbb` failed: canonical +36.74%, kill +26.68%, with correct
+  goldens. The original report is retained at `build/reports/eng036-runtime-benchmark-20260923-01.json`.
+  The diagnostic extension, matched JFR, separate-process A/A, and controlled paired follow-up are
+  now retained too; see the latest status above. The 5% gate is unchanged.
+- Direct Android-free static review passed: `engine-runtime` uses Kotlin/JVM and only the
+  `:engine-core` production dependency; production imports are core contracts and
+  `java.util.Collections`, with no Android/desktop/game/render references. Independent generic API,
+  sandbox behavior/order, benchmark methodology and final result reviews passed.
+- ENG-036 remains active on the delivery board because remote publication is not authorized.
+  Resolve the scoped local checkpoint from Git history; consumer pin/build state belongs to MySD.
+  Technical acceptance does not promote its Experimental API to Stable. One coordinated engine-run
+  telemetry event and required retro are recorded; do not duplicate them. See `.ai/handoff.md` and
+  `docs/contracts/runtime-benchmark.md` for retained evidence.
+- PROC-015 remains the reference-game state-graph/mechanic-claim bridge backlog. Probable gameplay
+  gaps and `mysd` demand remain deliberately uncarded until Luna evidence passes Gate 1.
 - Signal Garden `SG-001` (content pack) is complete: original pack + loader unit test + gates pass.
 - Signal Garden `SG-002` (reward deposit hook) is complete: `DefenseRuntime.updateTowers` returns
   `TowerUpdateResult(metrics, rewards)` accumulating content-derived kill rewards (no Inventory
@@ -216,18 +248,17 @@ Owner of last update: Codex (2026-07-18: PROC-002 / ADR-0004 accepted; ENG-036 a
 
 ## Next Exact Action
 
-Implement engine backlog item `ENG-015` (presentation-side game speed control):
-
-```powershell
-Get-Content -Raw .claude\specs\ENGINE_ROADMAP.md
-Get-Content -Raw .claude\specs\backlog\ENG-015-game-speed-control.md
-```
-
-Expected next output:
-
-- Presentation-side game speed policy that does not alter authoritative fixed-tick simulation
+Resolve the reviewed ENG-036 local checkpoint from Git history, creating it from the explicit scope
+only if absent. MySD may pin that exact accepted SHA under ADR-0004. The single telemetry event and
+required retro are already recorded. Publication remains separately unauthorized; keep the card active until the
+canonical commit/push gate is actually fulfilled. Do not rerun passed performance gates to select
+better samples or erase any earlier failed evidence.
 
 ## Known Blockers
+
+- ENG-036 has no remaining technical gate blocker. Remote publication and consumer integration
+  are separate delivery actions, not missing correctness/performance evidence. Its API remains
+  Experimental, and headless timing does not close historical Android device/performance gaps.
 
 - ENG-027 is accepted with non-blocking manual limitations: on a device/emulator, smoke build-tower,
   tower selection, upgrade, and pause/recreate lifecycle continuity; exercise non-default fontScale
@@ -279,9 +310,9 @@ Expected next output:
      acceptance #3's device path. Still OPEN/device-pending — unaffected by the SG-004 follow-up.
 - SG-004 follow-up new low-severity items (2026-07-05, non-blocking, from
   me-simulation-reviewer/me-save-compat-reviewer/me-android-performance/me-verifier):
-  1. No persisted CommandId-issuing counter for the new `pendingCommands` encoding — forward-looking
-     only; no production caller mints sequential command ids today, so there is no current collision
-     risk. Revisit if/when a real command-submitting UI is added.
+  1. RESOLVED (ENG-026/ENG-036): command IDs are explicitly caller-owned. The Android caller now
+     persists its allocator in lifecycle state, while each concrete game that owns an allocator
+     persists it in its opaque payload; the generic session does not advertise an unpersisted cursor.
   2. No engine-core-unit-level determinism test for `CommandQueue.pending()`/`SandboxRuntime.submitAll()`
      in isolation — covered end-to-end at the sandbox level (`SandboxSessionLifecycleTest`) instead.
   3. The new `pendingCommands` properties-line encoding assumes command type/actorId/stablePayload
@@ -330,6 +361,15 @@ Expected next output:
 - Gradle still emits a Gradle 10 deprecation warning from AGP/Gradle internals; builds pass.
 
 ## Verification
+
+- ENG-036 (2026-09-23, locally accepted): final post-helper full suite 184 tests/0 failures,
+  Android assemble and installDist pass (`build/reports/eng036-after-helper-20260923-01.log`);
+  replay/save pass (`eng036-after-helper-{replay,save}-20260923.log`); content validation (2 packs)
+  and selfcheck pass in the initial final gate. Direct Android-free source/dependency review passes.
+  Controlled paired03 passes calibrated <=5% headless overhead; report SHA-256
+  `fcba53a30178293fde7b7b726e6c6cffe89406a23e3f8a3191408d8efc71a1f8`. Separate writer/reviewer
+  acceptance is recorded; delivery remains unpublished. Complete failure-to-pass history is in
+  `docs/contracts/runtime-benchmark.md`.
 
 - ENG-008 (2026-07-18): full `./gradlew.bat test` -> pass; content validation -> pass
   (`validated 2 pack(s)`); replay -> pass with canonical `12a65fd2b87593cf` and kill

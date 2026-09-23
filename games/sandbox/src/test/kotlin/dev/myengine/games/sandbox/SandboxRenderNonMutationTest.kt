@@ -21,7 +21,7 @@ class SandboxRenderNonMutationTest {
         val runtime = SandboxGame.createRuntime(registry)
         runtime.step(10)
 
-        val snapshot = runtime.snapshot()
+        val snapshot = runtime.snapshot().value
         val hashBefore = runtime.state.stableHash()
 
         val camera = Camera(

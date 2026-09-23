@@ -3,6 +3,27 @@
 This file records major project-facing changes. It is not a replacement for ADRs, `STATE.md`, or
 the phase plan.
 
+## 2026-09-23 - ENG-036 Technical Acceptance (Local, Unpublished)
+
+Independent review accepted the Android-free Experimental runtime/session API, sandbox adaptation,
+and protected command-only input boundary after full implementation. Final source passes 184 tests
+with zero failures, Android assemble/installDist, replay, v1-v7 save compatibility, content validation,
+selfcheck and direct Android-free static review. The unchanged-golden controlled paired03 gate passes
+after a minimal sandbox-only callback helper extraction. Original noisy failures, same-code A/A
+evidence, the genuine pre-helper paired02 kill regression, and final calibrated pass are retained in
+`docs/contracts/runtime-benchmark.md`. No measurements were discarded or thresholds relaxed.
+
+This is technical acceptance, not publication or Stable API promotion. Scoped commit/publication,
+the exact MySD pin and one root-owned coordinated telemetry record remain delivery actions.
+
+## 2026-09-16 - ENG-036 Runtime/Session Extraction (Staged)
+
+Created the Android-free `engine-runtime` module and its Experimental cross-game descriptor/session
+contract. Deterministic command-queue and bounded tick orchestration moved into the reusable base;
+the sandbox remains responsible for game state, systems, snapshots, content, hashing, and its
+unchanged v1-v7 save payload. Test sources and typed compatibility cases are present, but all gates
+are intentionally deferred until the encompassing MySD engine + game batch is complete.
+
 ## 2026-07-02 - Phase 00: Reference Research
 
 Created the reference and license guardrail baseline:

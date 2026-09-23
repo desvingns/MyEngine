@@ -2,6 +2,9 @@ package dev.myengine.games.sandbox
 
 import dev.myengine.content.ContentRegistry
 import dev.myengine.core.EngineCommand
+import dev.myengine.render.EngineSnapshot
+import dev.myengine.runtime.ExperimentalGameRuntimeApi
+import dev.myengine.runtime.SessionStepResult
 import java.io.StringReader
 import java.util.Properties
 
@@ -21,6 +24,7 @@ import java.util.Properties
  * instance constructed every tick rather than a persistent cursor, so there is nothing to persist
  * for it.
  */
+@OptIn(ExperimentalGameRuntimeApi::class)
 class SandboxSession(
     val runtime: SandboxRuntime,
     val seed: Long,
@@ -32,11 +36,31 @@ class SandboxSession(
      */
     fun save(): String = SandboxSaveCodec.encode(runtime.state, seed, runtime.pendingCommands())
 
-    fun stableHash(): String = runtime.state.stableHash()
+    fun stableHash(): String = runtime.stableHash()
+
+    /** Immutable game-specific value for legacy Android/render callers. */
+    fun snapshot(): EngineSnapshot = runtime.snapshot().value
 
     /** Thin delegate so a lifecycle/test can advance the simulation. */
     fun step(ticks: Int = 1) {
-        runtime.step(ticks)
+        require(ticks >= 0) { "Count 'times' must be non-negative, but was $ticks." }
+        var remaining = ticks
+        val maxTicksPerStep = runtime.descriptor.identity.maxTicksPerStep
+        while (remaining > 0) {
+            val requested = minOf(remaining, maxTicksPerStep)
+            when (val result = runtime.step(requested)) {
+                is SessionStepResult.Advanced -> {
+                    remaining -= result.advancedTicks
+                    if (result.terminal) return
+                    check(result.advancedTicks == requested) {
+                        "Sandbox runtime advanced ${result.advancedTicks} of $requested requested ticks without terminating."
+                    }
+                }
+                is SessionStepResult.Rejected -> throw IllegalArgumentException(
+                    "ticks must be in ${result.allowedTicks}; was ${result.requestedTicks}",
+                )
+            }
+        }
     }
 
     /** Thin delegate so a lifecycle/test can enqueue a command. */
@@ -54,7 +78,10 @@ class SandboxSession(
             seed: Long = DEFAULT_SEED,
             difficultyId: String? = null,
             mapId: String? = null,
-        ): SandboxSession = SandboxSession(SandboxGame.createRuntime(registry, difficultyId, mapId), seed)
+        ): SandboxSession = SandboxSession(
+            runtime = SandboxGame.createRuntime(registry, difficultyId, mapId, seed),
+            seed = seed,
+        )
 
         /**
          * Restores a session from a save [text] produced by [save].
@@ -72,8 +99,11 @@ class SandboxSession(
             val state = SandboxSaveCodec.decode(text, registry)
             val pendingCommands = SandboxSaveCodec.decodePendingCommands(text)
             val seed = parseSeed(text)
-            val runtime = SandboxRuntime(state)
-            runtime.restorePendingCommands(pendingCommands)
+            val runtime = SandboxRuntime(
+                state = state,
+                seed = seed,
+                restoredPendingCommands = pendingCommands,
+            )
             return SandboxSession(runtime, seed)
         }
 

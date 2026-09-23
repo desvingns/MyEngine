@@ -43,6 +43,7 @@ render/input work, AGP 9 built-in Kotlin for Android, and desktop as a developme
 Phase 03 defines these planned module boundaries:
 
 - `engine-core`: tick loop, deterministic RNG, command queue, events, replay hashes.
+- `engine-runtime`: Android-free cross-game descriptor/session lifecycle and deterministic command/tick orchestration.
 - `engine-world`: tile/chunk grid, terrain, occupancy, buildability, spatial queries.
 - `engine-entities`: entities, components, stable IDs, serialization boundaries.
 - `engine-ai`: jobs, tasks, path requests, utility/behavior hooks.

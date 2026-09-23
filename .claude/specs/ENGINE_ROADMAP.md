@@ -7,14 +7,14 @@ two or more games outranks single-game gaps of the same severity.
 Updated by: the `/me-spec` backlog bridge (new gaps / new demand) and `/me`
 close-out (status changes).
 
-Last updated: 2026-07-18
+Last updated: 2026-09-23
 
 ## Capabilities
 
 | Capability | Cards | Demanded by | Demand | Status |
 |---|---|---|---:|---|
 | Cross-repo composite build + pinned engine revision | PROC-002 / ADR-0004 | process, mysd | - | **done** (2026-07-18; consumer lock pins a full accepted SHA, CI checks out the same commit, Stable/Experimental/Internal usage is explicit) |
-| Reusable Android-free runtime/session API | ENG-036 | mysd | 1 | backlog (extract generic descriptor/session orchestration from games/sandbox; preserve replay hashes and v1-v7 save migrations) |
+| Reusable Android-free runtime/session API | ENG-036 | mysd | 1 | **active** (technically accepted locally 2026-09-23: 184/0 tests, compatibility/content/static/build gates and calibrated paired03 <=5% pass; Experimental API; remote publication pending) |
 | Defense kill-reward deposit into player resources | SG-002, MTD-001 | signal-garden, mytd | 2 | **done** (SG-002 implemented 2026-07-04; MTD-001 closed 2026-07-05 as duplicate; MyTD gold maps to content-defined `rewardResource`) |
 | Render surface + palette (snapshot -> RenderFrame) | SG-003 (+follow-up), MTD-005 | signal-garden, mytd | 2 | **done** (MTD-005 accepted 2026-07-16: Android Canvas consumes immutable RenderFrame, MotionEvent uses InputAdapter, scoped JVM/build/replay gates pass; device smoke and performance profiling remain manual-pending) |
 | Content pack authoring/validation (game pack) | SG-001 | signal-garden | 1 | done (2026-07-04) |
@@ -102,8 +102,9 @@ Last updated: 2026-07-18
    exact backlog action is `ENG-015`.
 4. DX-008 is done: use its hybrid-format ADR for ENG-017/ENG-028 schema work. Other high-leverage
    pipeline cards remain DX-002, DX-006, and DX-005.
-5. MySD foundation: PROC-002 / ADR-0004 is done. After MySD Gate 2, implement ENG-036 before the
-   headless game slice; bridge only Gate 1-confirmed demand through PROC-015 semantics.
+5. MySD foundation: PROC-002 / ADR-0004 is done. ENG-036 technical gates are accepted locally;
+   delivery remains active until the scoped commit/push gate is fulfilled. MySD may pin only the
+   exact accepted commit after it exists. Bridge only Gate 1-confirmed demand through PROC-015 semantics.
 
 ## Deliberately not carded (2026-07-06, bounded scope)
 

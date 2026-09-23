@@ -8,6 +8,8 @@ import dev.myengine.core.command.BuildTowerCommand
 import dev.myengine.core.command.SellTowerCommand
 import dev.myengine.core.command.TileCoordinate
 import dev.myengine.core.command.UpgradeTowerCommand
+import dev.myengine.runtime.ExperimentalGameRuntimeApi
+import dev.myengine.runtime.SessionRestoreResult
 import dev.myengine.world.TilePosition
 import java.io.StringReader
 import java.io.StringWriter
@@ -39,6 +41,17 @@ class SandboxSessionLifecycleTest {
 
     private fun buildPulseAt(tick: Long, position: TilePosition) =
         BuildTowerCommand(CommandId(1), Tick(tick), "pulse", TileCoordinate(position.x, position.y))
+
+    @Test
+    fun legacyStepKeepsZeroAsNoOpAndRejectsNegativeCounts() {
+        val session = SandboxSession.start()
+
+        session.step(0)
+
+        assertEquals(Tick(0), session.runtime.currentTick)
+        assertFailsWith<IllegalArgumentException> { session.step(-1) }
+        assertEquals(Tick(0), session.runtime.currentTick)
+    }
 
     /** A. Save at a quiescent tick, restore, and the reconstructed state hashes identically. */
     @Test
@@ -144,8 +157,10 @@ class SandboxSessionLifecycleTest {
     }
 
     @Test
+    @OptIn(ExperimentalGameRuntimeApi::class)
     fun v1ThroughV6SavesMigrateWithoutTargetingMode() {
         val registry = SandboxGame.loadRegistry()
+        val descriptor = SandboxGame.descriptor(registry)
         assertEquals(1, registry.maps.size, "legacy migration is only valid while the content pack has one map")
         val v7Save = SandboxSession.start(registry).also { it.step(5) }.save()
 
@@ -153,8 +168,16 @@ class SandboxSessionLifecycleTest {
             val legacy = legacySave(v7Save, version, dropPendingCommands = version == 1)
 
             val decoded = SandboxSaveCodec.decode(legacy, registry)
+            val restored = SandboxSession.restore(legacy, registry)
+            val typedRestored = assertIs<SessionRestoreResult.Restored<*>>(
+                descriptor.restoreText(legacy),
+            ).session
 
             assertEquals(Tick(5), decoded.tick, "v$version tick")
+            assertEquals(Tick(5), restored.runtime.currentTick, "v$version restored tick")
+            assertEquals(decoded.stableHash(), restored.stableHash(), "v$version restored hash")
+            assertEquals(decoded.stableHash(), typedRestored.stableHash(), "v$version typed restored hash")
+            assertEquals("7", saveProperty(restored.save(), "saveVersion"), "v$version roundtrip version")
             assertEquals(registry.requireMap().id, decoded.mapId, "v$version map")
             assertEquals(RunStatus.ACTIVE, decoded.run.status, "v$version must migrate without terminal state")
             if (version < 6) assertEquals(emptyMap(), decoded.defense.towerMetrics, "v$version tower metrics")
@@ -312,6 +335,21 @@ class SandboxSessionLifecycleTest {
         // Re-saving the restored session reproduces the same `seed` property in the text.
         assertEquals(seedProperty(session.save()), seedProperty(restored.save()))
         assertEquals(session.seed.toString(), seedProperty(restored.save()))
+    }
+
+    @Test
+    fun explicitLegacyFacadeSeedOverridesARuntimeConstructedWithAnotherSeed() {
+        val registry = SandboxGame.loadRegistry()
+        val session = SandboxSession(
+            runtime = SandboxGame.createRuntime(registry = registry, seed = 7),
+            seed = 41,
+        )
+
+        val restored = SandboxSession.restore(session.save(), registry)
+
+        assertEquals("41", seedProperty(session.save()))
+        assertEquals(41L, restored.seed)
+        assertEquals(41L, restored.runtime.seed)
     }
 
     /**

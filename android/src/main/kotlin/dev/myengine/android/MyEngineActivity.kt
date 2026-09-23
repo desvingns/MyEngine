@@ -29,7 +29,7 @@ class MyEngineActivity : Activity() {
         }
         started.onSuccess {
             session = it
-            latestSnapshot = it.runtime.snapshot()
+            latestSnapshot = it.snapshot()
             val view = SandboxRenderView(
                 context = this,
                 latestSnapshot = { latestSnapshot },
@@ -91,7 +91,7 @@ class MyEngineActivity : Activity() {
         if (activeSession != null) {
             val ticks = fixedTickLoop.advance(frameTimeNanos)
             if (ticks > 0) activeSession.step(ticks)
-            latestSnapshot = activeSession.runtime.snapshot()
+            latestSnapshot = activeSession.snapshot()
             renderView?.renderLatestFrame()
         }
         if (loopRunning) Choreographer.getInstance().postFrameCallback(frameCallback)
